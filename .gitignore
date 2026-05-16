@@ -1,0 +1,87 @@
+# .NET
+bin/
+obj/
+out/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+*.swp
+*.swo
+
+# Build
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Test results
+TestResults/
+[Cc]overage*/
+*.coverage
+*.coveragexml
+
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+# EF Core
+*.mdf
+*.ldf
+*.ndf
+
+# Rider / Resharper
+.idea/
+*.sln.iml
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Node / SvelteKit
+node_modules/
+.svelte-kit/
+.vercel/
+.netlify/
+build/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Azure / secrets
+appsettings.*.local.json
+*.pfx
+*.key
+*.pem
+secrets.json
+
+# Docker
+.dockerignore.bak
+
+# Misc
+*.bak
+*.tmp
+*~
