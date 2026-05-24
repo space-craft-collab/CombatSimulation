@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orleans Monster Arena — Hot &amp; Cold Storage</title>
+<style>
+  :root {
+    --hot:        #ff6b35;
+    --hot-soft:   #fff1ea;
+    --hot-line:   #ff8c5a;
+    --cold:       #2f80ed;
+    --cold-soft:  #eef4fd;
+    --cold-line:  #5b9bf0;
+    --ram:        #f2c94c;
+    --ink:        #1c2433;
+    --muted:      #6b7280;
+    --bg:         #f7f8fa;
+    --card:       #ffffff;
+    --border:     #e3e7ee;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    padding: 24px 16px 60px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: .95rem; }
+
+  /* ---- controls ---- */
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin-bottom: 18px;
+  }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border); background: var(--card);
+    color: var(--ink); padding: 8px 16px; border-radius: 8px;
+    transition: background .15s, transform .05s;
+  }
+  button:hover { background: #f0f2f6; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  button.primary:hover { background: #2c3850; }
+  .step-label {
+    font-size: .9rem; color: var(--muted); margin-left: 4px;
+    min-width: 0; flex: 1;
+  }
+  .step-label b { color: var(--ink); }
+
+  /* ---- columns ---- */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 64px 1fr;
+    gap: 0;
+    align-items: stretch;
+  }
+  @media (max-width: 760px) {
+    .grid { grid-template-columns: 1fr; }
+    .bridge-col { order: 2; min-height: 80px; }
+  }
+
+  .col {
+    border-radius: 14px; padding: 18px;
+    border: 2px solid; position: relative;
+  }
+  .col.hot  { background: var(--hot-soft);  border-color: var(--hot-line); }
+  .col.cold { background: var(--cold-soft); border-color: var(--cold-line); }
+
+  .col-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .badge {
+    font-size: .7rem; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; padding: 3px 8px; border-radius: 999px; color: #fff;
+  }
+  .badge.hot  { background: var(--hot); }
+  .badge.cold { background: var(--cold); }
+  .col h2 { font-size: 1.05rem; margin: 0; }
+  .col .tech { font-size: .82rem; color: var(--muted); margin: 2px 0 14px; }
+
+  .node {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+    transition: box-shadow .2s, transform .2s, border-color .2s;
+  }
+  .node h3 { margin: 0 0 4px; font-size: .92rem; display: flex; align-items: center; gap: 6px; }
+  .node ul { margin: 4px 0 0; padding-left: 18px; font-size: .82rem; color: var(--muted); }
+  .node ul li { margin: 1px 0; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+  .dot.ram  { background: var(--ram); }
+  .dot.hot  { background: var(--hot); }
+  .dot.cold { background: var(--cold); }
+
+  /* dim everything while a run is in progress, so the active node pops */
+  .grid.playing .node { opacity: .4; filter: saturate(.6); }
+
+  /* active highlight during animation */
+  .node {
+    opacity: 1;
+  }
+  .node.active {
+    opacity: 1 !important; filter: none !important;
+    transform: translateY(-4px) scale(1.05);
+    z-index: 2;
+  }
+  .node.active.h {
+    border-color: var(--hot); border-width: 2px;
+    box-shadow: 0 10px 30px rgba(255,107,53,.40);
+    animation: pulse-hot 1.3s ease-in-out infinite;
+  }
+  .node.active.c {
+    border-color: var(--cold); border-width: 2px;
+    box-shadow: 0 10px 30px rgba(47,128,237,.40);
+    animation: pulse-cold 1.3s ease-in-out infinite;
+  }
+  @keyframes pulse-hot {
+    0%, 100% { box-shadow: 0 10px 30px rgba(255,107,53,.40); }
+    50%      { box-shadow: 0 10px 40px rgba(255,107,53,.70); }
+  }
+  @keyframes pulse-cold {
+    0%, 100% { box-shadow: 0 10px 30px rgba(47,128,237,.40); }
+    50%      { box-shadow: 0 10px 40px rgba(47,128,237,.70); }
+  }
+  /* gently surface what changed in the active node */
+  .node.active h3 { color: var(--ink); }
+  .node.active ul li { color: var(--ink); }
+
+  /* ---- the autosave loop inside hot ---- */
+  .loop {
+    display: flex; align-items: center; gap: 8px; font-size: .78rem;
+    color: var(--hot); font-weight: 600; margin: -2px 0 12px 2px;
+  }
+  .loop .arrow { font-size: 1rem; }
+
+  /* ---- bridge column ---- */
+  .bridge-col {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; position: relative;
+  }
+  .bridge-arrow {
+    font-size: 1.8rem; color: var(--muted); transition: color .2s, transform .2s;
+  }
+  .bridge-arrow.active {
+    color: var(--hot); transform: scale(1.7);
+    animation: slide-arrow 1s ease-in-out infinite;
+  }
+  @keyframes slide-arrow {
+    0%, 100% { transform: scale(1.7) translateX(-3px); }
+    50%      { transform: scale(1.7) translateX(3px); }
+  }
+  @media (max-width: 760px) {
+    .bridge-arrow { transform: rotate(90deg); }
+    .bridge-arrow.active { transform: rotate(90deg) scale(1.7); animation: none; }
+  }
+  .bridge-tag {
+    font-size: .68rem; text-align: center; color: var(--muted);
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    font-weight: 600; letter-spacing: .03em;
+  }
+  @media (max-width: 760px) {
+    .bridge-tag { writing-mode: horizontal-tb; transform: none; }
+  }
+
+  /* ---- legend / footnotes ---- */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 18px; margin-top: 22px;
+    font-size: .82rem; color: var(--muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .note {
+    margin-top: 18px; padding: 12px 14px; border-radius: 10px;
+    background: #fff8e6; border: 1px solid #f5d98a; font-size: .82rem; color: #6b5510;
+  }
+  .note b { color: #4a3b08; }
+  footer { margin-top: 28px; font-size: .75rem; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔥🧊 Hot &amp; Cold Storage — Orleans Monster Arena</h1>
+  <p class="sub">How a live battle stays fast in memory, gets backed up cheaply, then lands as a permanent record. Press <b>Play battle lifecycle</b> to step through it.</p>
+
+  <div class="controls">
+    <button class="primary" id="play">▶ Play battle lifecycle</button>
+    <button id="reset">↺ Reset</button>
+    <span class="step-label" id="stepLabel">Idle — nothing happening yet.</span>
+  </div>
+
+  <div class="grid">
+    <!-- HOT -->
+    <div class="col hot">
+      <div class="col-head">
+        <span class="badge hot">Hot path</span>
+        <h2>Live &amp; fast</h2>
+      </div>
+      <div class="tech">Orleans grains (RAM) + Azure Table Storage</div>
+
+      <div class="node h" id="n-ram">
+        <h3><span class="dot ram"></span> Grain state in RAM</h3>
+        <ul>
+          <li>Round number, whose turn</li>
+          <li>Each monster: HP, buffs, cooldowns</li>
+          <li>Single-threaded per grain — no races</li>
+        </ul>
+      </div>
+
+      <div class="loop">
+        <span class="arrow">⟳</span> auto-save / reload on reactivation
+      </div>
+
+      <div class="node h" id="n-table">
+        <h3><span class="dot hot"></span> Azure Table Storage</h3>
+        <ul>
+          <li>Persisted grain state (crash safety net)</li>
+          <li>Cluster membership (which silos live)</li>
+          <li>Reminders (durable turn timers)</li>
+          <li>NoSQL key-value · cheap · no schema</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- BRIDGE -->
+    <div class="bridge-col">
+      <div class="bridge-tag">on Completed</div>
+      <div class="bridge-arrow" id="bridge">➜</div>
+      <div class="bridge-tag">IBattleSnapshotWriter</div>
+    </div>
+
+    <!-- COLD -->
+    <div class="col cold">
+      <div class="col-head">
+        <span class="badge cold">Cold path</span>
+        <h2>Durable &amp; queryable</h2>
+      </div>
+      <div class="tech">EF Core + Azure SQL</div>
+
+      <div class="node c" id="n-catalog">
+        <h3><span class="dot cold"></span> Catalog masters</h3>
+        <ul>
+          <li>Monster definitions, stats, move sets</li>
+          <li>Read often, change rarely</li>
+        </ul>
+      </div>
+
+      <div class="node c" id="n-players">
+        <h3><span class="dot cold"></span> Players</h3>
+        <ul>
+          <li>Accounts &amp; identity</li>
+          <li>Win / loss records</li>
+        </ul>
+      </div>
+
+      <div class="node c" id="n-snapshot">
+        <h3><span class="dot cold"></span> Battle snapshots</h3>
+        <ul>
+          <li>Final result of a finished battle</li>
+          <li>Feeds history &amp; leaderboards (joins!)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="dot ram"></span> In RAM (fastest, volatile)</span>
+    <span><span class="dot hot"></span> Hot · Table Storage (cheap, durable backup)</span>
+    <span><span class="dot cold"></span> Cold · Azure SQL (relational, reportable)</span>
+  </div>
+
+  <div class="note">
+    ⚠️ <b>Honest trade-off (ADR-0003):</b> no transactional outbox. If a silo crashes
+    <i>between</i> a battle completing and the snapshot write, that one snapshot can be lost
+    (at-most-once). Acceptable for a showcase — and documented so reviewers see it was deliberate.
+  </div>
+
+  <footer>Orleans Monster Arena · architecture reference · see <code>docs/adr/</code></footer>
+</div>
+
+<script>
+  // Battle lifecycle steps. Each step lights up nodes + sets a caption.
+  const steps = [
+    {
+      label: "<b>1. Created.</b> A LiveBattleGrain spins up. Its state lives in RAM.",
+      on: ["n-ram"]
+    },
+    {
+      label: "<b>2. In progress.</b> Rounds tick in RAM — HP, buffs, turn order mutate fast.",
+      on: ["n-ram"]
+    },
+    {
+      label: "<b>3. Auto-save.</b> Orleans periodically persists grain state to Table Storage. Survives a silo restart.",
+      on: ["n-ram", "n-table"]
+    },
+    {
+      label: "<b>4. Completed.</b> The battle ends. Time to make a permanent record.",
+      on: ["n-ram"]
+    },
+    {
+      label: "<b>5. Bridge.</b> Grain calls IBattleSnapshotWriter — hot ➜ cold.",
+      on: ["n-ram"], bridge: true
+    },
+    {
+      label: "<b>6. Snapshot written.</b> EF Core inserts the final result into Azure SQL.",
+      on: ["n-snapshot"]
+    },
+    {
+      label: "<b>7. Deactivate.</b> The grain unloads; its hot state can age out. Record lives on in SQL.",
+      on: ["n-snapshot"]
+    }
+  ];
+
+  const allNodes = ["n-ram","n-table","n-catalog","n-players","n-snapshot"];
+  const stepLabel = document.getElementById("stepLabel");
+  const bridge = document.getElementById("bridge");
+  const playBtn = document.getElementById("play");
+  const grid = document.querySelector(".grid");
+  const STEP_MS = 2800; // dwell time per step
+  let timer = null, i = 0;
+
+  function clearActive() {
+    allNodes.forEach(id => document.getElementById(id).classList.remove("active"));
+    bridge.classList.remove("active");
+  }
+
+  function render(step, idx) {
+    clearActive();
+    step.on.forEach(id => document.getElementById(id).classList.add("active"));
+    if (step.bridge) bridge.classList.add("active");
+    stepLabel.innerHTML =
+      "<span style='opacity:.5'>Step " + (idx + 1) + " / " + steps.length + "</span> &nbsp; " + step.label;
+  }
+
+  function play() {
+    stop();
+    i = 0;
+    grid.classList.add("playing");
+    playBtn.textContent = "⏸ Playing…";
+    const tick = () => {
+      if (i >= steps.length) {
+        stop();
+        clearActive();
+        stepLabel.innerHTML = "<b>Done.</b> Battle archived. Press Reset or Play again.";
+        return;
+      }
+      render(steps[i], i);
+      i++;
+      timer = setTimeout(tick, STEP_MS);
+    };
+    tick();
+  }
+
+  function stop() {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    grid.classList.remove("playing");
+    playBtn.textContent = "▶ Play battle lifecycle";
+  }
+
+  function reset() {
+    stop();
+    clearActive();
+    i = 0;
+    stepLabel.textContent = "Idle — nothing happening yet.";
+  }
+
+  playBtn.addEventListener("click", () => { timer ? stop() : play(); });
+  document.getElementById("reset").addEventListener("click", reset);
+</script>
+</body>
+</html>
