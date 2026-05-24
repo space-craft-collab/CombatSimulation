@@ -1,0 +1,68 @@
+<Project>
+
+  <!--
+    Solution-wide MSBuild defaults for Orleans Monster Arena.
+    Applied automatically to every project under this directory.
+    See CLAUDE.md for the coding standards these settings enforce.
+  -->
+
+  <PropertyGroup>
+    <!-- Target the latest stable .NET. -->
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Modern C# language features. -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Treat warnings as errors in CI-grade builds. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors />
+
+    <!-- Analyzer + code-style enforcement. -->
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+
+    <!-- Deterministic + reproducible builds. -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- Versioning + metadata. -->
+    <Version>0.1.0</Version>
+    <Authors>Anian Hartmann</Authors>
+    <Company>Anian Hartmann</Company>
+    <Product>Orleans Monster Arena</Product>
+    <Copyright>Copyright © Anian Hartmann</Copyright>
+    <NeutralLanguage>en-US</NeutralLanguage>
+
+    <!-- Default to library; executables override this. -->
+    <IsPackable>false</IsPackable>
+
+    <!-- Embed source + symbols for easier debugging of NuGet consumers (cheap, useful). -->
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- XML documentation: required for public surface (see CLAUDE.md). -->
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: missing XML comment on public type/member.
+         Surfaced as a warning so it shows up; promoted to error
+         by TreatWarningsAsErrors above. Demote in test projects. -->
+    <NoWarn>$(NoWarn)</NoWarn>
+  </PropertyGroup>
+
+  <!-- Test projects: relax doc + analyzer rigor. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests'))">
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CA1707;CA2007</NoWarn>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>
