@@ -1,6 +1,6 @@
 # ADR-0002: Orleans silo co-hosted with the web host
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-05-16
 - **Deciders:** aha (solo maintainer)
 

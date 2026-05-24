@@ -1,6 +1,6 @@
 # ADR-0001: Modular monolith over microservices
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-05-16
 - **Deciders:** aha (solo maintainer)
 
@@ -24,9 +24,9 @@ clean module boundaries.
 ## Decision
 
 Ship as a **modular monolith**: one binary, one deployable, with
-strict in-process module boundaries enforced through
-`Shared.Contracts` interfaces. Orleans runs co-hosted in the same
-process (see [ADR-0002]).
+strict in-process module boundaries enforced through per-module
+`<Module>.Contracts` interfaces ([ADR-0005]). Orleans runs
+co-hosted in the same process (see [ADR-0002]).
 
 ## Consequences
 
@@ -46,7 +46,7 @@ process (see [ADR-0002]).
 - **Neutral / follow-ups:**
   - Inter-module communication rules are locked in [ADR-0005].
   - If a real workload ever demands it, modules can be lifted
-    out by moving their `Shared.Contracts` interface
+    out by moving their `<Module>.Contracts` interface
     implementation behind an HTTP/gRPC adapter.
 
 ## Alternatives considered

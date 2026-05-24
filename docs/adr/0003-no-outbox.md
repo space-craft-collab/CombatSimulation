@@ -1,6 +1,6 @@
 # ADR-0003: No transactional outbox for hot→cold handoff
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-05-16
 - **Deciders:** aha (solo maintainer)
 
@@ -64,7 +64,7 @@ was a conscious choice, not an oversight.
 ## References
 
 - Chris Richardson, "Pattern: Transactional outbox"
-- [ADR-0005]: Service interfaces (the `IBattleSnapshotWriter`
-  contract sits there)
+- [ADR-0005]: Service interfaces — `IBattleSnapshotWriter` lives
+  in `Battles.Contracts`.
 
 [ADR-0005]: 0005-inter-module-services.md

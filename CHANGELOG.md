@@ -34,10 +34,12 @@ and this project adheres to
   ASP.NET Core 10, NLog, OpenTelemetry, xUnit +
   Testcontainers
 - `docs/adr/` — ADR directory with MADR template,
-  index `README.md`, and ADRs 0001–0007
+  index `README.md`, and ADRs 0001–0008
   (modular monolith, Orleans co-hosted, no outbox,
-  SvelteKit frontend, inter-module service
-  interfaces, NLog logging, turn-based model)
+  SvelteKit frontend, inter-module service interfaces
+  via per-module Contracts, NLog logging, turn-based
+  model, Shared layer split). All ADRs are `Proposed`
+  while the project is pre-code.
 
 #### Decided
 - Stack: .NET 10, Orleans 9, SvelteKit + Svelte 5,
@@ -45,7 +47,8 @@ and this project adheres to
   ASP.NET Core Minimal API + SignalR
 - Interaction model: **turn-based** (fits actor model)
 - Inter-module comms: **plain service interfaces in
-  `Shared.Contracts`** — no in-process bus / Mediator
+  per-module `<Module>.Contracts` projects** (RiverBooks
+  pattern) — no in-process bus / Mediator
 - OpenAPI client: **Kiota** (NSwag rejected)
 - Logging: **NLog** (not Serilog)
 

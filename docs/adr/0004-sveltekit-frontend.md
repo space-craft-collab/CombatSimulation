@@ -1,6 +1,6 @@
 # ADR-0004: SvelteKit + Svelte 5 for the frontend
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-05-16
 - **Deciders:** aha (solo maintainer)
 

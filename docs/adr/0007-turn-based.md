@@ -1,6 +1,6 @@
 # ADR-0007: Turn-based interaction model
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-05-16
 - **Deciders:** aha (solo maintainer)
 

@@ -1,6 +1,6 @@
 # ADR-0006: NLog for structured logging
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-05-16
 - **Deciders:** aha (solo maintainer)
 
