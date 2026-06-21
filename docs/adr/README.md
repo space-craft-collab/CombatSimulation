@@ -17,6 +17,7 @@ new entries.
 | 0006 | [NLog for structured logging](0006-nlog-logging.md)                  | Proposed |
 | 0007 | [Turn-based interaction model](0007-turn-based.md)                   | Proposed |
 | 0008 | [Split the Shared layer: Kernel + Infrastructure](0008-shared-layer-split.md) | Proposed |
+| 0009 | [Per-module internal structure: vertical slices](0009-module-internal-structure.md) | Proposed |
 
 ## Diagrams
 

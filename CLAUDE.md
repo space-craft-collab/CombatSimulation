@@ -80,6 +80,25 @@ public CombatResult Resolve(Unit attacker, Unit defender)
   distinct responsibilities — do not merge them into one combined
   repository per aggregate (CQRS-style split).
 
+## Module layout
+
+Each module is **one project** (`Microsoft.NET.Sdk`) — see ADR-0009.
+Internal folders:
+
+- `Domain/` — entities, value objects, aggregates, invariants.
+- `Features/` — vertical slices; **one subfolder per use case**,
+  holding its service, request/response types, validation, and its
+  Minimal API endpoint.
+- `Infrastructure/` — `DbContext`, EF configs, the read and write
+  repositories, external clients.
+- `<Module>Module.cs` at the root — the DI/endpoint registration
+  entry the host calls.
+
+ASP.NET Core comes via `<FrameworkReference Include="Microsoft.AspNetCore.App" />`,
+not a NuGet package. The `Domain` → `Features` → `Infrastructure`
+direction is a convention enforced by an architecture test
+(NetArchTest), since folders are not compiler-checked.
+
 ## Tests
 
 - **xUnit v3** (the v3 line, not v2)

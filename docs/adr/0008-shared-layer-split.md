@@ -25,31 +25,36 @@ dependency direction:
 - **`Shared.Kernel`** — dependency-light primitives: `Result<T>`,
   domain base types (`Entity`, `ValueObject`, `AggregateRoot`),
   guard helpers, abstractions. **No EF Core / Orleans / Azure
-  references.** Referenced by module Domain and Application layers.
+  references.** Referenced by the module project (its `Domain` and
+  `Features` folders) and the Bootstrapper.
 - **`Shared.Infrastructure`** — concrete cross-cutting infra:
   base `DbContext` conventions, common EF mappings, NLog +
   OpenTelemetry registration extensions, Azure Table Storage /
   Orleans wiring helpers. References EF Core, Orleans, and Azure
-  SDKs. Referenced only by module **Infrastructure** projects and
-  the Bootstrapper.
+  SDKs. Referenced by the module project (its `Infrastructure`
+  folder) and the Bootstrapper.
 
 Inter-module service interfaces and DTOs live in per-module
 `<Module>.Contracts` projects — see [ADR-0005], not here.
 
-The resulting direction is:
+Each module is a **single project** ([ADR-0009]); the layers below
+are folders within it, and the direction between them is enforced
+by an architecture test rather than csproj edges:
 
 ```
-Domain          → Shared.Kernel
-Application     → Shared.Kernel, <consumed module>.Contracts
-Infrastructure  → Shared.Kernel, Shared.Infrastructure
+Domain (folder)         → Shared.Kernel
+Features (folder)       → Shared.Kernel, <consumed module>.Contracts
+Infrastructure (folder) → Shared.Kernel, Shared.Infrastructure
 ```
 
-Within the `Battles` module only, the Application and
-Infrastructure projects additionally reference
-`Battles.Grains.Abstractions` — the grain interfaces plus the
-`Microsoft.Orleans.Sdk` dependency they require. That Orleans
-reference deliberately stays out of `Shared.Kernel` and the plain
-`*.Contracts` projects; see [ADR-0005].
+At the project level the module therefore references
+`Shared.Kernel`, `Shared.Infrastructure`, and the
+`<Module>.Contracts` of each consumed module. The `Battles`
+project additionally references `Battles.Grains.Abstractions` —
+the grain interfaces plus the `Microsoft.Orleans.Sdk` dependency
+they require. That Orleans reference deliberately stays out of
+`Shared.Kernel` and the plain `*.Contracts` projects; see
+[ADR-0005].
 
 ## Consequences
 
@@ -59,8 +64,10 @@ reference deliberately stays out of `Shared.Kernel` and the plain
   - Cross-cutting infra wiring (logging, tracing, persistence
     conventions) lives in one place instead of being copy-pasted
     across module Infrastructure projects.
-  - The dependency graph makes the intended layering visible in
-    the `.csproj` references — reviewers can see it at a glance.
+  - The cross-project layering is visible in the `.csproj`
+    references — reviewers can see it at a glance. The
+    intra-module layering is enforced by an architecture test
+    instead ([ADR-0009]).
 - **Negative:**
   - One more project to maintain than the original two-assembly
     plan.
@@ -90,7 +97,10 @@ reference deliberately stays out of `Shared.Kernel` and the plain
   contracts live there, not in the Shared layer.
 - [ADR-0006]: NLog for structured logging — wiring lives in
   `Shared.Infrastructure`.
+- [ADR-0009]: Per-module internal structure — the layers above are
+  folders in one module project, enforced by an architecture test.
 
 [ADR-0001]: 0001-modular-monolith.md
 [ADR-0005]: 0005-inter-module-services.md
 [ADR-0006]: 0006-nlog-logging.md
+[ADR-0009]: 0009-module-internal-structure.md

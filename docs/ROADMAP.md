@@ -10,7 +10,7 @@ sequences the work.
 
 - **Phase 0 — Foundations & ADRs** ✅ done
   Repo scaffolding, coding standards, build/package config,
-  ADRs 0001–0008, architecture diagrams.
+  ADRs 0001–0009, architecture diagrams.
 - **Phase 1 — Walking skeleton** ⬅ current
   Compilable, runnable, CI-green solution that establishes the
   full project graph. No domain logic yet.
@@ -50,11 +50,14 @@ is the structural skeleton that later phases fill in.
 
 Per module (`Catalog`, `Battles`, `Players`):
 
-- `<Module>.Domain` → `Shared.Kernel`
-- `<Module>.Application` → `Shared.Kernel`, consumed
-  `<Module>.Contracts`
-- `<Module>.Infrastructure` → `Shared.Kernel`,
-  `Shared.Infrastructure`
+- `<Module>` — a **single project**
+  ([ADR-0009](adr/0009-module-internal-structure.md)) with
+  `Domain/`, `Features/`, `Infrastructure/` folders. References
+  `Shared.Kernel`, `Shared.Infrastructure`, consumed
+  `<Module>.Contracts`, and `<FrameworkReference
+  Include="Microsoft.AspNetCore.App" />` for feature-local Minimal
+  API endpoints. Intra-module layering is enforced by an
+  architecture test, not csproj edges.
 - `<Module>.Contracts` → `Shared.Kernel` only (Orleans-free)
 
 Battles-only:
@@ -69,22 +72,30 @@ Shared:
 
 Host + tests:
 
-- `AppHost` (ASP.NET Core composition root) → each module's
-  Application + Infrastructure, `Battles.Grains.Abstractions`,
-  `Shared.Infrastructure`
-- `*.Tests` (xUnit)
+- `AppHost` (ASP.NET Core composition root) → each module
+  project, `Battles.Grains.Abstractions`, `Shared.Infrastructure`
+- `*.Tests` (xUnit v3)
 
 This is the [ADR-0005](adr/0005-inter-module-services.md) /
 [ADR-0008](adr/0008-shared-layer-split.md) dependency
 direction. No module references another module's implementation
-assembly; consumers see only `<Module>.Contracts`.
+assembly; consumers see only `<Module>.Contracts`. The internal
+`Domain`/`Features`/`Infrastructure` folder layout per module
+follows [ADR-0009](adr/0009-module-internal-structure.md).
 
 ### Checklist
 
 - [ ] `OrleansMonsterArena.sln` with the project graph above,
       projects under `src/` and `tests/`
-- [ ] References wired per ADR-0005 / ADR-0008; no forbidden
-      edges (no module → another module's implementation)
+- [ ] References wired per ADR-0005 / ADR-0008 / ADR-0009; no
+      forbidden edges (no module → another module's implementation)
+- [ ] Each module is one project with `Domain/`, `Features/`,
+      `Infrastructure/` folders + `<Module>Module.cs` registration
+      entry; ASP.NET via `FrameworkReference`
+      ([ADR-0009](adr/0009-module-internal-structure.md))
+- [ ] Architecture test (NetArchTest): per module, `Domain` does
+      not depend on `Features`/`Infrastructure`; runs in CI
+      ([ADR-0009](adr/0009-module-internal-structure.md))
 - [ ] `AppHost` boots; `GET /health` returns 200
 - [ ] Minimal NLog wiring in `Shared.Infrastructure`, consumed
       by `AppHost` ([ADR-0006](adr/0006-nlog-logging.md))
@@ -95,8 +106,8 @@ assembly; consumers see only `<Module>.Contracts`.
       protection once CI is green
 - [ ] README status → "Phase 1"; CHANGELOG Phase 1 entry
 - [ ] **Decision:** promote structural ADRs
-      (0001/0002/0005/0008) to `Accepted` now that code commits
-      to them?
+      (0001/0002/0005/0008/0009) to `Accepted` now that code
+      commits to them?
 
 ### Explicitly deferred
 
