@@ -27,8 +27,9 @@ Interactive HTML diagrams live in [`../diagrams/`](../diagrams/):
   battle lifecycle across the hot (Orleans/Table Storage) and cold
   (EF Core/Azure SQL) paths (ADR-0003, ADR-0007).
 - [`project-dependencies.html`](../diagrams/project-dependencies.html) —
-  project reference graph with the `Battles.Grains.Abstractions`
-  split, plus a battle data-flow walkthrough (ADR-0005, ADR-0008).
+  project reference graph (one project per module, with the
+  `Battles.Grains.Abstractions` split), plus a battle data-flow
+  walkthrough (ADR-0005, ADR-0008, ADR-0009).
 
 ## Conventions
 

@@ -145,8 +145,11 @@
   <h1>🧩 Project Dependencies &amp; Data Flow</h1>
   <p class="sub">
     The modular monolith with grain interfaces extracted into
-    <b>Battles.Grains.Abstractions</b>. Arrows of dependency point
-    <i>downward</i> — every project references the ones below it.
+    <b>Battles.Grains.Abstractions</b>. Each module is a single
+    project with <code>Domain/</code> · <code>Features/</code> ·
+    <code>Infrastructure/</code> folders (ADR-0009). Arrows of
+    dependency point <i>downward</i> — every project references the
+    ones below it.
   </p>
 
   <!-- ============ DIAGRAM 1: DEPENDENCY GRAPH ============ -->
@@ -169,57 +172,29 @@
         <div class="node n-host touches-orleans">
           <h3>Bootstrapper <span class="pill orleans">Orleans</span></h3>
           <div class="role">Composition root · <code>UseOrleans()</code> · holds <code>IClusterClient</code></div>
-          <div class="refs">refs <b>every *.Infrastructure</b>, Shared.Infrastructure, Battles.Grains.Abstractions</div>
+          <div class="refs">refs <b>every module project</b>, Shared.Infrastructure, Battles.Grains.Abstractions</div>
         </div>
       </div>
     </div>
 
     <div class="tier">
-      <div class="tier-name">Infrastructure</div>
+      <div class="tier-name">Modules</div>
       <div class="tier-row">
         <div class="node n-catalog">
-          <h3>Catalog.Infrastructure</h3>
-          <div class="role">EF Core repos</div>
-          <div class="refs">refs <b>Shared.Infrastructure</b>, Catalog.Domain</div>
+          <h3>Catalog</h3>
+          <div class="role"><code>Domain/</code> · <code>Features/</code> · <code>Infrastructure/</code> — monster definitions, implements <code>ICatalogQueryService</code></div>
+          <div class="refs">refs <b>Catalog.Contracts</b>, Shared.Kernel, Shared.Infrastructure</div>
         </div>
         <div class="node n-battles touches-orleans">
-          <h3>Battles.Infrastructure <span class="pill orleans">Orleans</span></h3>
-          <div class="role">Grain impls · snapshot writer</div>
-          <div class="refs">refs <b>Battles.Grains.Abstractions</b>, Shared.Infrastructure</div>
+          <h3>Battles <span class="pill orleans">Orleans</span></h3>
+          <div class="role"><code>Domain/</code> · <code>Features/</code> · <code>Infrastructure/</code> · <code>Grains/</code> — round rules, grain impls, snapshot writer</div>
+          <div class="refs">refs <b>Catalog.Contracts</b>, <b>Players.Contracts</b>, Battles.Grains.Abstractions, Shared.Infrastructure</div>
         </div>
         <div class="node n-players">
-          <h3>Players.Infrastructure</h3>
-          <div class="role">EF Core repos</div>
-          <div class="refs">refs <b>Shared.Infrastructure</b>, Players.Domain</div>
+          <h3>Players</h3>
+          <div class="role"><code>Domain/</code> · <code>Features/</code> · <code>Infrastructure/</code> — accounts · W/L, implements <code>IPlayerStatsService</code></div>
+          <div class="refs">refs <b>Players.Contracts</b>, Shared.Kernel, Shared.Infrastructure</div>
         </div>
-      </div>
-    </div>
-
-    <div class="tier">
-      <div class="tier-name">Application</div>
-      <div class="tier-row">
-        <div class="node n-catalog">
-          <h3>Catalog.Application</h3>
-          <div class="role">implements <code>ICatalogQueryService</code></div>
-        </div>
-        <div class="node n-battles touches-orleans">
-          <h3>Battles.Application <span class="pill orleans">Orleans</span></h3>
-          <div class="role">orchestrates rounds</div>
-          <div class="refs">refs <b>Catalog.Contracts</b>, <b>Players.Contracts</b>, Battles.Grains.Abstractions</div>
-        </div>
-        <div class="node n-players">
-          <h3>Players.Application</h3>
-          <div class="role">implements <code>IPlayerStatsService</code></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="tier">
-      <div class="tier-name">Domain</div>
-      <div class="tier-row">
-        <div class="node n-catalog"><h3>Catalog.Domain</h3><div class="role">monster definitions</div></div>
-        <div class="node n-battles"><h3>Battles.Domain</h3><div class="role">round resolution rules</div></div>
-        <div class="node n-players"><h3>Players.Domain</h3><div class="role">accounts · W/L</div></div>
       </div>
     </div>
 
@@ -288,15 +263,15 @@
     <div class="flowstep" data-i="0">
       <div class="num">1</div>
       <div>
-        <div class="where" style="color:var(--host)">Bootstrapper · API/SignalR</div>
+        <div class="where" style="color:var(--battles)">Battles · Features/ endpoint</div>
         <h3>Client submits an action</h3>
-        <p>The endpoint resolves <code>ILiveBattleGrain</code> via <code>IClusterClient</code> and calls it. Only the host crosses this boundary.</p>
+        <p>A feature-local Minimal API endpoint (mapped by the host) resolves <code>ILiveBattleGrain</code> via <code>IClusterClient</code> and calls it.</p>
       </div>
     </div>
     <div class="flowstep" data-i="1">
       <div class="num">2</div>
       <div>
-        <div class="where" style="color:var(--battles)">Battles.Infrastructure · grain</div>
+        <div class="where" style="color:var(--battles)">Battles · Grains/ folder</div>
         <h3>Grain wakes (state in RAM)</h3>
         <p>Single-threaded, FIFO — one action = one message. State auto-persists to Azure Table Storage.</p>
       </div>
@@ -312,7 +287,7 @@
     <div class="flowstep" data-i="3">
       <div class="num">4</div>
       <div>
-        <div class="where" style="color:var(--battles)">Battles.Domain</div>
+        <div class="where" style="color:var(--battles)">Battles · Domain/ folder</div>
         <h3>Resolves the round</h3>
         <p>Pure domain rules apply damage, buffs, turn order. Returns a <code>BattleEventDto</code> delta.</p>
       </div>
@@ -336,7 +311,7 @@
     <div class="flowstep" data-i="6">
       <div class="num">7</div>
       <div>
-        <div class="where" style="color:var(--battles)">Battles.Infrastructure</div>
+        <div class="where" style="color:var(--battles)">Battles · Infrastructure/ folder</div>
         <h3>Writes snapshot, deactivates</h3>
         <p><code>IBattleSnapshotWriter</code> (intra-Battles) persists the final result to Azure SQL via EF Core, then the grain unloads.</p>
       </div>
