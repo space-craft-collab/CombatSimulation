@@ -65,9 +65,24 @@ Target the **most modern** .NET standards available.
 public CombatResult Resolve(Unit attacker, Unit defender)
 ```
 
+## Dependencies & Abstractions
+
+- **Interfaces only where they carry real value.** Cross-module
+  contracts in `<Module>.Contracts` and Orleans grain interfaces
+  are wanted (see ADR-0005).
+- **No test-only interfaces.** Do not create `IFooRepository`-style
+  interfaces whose sole purpose is making a class mockable in a
+  unit test. For such test seams, inject a **function delegate**
+  (`Func<...>` / `Action<...>`) instead of an interface.
+- Default to concrete classes; introduce a seam only when a test
+  genuinely needs one, and prefer the delegate form for it.
+- **Separate read and write repositories.** Reads and writes are
+  distinct responsibilities — do not merge them into one combined
+  repository per aggregate (CQRS-style split).
+
 ## Tests
 
-- xUnit preferred
+- **xUnit v3** (the v3 line, not v2)
 - Arrange / Act / Assert layout
 - Test names: `Method_Scenario_ExpectedResult`
 

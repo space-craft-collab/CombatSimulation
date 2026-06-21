@@ -67,6 +67,16 @@ own `<Module>.Contracts` project.
   plain method calls and (where useful) plain C# events suffice.
 - `<Module>.Contracts` projects stay dependency-light (they may
   reference `Shared.Kernel` for shared primitives, nothing more).
+- **Interfaces only where they carry real value.** The contract
+  and grain interfaces above earn their keep: they decouple
+  modules and keep the "ready to extract" property. This is *not*
+  a licence for `IFooRepository`-style interfaces whose only
+  purpose is making a class mockable in a unit test. Inside a
+  module, default to concrete classes; when a test genuinely needs
+  a seam, inject a **function delegate** (`Func<...>` / `Action<...>`)
+  rather than minting a single-method interface for it. The
+  cross-module surface is the boundary where an interface is
+  justified; an internal test seam is not.
 
 The dependency direction is therefore: a module depends only on
 the `<Module>.Contracts` projects of the modules it consumes; no
