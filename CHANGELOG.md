@@ -40,6 +40,17 @@ and this project adheres to
   via per-module Contracts, NLog logging, turn-based
   model, Shared layer split). All ADRs are `Proposed`
   while the project is pre-code.
+- `docs/diagrams/project-dependencies.html` — interactive
+  project reference graph + battle data-flow walkthrough
+  (ADR-0005, ADR-0008).
+
+#### Changed
+- ADR-0005 / ADR-0008 / ADR-0003: grain interfaces move out
+  of the plain `<Module>.Contracts` projects into a separate
+  `Battles.Grains.Abstractions` project that carries the
+  `Microsoft.Orleans.Sdk` reference — keeps `*.Contracts`
+  Orleans-free. `IBattleSnapshotWriter` clarified as a
+  Battles-internal abstraction, not a cross-module contract.
 
 #### Decided
 - Stack: .NET 10, Orleans 9, SvelteKit + Svelte 5,
@@ -56,4 +67,10 @@ and this project adheres to
 - Event-Storming notes (paper, photo in README)
 - SvelteKit adapter choice — deferred to start of
   Phase 4 (1-day spike, see ADR-0004)
-- Branch protection on `main`
+
+#### Decided (process)
+- Branch protection on `main`: `protect-main` rule created
+  (block force-push + deletion, no PR-gate). Not enforced
+  while the repo is private on the free plan — takes effect
+  when the repo goes public. CI status-check gate
+  (`dotnet test`) to be added in Phase 1.

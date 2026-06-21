@@ -18,6 +18,17 @@ new entries.
 | 0007 | [Turn-based interaction model](0007-turn-based.md)                   | Proposed |
 | 0008 | [Split the Shared layer: Kernel + Infrastructure](0008-shared-layer-split.md) | Proposed |
 
+## Diagrams
+
+Interactive HTML diagrams live in [`../diagrams/`](../diagrams/):
+
+- [`hot-cold-storage.html`](../diagrams/hot-cold-storage.html) —
+  battle lifecycle across the hot (Orleans/Table Storage) and cold
+  (EF Core/Azure SQL) paths (ADR-0003, ADR-0007).
+- [`project-dependencies.html`](../diagrams/project-dependencies.html) —
+  project reference graph with the `Battles.Grains.Abstractions`
+  split, plus a battle data-flow walkthrough (ADR-0005, ADR-0008).
+
 ## Conventions
 
 - Filenames: `NNNN-short-kebab-title.md`, four-digit prefix.

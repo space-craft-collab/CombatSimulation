@@ -44,6 +44,13 @@ Application     → Shared.Kernel, <consumed module>.Contracts
 Infrastructure  → Shared.Kernel, Shared.Infrastructure
 ```
 
+Within the `Battles` module only, the Application and
+Infrastructure projects additionally reference
+`Battles.Grains.Abstractions` — the grain interfaces plus the
+`Microsoft.Orleans.Sdk` dependency they require. That Orleans
+reference deliberately stays out of `Shared.Kernel` and the plain
+`*.Contracts` projects; see [ADR-0005].
+
 ## Consequences
 
 - **Positive:**

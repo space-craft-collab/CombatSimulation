@@ -64,7 +64,8 @@ was a conscious choice, not an oversight.
 ## References
 
 - Chris Richardson, "Pattern: Transactional outbox"
-- [ADR-0005]: Service interfaces — `IBattleSnapshotWriter` lives
-  in `Battles.Contracts`.
+- [ADR-0005]: Service interfaces — `IBattleSnapshotWriter` is a
+  Battles-internal abstraction (the grain calls it within the
+  module), not a cross-module contract.
 
 [ADR-0005]: 0005-inter-module-services.md

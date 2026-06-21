@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orleans Monster Arena — Project Dependencies &amp; Data Flow</title>
+<style>
+  :root {
+    --catalog:   #2f80ed;
+    --battles:   #ff6b35;
+    --players:   #27ae60;
+    --shared:    #6b7280;
+    --orleans:   #8b5cf6;
+    --host:      #1c2433;
+    --ink:       #1c2433;
+    --muted:     #6b7280;
+    --bg:        #f7f8fa;
+    --card:      #ffffff;
+    --border:    #e3e7ee;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.5;
+    padding: 24px 16px 60px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 22px; font-size: .95rem; }
+  h2.section { font-size: 1.15rem; margin: 34px 0 4px; }
+  .section-sub { color: var(--muted); font-size: .9rem; margin: 0 0 16px; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px;
+  }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border); background: var(--card);
+    color: var(--ink); padding: 8px 16px; border-radius: 8px;
+    transition: background .15s, transform .05s;
+  }
+  button:hover { background: #f0f2f6; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--host); color: #fff; border-color: var(--host); }
+  button.primary:hover { background: #2c3850; }
+  .step-label { font-size: .9rem; color: var(--muted); flex: 1; min-width: 0; }
+  .step-label b { color: var(--ink); }
+
+  /* ---------- tiers (dependency graph) ---------- */
+  .tier {
+    display: grid; grid-template-columns: 110px 1fr; gap: 12px;
+    align-items: center; margin-bottom: 14px;
+  }
+  .tier-name {
+    font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--muted); text-align: right;
+  }
+  .tier-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  @media (max-width: 720px) {
+    .tier { grid-template-columns: 1fr; gap: 4px; }
+    .tier-name { text-align: left; }
+  }
+
+  .node {
+    background: var(--card); border: 1px solid var(--border);
+    border-left-width: 4px; border-radius: 10px; padding: 10px 12px;
+    min-width: 150px; flex: 1 1 150px;
+    transition: box-shadow .2s, transform .15s, opacity .2s;
+  }
+  .node h3 { margin: 0; font-size: .85rem; }
+  .node .role { font-size: .74rem; color: var(--muted); margin-top: 2px; }
+  .node .refs { font-size: .68rem; color: var(--muted); margin-top: 6px; }
+  .node .refs b { color: var(--ink); font-weight: 600; }
+
+  .n-catalog { border-left-color: var(--catalog); }
+  .n-battles { border-left-color: var(--battles); }
+  .n-players { border-left-color: var(--players); }
+  .n-shared  { border-left-color: var(--shared); }
+  .n-orleans { border-left-color: var(--orleans); }
+  .n-host    { border-left-color: var(--host); }
+
+  .pill {
+    display: inline-block; font-size: .62rem; font-weight: 700;
+    padding: 2px 7px; border-radius: 999px; color: #fff;
+    vertical-align: middle; margin-left: 6px;
+  }
+  .pill.orleans { background: var(--orleans); }
+  .pill.clean   { background: var(--players); }
+
+  /* highlight Orleans reach */
+  .graph.show-orleans .node { opacity: .32; filter: grayscale(.4); }
+  .graph.show-orleans .node.touches-orleans {
+    opacity: 1; filter: none;
+    box-shadow: 0 6px 22px rgba(139,92,246,.35);
+    border-color: var(--orleans);
+  }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 16px; margin-top: 18px;
+    font-size: .8rem; color: var(--muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  .note {
+    margin-top: 18px; padding: 12px 14px; border-radius: 10px;
+    background: #f3effe; border: 1px solid #d6c9f7; font-size: .82rem; color: #4b357e;
+  }
+  .note b { color: #36215e; }
+
+  /* ---------- data flow ---------- */
+  .flow { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+  .flowstep {
+    display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+    transition: box-shadow .2s, transform .15s, opacity .2s, border-color .2s;
+  }
+  .flow.playing .flowstep { opacity: .35; }
+  .flowstep.active {
+    opacity: 1 !important; transform: translateX(4px);
+    border-color: var(--battles);
+    box-shadow: 0 8px 26px rgba(255,107,53,.3);
+  }
+  .num {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--bg);
+    border: 1px solid var(--border); display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: .9rem; color: var(--muted);
+  }
+  .flowstep.active .num { background: var(--battles); color: #fff; border-color: var(--battles); }
+  .flowstep h3 { margin: 0 0 3px; font-size: .9rem; }
+  .flowstep .where {
+    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .03em; color: var(--muted);
+  }
+  .flowstep p { margin: 4px 0 0; font-size: .82rem; color: var(--muted); }
+  .flowstep code { font-size: .78rem; background: #f0f2f6; padding: 1px 5px; border-radius: 5px; }
+
+  footer { margin-top: 30px; font-size: .75rem; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧩 Project Dependencies &amp; Data Flow</h1>
+  <p class="sub">
+    The modular monolith with grain interfaces extracted into
+    <b>Battles.Grains.Abstractions</b>. Arrows of dependency point
+    <i>downward</i> — every project references the ones below it.
+  </p>
+
+  <!-- ============ DIAGRAM 1: DEPENDENCY GRAPH ============ -->
+  <h2 class="section">1 · How the projects reference each other</h2>
+  <p class="section-sub">
+    Per-module <code>*.Contracts</code> stay plain POCO + interfaces (ADR-0005).
+    Only one tiny project carries the Orleans dependency.
+  </p>
+
+  <div class="controls">
+    <button class="primary" id="orleansBtn">💜 Highlight Orleans reach</button>
+    <span class="step-label" id="orleansLabel">Showing the full project graph.</span>
+  </div>
+
+  <div class="graph" id="graph">
+
+    <div class="tier">
+      <div class="tier-name">Host</div>
+      <div class="tier-row">
+        <div class="node n-host touches-orleans">
+          <h3>Bootstrapper <span class="pill orleans">Orleans</span></h3>
+          <div class="role">Composition root · <code>UseOrleans()</code> · holds <code>IClusterClient</code></div>
+          <div class="refs">refs <b>every *.Infrastructure</b>, Shared.Infrastructure, Battles.Grains.Abstractions</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tier">
+      <div class="tier-name">Infrastructure</div>
+      <div class="tier-row">
+        <div class="node n-catalog">
+          <h3>Catalog.Infrastructure</h3>
+          <div class="role">EF Core repos</div>
+          <div class="refs">refs <b>Shared.Infrastructure</b>, Catalog.Domain</div>
+        </div>
+        <div class="node n-battles touches-orleans">
+          <h3>Battles.Infrastructure <span class="pill orleans">Orleans</span></h3>
+          <div class="role">Grain impls · snapshot writer</div>
+          <div class="refs">refs <b>Battles.Grains.Abstractions</b>, Shared.Infrastructure</div>
+        </div>
+        <div class="node n-players">
+          <h3>Players.Infrastructure</h3>
+          <div class="role">EF Core repos</div>
+          <div class="refs">refs <b>Shared.Infrastructure</b>, Players.Domain</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tier">
+      <div class="tier-name">Application</div>
+      <div class="tier-row">
+        <div class="node n-catalog">
+          <h3>Catalog.Application</h3>
+          <div class="role">implements <code>ICatalogQueryService</code></div>
+        </div>
+        <div class="node n-battles touches-orleans">
+          <h3>Battles.Application <span class="pill orleans">Orleans</span></h3>
+          <div class="role">orchestrates rounds</div>
+          <div class="refs">refs <b>Catalog.Contracts</b>, <b>Players.Contracts</b>, Battles.Grains.Abstractions</div>
+        </div>
+        <div class="node n-players">
+          <h3>Players.Application</h3>
+          <div class="role">implements <code>IPlayerStatsService</code></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tier">
+      <div class="tier-name">Domain</div>
+      <div class="tier-row">
+        <div class="node n-catalog"><h3>Catalog.Domain</h3><div class="role">monster definitions</div></div>
+        <div class="node n-battles"><h3>Battles.Domain</h3><div class="role">round resolution rules</div></div>
+        <div class="node n-players"><h3>Players.Domain</h3><div class="role">accounts · W/L</div></div>
+      </div>
+    </div>
+
+    <div class="tier">
+      <div class="tier-name">Contracts</div>
+      <div class="tier-row">
+        <div class="node n-catalog">
+          <h3>Catalog.Contracts <span class="pill clean">no Orleans</span></h3>
+          <div class="role"><code>ICatalogQueryService</code> + DTOs</div>
+        </div>
+        <div class="node n-orleans touches-orleans">
+          <h3>Battles.Grains.Abstractions <span class="pill orleans">Orleans</span></h3>
+          <div class="role"><code>ILiveBattleGrain</code>, grain DTOs <code>[GenerateSerializer]</code></div>
+          <div class="refs">refs <b>Microsoft.Orleans.Sdk</b>, Shared.Kernel</div>
+        </div>
+        <div class="node n-players">
+          <h3>Players.Contracts <span class="pill clean">no Orleans</span></h3>
+          <div class="role"><code>IPlayerStatsService</code> + DTOs</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tier">
+      <div class="tier-name">Shared</div>
+      <div class="tier-row">
+        <div class="node n-shared">
+          <h3>Shared.Kernel <span class="pill clean">no Orleans</span></h3>
+          <div class="role"><code>Result&lt;T&gt;</code>, Entity, guards — dependency-light</div>
+        </div>
+        <div class="node n-shared touches-orleans">
+          <h3>Shared.Infrastructure <span class="pill orleans">Orleans</span></h3>
+          <div class="role">EF/NLog/OTEL/Orleans wiring helpers</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--catalog)"></span> Catalog</span>
+    <span><span class="swatch" style="background:var(--battles)"></span> Battles</span>
+    <span><span class="swatch" style="background:var(--players)"></span> Players</span>
+    <span><span class="swatch" style="background:var(--orleans)"></span> Carries Orleans dependency</span>
+    <span><span class="swatch" style="background:var(--shared)"></span> Shared</span>
+  </div>
+
+  <div class="note">
+    💡 <b>Why extract the grain interfaces?</b> A grain interface must inherit
+    <code>IGrainWithGuidKey</code> and its DTOs need <code>[GenerateSerializer]</code> —
+    both pull in <code>Microsoft.Orleans.Sdk</code>. Press the highlight button: the Orleans
+    dependency only reaches <b>Battles.* + the host</b>. Catalog and Players never see an
+    Orleans type, which keeps ADR-0002's promise intact.
+  </div>
+
+  <!-- ============ DIAGRAM 2: DATA FLOW ============ -->
+  <h2 class="section">2 · How data flows through one battle</h2>
+  <p class="section-sub">From a client action to a durable record — and which project owns each hop.</p>
+
+  <div class="controls">
+    <button class="primary" id="play">▶ Play one round → completion</button>
+    <button id="reset">↺ Reset</button>
+    <span class="step-label" id="flowLabel">Idle — press play.</span>
+  </div>
+
+  <div class="flow" id="flow">
+    <div class="flowstep" data-i="0">
+      <div class="num">1</div>
+      <div>
+        <div class="where" style="color:var(--host)">Bootstrapper · API/SignalR</div>
+        <h3>Client submits an action</h3>
+        <p>The endpoint resolves <code>ILiveBattleGrain</code> via <code>IClusterClient</code> and calls it. Only the host crosses this boundary.</p>
+      </div>
+    </div>
+    <div class="flowstep" data-i="1">
+      <div class="num">2</div>
+      <div>
+        <div class="where" style="color:var(--battles)">Battles.Infrastructure · grain</div>
+        <h3>Grain wakes (state in RAM)</h3>
+        <p>Single-threaded, FIFO — one action = one message. State auto-persists to Azure Table Storage.</p>
+      </div>
+    </div>
+    <div class="flowstep" data-i="2">
+      <div class="num">3</div>
+      <div>
+        <div class="where" style="color:var(--catalog)">Catalog (via Catalog.Contracts)</div>
+        <h3>Reads monster stats</h3>
+        <p>Grain calls <code>ICatalogQueryService</code> through DI. A plain interface — no Orleans type crosses into Catalog.</p>
+      </div>
+    </div>
+    <div class="flowstep" data-i="3">
+      <div class="num">4</div>
+      <div>
+        <div class="where" style="color:var(--battles)">Battles.Domain</div>
+        <h3>Resolves the round</h3>
+        <p>Pure domain rules apply damage, buffs, turn order. Returns a <code>BattleEventDto</code> delta.</p>
+      </div>
+    </div>
+    <div class="flowstep" data-i="4">
+      <div class="num">5</div>
+      <div>
+        <div class="where" style="color:var(--host)">SignalR → client</div>
+        <h3>Broadcasts the delta</h3>
+        <p>The round delta streams back to the live view. Then the grain waits for the next action (or a Reminder/Timer fires).</p>
+      </div>
+    </div>
+    <div class="flowstep" data-i="5">
+      <div class="num">6</div>
+      <div>
+        <div class="where" style="color:var(--players)">Players (via Players.Contracts)</div>
+        <h3>On completion: updates W/L</h3>
+        <p>Grain calls <code>IPlayerStatsService</code> — again a plain interface, no Orleans leak.</p>
+      </div>
+    </div>
+    <div class="flowstep" data-i="6">
+      <div class="num">7</div>
+      <div>
+        <div class="where" style="color:var(--battles)">Battles.Infrastructure</div>
+        <h3>Writes snapshot, deactivates</h3>
+        <p><code>IBattleSnapshotWriter</code> (intra-Battles) persists the final result to Azure SQL via EF Core, then the grain unloads.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>Orleans Monster Arena · architecture reference · see <code>docs/adr/</code></footer>
+</div>
+
+<script>
+  /* ---- Diagram 1: Orleans reach toggle ---- */
+  const graph = document.getElementById("graph");
+  const orleansBtn = document.getElementById("orleansBtn");
+  const orleansLabel = document.getElementById("orleansLabel");
+  orleansBtn.addEventListener("click", () => {
+    const on = graph.classList.toggle("show-orleans");
+    orleansBtn.textContent = on ? "🔍 Show full graph" : "💜 Highlight Orleans reach";
+    orleansLabel.innerHTML = on
+      ? "Lit projects touch <b>Orleans</b>; everything else stays Orleans-free."
+      : "Showing the full project graph.";
+  });
+
+  /* ---- Diagram 2: data flow player ---- */
+  const flow = document.getElementById("flow");
+  const steps = Array.from(flow.querySelectorAll(".flowstep"));
+  const flowLabel = document.getElementById("flowLabel");
+  const playBtn = document.getElementById("play");
+  const STEP_MS = 2400;
+  let timer = null, i = 0;
+
+  const clearActive = () => steps.forEach(s => s.classList.remove("active"));
+
+  function play() {
+    stop(); i = 0; flow.classList.add("playing");
+    playBtn.textContent = "⏸ Playing…";
+    const tick = () => {
+      if (i >= steps.length) {
+        stop(); clearActive();
+        flowLabel.innerHTML = "<b>Done.</b> Battle archived in Azure SQL. Reset or play again.";
+        return;
+      }
+      clearActive();
+      steps[i].classList.add("active");
+      flowLabel.innerHTML = "<span style='opacity:.5'>Step " + (i+1) + " / " + steps.length + "</span>";
+      i++;
+      timer = setTimeout(tick, STEP_MS);
+    };
+    tick();
+  }
+  function stop() {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    flow.classList.remove("playing");
+    playBtn.textContent = "▶ Play one round → completion";
+  }
+  function reset() { stop(); clearActive(); i = 0; flowLabel.textContent = "Idle — press play."; }
+
+  playBtn.addEventListener("click", () => { timer ? stop() : play(); });
+  document.getElementById("reset").addEventListener("click", reset);
+</script>
+</body>
+</html>

@@ -186,8 +186,10 @@
 
   <div class="controls">
     <button class="primary" id="play">▶ Play battle lifecycle</button>
+    <button id="prev" disabled>‹ Prev</button>
+    <button id="next">Next ›</button>
     <button id="reset">↺ Reset</button>
-    <span class="step-label" id="stepLabel">Idle — nothing happening yet.</span>
+    <span class="step-label" id="stepLabel">Idle — press Next or Play. (Use ← / → keys too.)</span>
   </div>
 
   <div class="grid">
@@ -316,16 +318,26 @@
   const stepLabel = document.getElementById("stepLabel");
   const bridge = document.getElementById("bridge");
   const playBtn = document.getElementById("play");
+  const prevBtn = document.getElementById("prev");
+  const nextBtn = document.getElementById("next");
   const grid = document.querySelector(".grid");
   const STEP_MS = 2800; // dwell time per step
-  let timer = null, i = 0;
+  let timer = null;
+  let current = -1; // index of the step on screen; -1 = idle/nothing shown
 
   function clearActive() {
     allNodes.forEach(id => document.getElementById(id).classList.remove("active"));
     bridge.classList.remove("active");
   }
 
-  function render(step, idx) {
+  // Enable/disable Prev/Next so you can't walk off either end.
+  function syncNav() {
+    prevBtn.disabled = current <= 0;
+    nextBtn.disabled = current >= steps.length - 1;
+  }
+
+  function render(idx) {
+    const step = steps[idx];
     clearActive();
     step.on.forEach(id => document.getElementById(id).classList.add("active"));
     if (step.bridge) bridge.classList.add("active");
@@ -333,20 +345,35 @@
       "<span style='opacity:.5'>Step " + (idx + 1) + " / " + steps.length + "</span> &nbsp; " + step.label;
   }
 
+  // Jump to a specific step manually (also used by the keyboard arrows).
+  function goTo(idx) {
+    stop();
+    current = Math.max(0, Math.min(steps.length - 1, idx));
+    grid.classList.add("playing"); // dim the rest so the active node pops
+    render(current);
+    syncNav();
+  }
+
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
   function play() {
     stop();
-    i = 0;
+    current = -1;
     grid.classList.add("playing");
     playBtn.textContent = "⏸ Playing…";
     const tick = () => {
-      if (i >= steps.length) {
+      current++;
+      if (current >= steps.length) {
         stop();
         clearActive();
-        stepLabel.innerHTML = "<b>Done.</b> Battle archived. Press Reset or Play again.";
+        current = steps.length - 1;
+        stepLabel.innerHTML = "<b>Done.</b> Battle archived. Press Reset, Prev, or Play again.";
+        syncNav();
         return;
       }
-      render(steps[i], i);
-      i++;
+      render(current);
+      syncNav();
       timer = setTimeout(tick, STEP_MS);
     };
     tick();
@@ -362,12 +389,23 @@
   function reset() {
     stop();
     clearActive();
-    i = 0;
-    stepLabel.textContent = "Idle — nothing happening yet.";
+    current = -1;
+    stepLabel.textContent = "Idle — press Next or Play. (Use ← / → keys too.)";
+    syncNav();
   }
 
   playBtn.addEventListener("click", () => { timer ? stop() : play(); });
+  nextBtn.addEventListener("click", next);
+  prevBtn.addEventListener("click", prev);
   document.getElementById("reset").addEventListener("click", reset);
+
+  // Walk through stages with the left/right arrow keys.
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") { e.preventDefault(); next(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+  });
+
+  syncNav();
 </script>
 </body>
 </html>

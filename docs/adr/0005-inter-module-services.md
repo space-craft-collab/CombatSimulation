@@ -40,9 +40,11 @@ own `<Module>.Contracts` project.
 ## Decision
 
 - **No direct project references between modules.** Each module
-  exposes its public surface through interfaces — e.g.
-  `ICatalogQueryService`, `IPlayerStatsService`,
-  `IBattleSnapshotWriter`.
+  exposes its cross-module surface through interfaces — e.g.
+  `ICatalogQueryService` (read by `Battles`) and
+  `IPlayerStatsService` (written by `Battles`).
+  `IBattleSnapshotWriter` is *not* cross-module: the grain calls it
+  inside `Battles` (see [ADR-0003]).
 - **Contracts live in per-module `<Module>.Contracts` projects**,
   not a global `Shared.Contracts` assembly. A consuming module
   references only the producer's `.Contracts` project — never the
@@ -50,8 +52,15 @@ own `<Module>.Contracts` project.
   `Catalog.Contracts` and `Players.Contracts`; it does not see
   `Catalog`'s or `Players`' internals.
 - **Grain interfaces** (`IArenaGrain`, `ILiveBattleGrain`,
-  `IMonsterInstanceGrain`) are part of the `Battles` module's
-  public surface and live in `Battles.Contracts`.
+  `IMonsterInstanceGrain`) do **not** live in `Battles.Contracts`.
+  A grain interface must inherit an Orleans marker
+  (`IGrainWithGuidKey`) and its DTOs need `[GenerateSerializer]`,
+  both of which pull in `Microsoft.Orleans.Sdk`. They live in a
+  separate `Battles.Grains.Abstractions` project that carries that
+  Orleans reference, consumed only by `Battles.*` and the host.
+  This keeps the plain `*.Contracts` projects Orleans-free, so a
+  module consuming a Battles service contract never sees an Orleans
+  type ([ADR-0002]).
 - **Other modules consume those interfaces via DI**, registered
   in the Bootstrapper.
 - **No in-process bus, no MediatR.** Inside a single module,
@@ -61,7 +70,11 @@ own `<Module>.Contracts` project.
 
 The dependency direction is therefore: a module depends only on
 the `<Module>.Contracts` projects of the modules it consumes; no
-module depends on another module's implementation assembly.
+module depends on another module's implementation assembly. The
+sole Orleans-bearing exception is `Battles.Grains.Abstractions`,
+which is internal to the `Battles` module plus the host — no other
+module references it. See the diagram in
+[`docs/diagrams/project-dependencies.html`].
 
 ## Consequences
 
@@ -109,13 +122,20 @@ module depends on another module's implementation assembly.
 ## References
 
 - [ADR-0001]: Modular monolith
-- [ADR-0003]: No outbox — referenced because
-  `IBattleSnapshotWriter` is the canonical example of a
-  cross-module call.
+- [ADR-0002]: Orleans co-hosted — why grain interfaces stay out of
+  the plain `*.Contracts` projects.
+- [ADR-0003]: No outbox — `IBattleSnapshotWriter` is a
+  Battles-internal abstraction (the grain calls it within the
+  module); the canonical *cross-module* calls are
+  `ICatalogQueryService` and `IPlayerStatsService`.
 - [ADR-0008]: Shared layer split (Kernel + Infrastructure)
 - [Ardalis RiverBooks]: reference modular-monolith sample
+- [`docs/diagrams/project-dependencies.html`]: interactive project
+  graph + battle data flow.
 
 [ADR-0001]: 0001-modular-monolith.md
+[ADR-0002]: 0002-orleans-cohosted.md
 [ADR-0003]: 0003-no-outbox.md
 [ADR-0008]: 0008-shared-layer-split.md
 [Ardalis RiverBooks]: https://github.com/ardalis/RiverBooks
+[`docs/diagrams/project-dependencies.html`]: ../diagrams/project-dependencies.html
