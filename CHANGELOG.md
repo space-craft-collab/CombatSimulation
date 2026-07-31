@@ -12,6 +12,12 @@ and this project adheres to
 
 ### Phase 1 — Walking skeleton (in progress)
 
+#### Added
+- ADR-0010 — function-delegate test seams instead
+  of test-only interfaces (pattern + DI/testing
+  conventions; elevates the rule from ADR-0005
+  and `CLAUDE.md`)
+
 #### Changed
 - `Directory.Packages.props`: test stack moved to
   **xUnit v3** (`xunit.v3` 3.2.2 — the old `xunit`

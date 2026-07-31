@@ -18,6 +18,7 @@ new entries.
 | 0007 | [Turn-based interaction model](0007-turn-based.md)                   | Proposed |
 | 0008 | [Split the Shared layer: Kernel + Infrastructure](0008-shared-layer-split.md) | Proposed |
 | 0009 | [Per-module internal structure: vertical slices](0009-module-internal-structure.md) | Proposed |
+| 0010 | [Function-delegate test seams instead of test-only interfaces](0010-delegate-test-seams.md) | Proposed |
 
 ## Diagrams
 

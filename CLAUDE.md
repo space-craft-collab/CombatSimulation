@@ -73,7 +73,8 @@ public CombatResult Resolve(Unit attacker, Unit defender)
 - **No test-only interfaces.** Do not create `IFooRepository`-style
   interfaces whose sole purpose is making a class mockable in a
   unit test. For such test seams, inject a **function delegate**
-  (`Func<...>` / `Action<...>`) instead of an interface.
+  (`Func<...>` / `Action<...>`) instead of an interface
+  (see ADR-0010).
 - Default to concrete classes; introduce a seam only when a test
   genuinely needs one, and prefer the delegate form for it.
 - **Separate read and write repositories.** Reads and writes are

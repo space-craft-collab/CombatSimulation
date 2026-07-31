@@ -76,7 +76,8 @@ own `<Module>.Contracts` project.
   a seam, inject a **function delegate** (`Func<...>` / `Action<...>`)
   rather than minting a single-method interface for it. The
   cross-module surface is the boundary where an interface is
-  justified; an internal test seam is not.
+  justified; an internal test seam is not. The delegate-seam
+  pattern is spelled out in [ADR-0010].
 
 The dependency direction is therefore: a module depends only on
 the `<Module>.Contracts` projects of the modules it consumes; no
@@ -147,5 +148,6 @@ module references it. See the diagram in
 [ADR-0002]: 0002-orleans-cohosted.md
 [ADR-0003]: 0003-no-outbox.md
 [ADR-0008]: 0008-shared-layer-split.md
+[ADR-0010]: 0010-delegate-test-seams.md
 [Ardalis RiverBooks]: https://github.com/ardalis/RiverBooks
 [`docs/diagrams/project-dependencies.html`]: ../diagrams/project-dependencies.html
