@@ -1,5 +1,7 @@
 # Orleans Monster Arena
 
+[![CI](https://github.com/space-craft-collab/CombatSimulation/actions/workflows/ci.yml/badge.svg)](https://github.com/space-craft-collab/CombatSimulation/actions/workflows/ci.yml)
+
 Turn-based monster battles powered by
 [Microsoft Orleans](https://learn.microsoft.com/dotnet/orleans/).
 
