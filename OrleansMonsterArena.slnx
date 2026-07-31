@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AppHost/AppHost.csproj" />
+    <Project Path="src/Battles.Contracts/Battles.Contracts.csproj" />
+    <Project Path="src/Battles.Grains.Abstractions/Battles.Grains.Abstractions.csproj" />
+    <Project Path="src/Battles/Battles.csproj" />
+    <Project Path="src/Catalog.Contracts/Catalog.Contracts.csproj" />
+    <Project Path="src/Catalog/Catalog.csproj" />
+    <Project Path="src/Players.Contracts/Players.Contracts.csproj" />
+    <Project Path="src/Players/Players.csproj" />
+    <Project Path="src/Shared.Infrastructure/Shared.Infrastructure.csproj" />
+    <Project Path="src/Shared.Kernel/Shared.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OrleansMonsterArena.Tests/OrleansMonsterArena.Tests.csproj" />
+  </Folder>
+</Solution>

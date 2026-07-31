@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Battles.Grains.Abstractions (ADR-0005): the only
+    Orleans-bearing abstractions project. Grain interfaces
+    (IArenaGrain, ILiveBattleGrain, IMonsterInstanceGrain) land
+    in Phase 2. Consumed by Battles.* and the AppHost only.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Sdk" />
+  </ItemGroup>
+
+</Project>

@@ -9,8 +9,9 @@ backend, with a **SvelteKit** frontend.
 
 ## Status
 
-Phase 1 — Walking skeleton (in progress). Not yet
-runnable. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Phase 1 — Walking skeleton (in progress). Builds,
+boots, and answers `GET /health`.
+See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Architecture (planned)
 

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Catalog.Contracts (ADR-0005): the Catalog module's
+    cross-module surface. Orleans-free; Shared.Kernel only.
+    First contract (ICatalogQueryService) lands in Phase 2.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Kernel\Shared.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>

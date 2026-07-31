@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Players module (ADR-0009): one project, layered internally
+    via Domain/ Features/ Infrastructure/ folders. ASP.NET Core
+    types come from the shared framework, not NuGet.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\Players.Contracts\Players.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Battles.Contracts (ADR-0005): the Battles module's
+    cross-module surface. Orleans-free; Shared.Kernel only.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Kernel\Shared.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>

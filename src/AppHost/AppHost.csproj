@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    AppHost: the composition root (ADR-0001/0002). Plain ASP.NET
+    Core in Phase 1; UseOrleans() joins in Phase 2.
+  -->
+
+  <PropertyGroup>
+    <!-- Program sits in the global namespace: top-level
+         statements plus the partial marker for tests. -->
+    <NoWarn>$(NoWarn);CA1050</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Catalog\Catalog.csproj" />
+    <ProjectReference Include="..\Battles\Battles.csproj" />
+    <ProjectReference Include="..\Players\Players.csproj" />
+    <ProjectReference Include="..\Battles.Grains.Abstractions\Battles.Grains.Abstractions.csproj" />
+    <ProjectReference Include="..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="nlog.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Battles module (ADR-0009): one project, layered internally
+    via Domain/ Features/ Infrastructure/ folders (a Grains/
+    folder for grain implementations follows in Phase 2).
+    Consumes Catalog and Players via their Contracts projects
+    only (ADR-0005).
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\Battles.Contracts\Battles.Contracts.csproj" />
+    <ProjectReference Include="..\Battles.Grains.Abstractions\Battles.Grains.Abstractions.csproj" />
+    <ProjectReference Include="..\Catalog.Contracts\Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\Players.Contracts\Players.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

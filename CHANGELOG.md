@@ -17,6 +17,24 @@ and this project adheres to
   of test-only interfaces (pattern + DI/testing
   conventions; elevates the rule from ADR-0005
   and `CLAUDE.md`)
+- `OrleansMonsterArena.slnx` with the full ADR
+  project graph (11 projects under `src/` +
+  `tests/`): three module projects with
+  `Domain/Features/Infrastructure` folders and
+  `<Module>Module.cs` entry points, per-module
+  Contracts, `Battles.Grains.Abstractions`,
+  `Shared.Kernel`, `Shared.Infrastructure`,
+  `AppHost`, test project
+- `Shared.Infrastructure`: NLog wiring
+  (`AddArenaLogging`, ADR-0006) and OpenTelemetry
+  tracing/metrics (`AddArenaTelemetry`, OTLP +
+  console exporters)
+- `AppHost`: composed host with `GET /health`
+  and `nlog.config` (console target)
+- xUnit v3 tests: `/health` smoke test +
+  NetArchTest guard for the ADR-0009 layering
+- `.github/workflows/ci.yml` — restore, build,
+  test on push/PR to `main`
 
 #### Changed
 - `Directory.Packages.props`: test stack moved to
@@ -40,6 +58,9 @@ and this project adheres to
 - ADR-0009: diagram follow-up note updated —
   `project-dependencies.html` is redrawn at
   module granularity
+- OpenTelemetry pins 1.10.0 → 1.17.0 (1.10.0
+  has known vulnerabilities, flagged by NU1902);
+  `NetArchTest.Rules` 1.3.2 pin added
 
 ### Phase 0 — Foundations & ADRs ✅
 

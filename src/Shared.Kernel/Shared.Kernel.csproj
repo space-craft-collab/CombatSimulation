@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Shared.Kernel (ADR-0008): dependency-light primitives only.
+    No EF Core / Orleans / Azure / ASP.NET references — ever.
+  -->
+
+  <PropertyGroup>
+    <!-- CA1716: "Shared" is a VB keyword; the ADR-0008 project
+         names are locked and VB interop is not a goal. -->
+    <NoWarn>$(NoWarn);CA1716</NoWarn>
+  </PropertyGroup>
+
+</Project>

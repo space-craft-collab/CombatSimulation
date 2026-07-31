@@ -89,27 +89,27 @@ follows [ADR-0009](adr/0009-module-internal-structure.md).
 
 ### Checklist
 
-- [ ] `OrleansMonsterArena.sln` with the project graph above,
-      projects under `src/` and `tests/`
-- [ ] References wired per ADR-0005 / ADR-0008 / ADR-0009; no
+- [x] `OrleansMonsterArena.slnx` (modern solution format) with
+      the project graph above, projects under `src/` and `tests/`
+- [x] References wired per ADR-0005 / ADR-0008 / ADR-0009; no
       forbidden edges (no module → another module's implementation)
-- [ ] Each module is one project with `Domain/`, `Features/`,
+- [x] Each module is one project with `Domain/`, `Features/`,
       `Infrastructure/` folders + `<Module>Module.cs` registration
       entry; ASP.NET via `FrameworkReference`
       ([ADR-0009](adr/0009-module-internal-structure.md))
-- [ ] Architecture test (NetArchTest): per module, `Domain` does
+- [x] Architecture test (NetArchTest): per module, `Domain` does
       not depend on `Features`/`Infrastructure`; runs in CI
       ([ADR-0009](adr/0009-module-internal-structure.md))
-- [ ] `AppHost` boots; `GET /health` returns 200
-- [ ] Minimal NLog wiring in `Shared.Infrastructure`, consumed
+- [x] `AppHost` boots; `GET /health` returns 200
+- [x] Minimal NLog wiring in `Shared.Infrastructure`, consumed
       by `AppHost` ([ADR-0006](adr/0006-nlog-logging.md))
-- [ ] OTEL traces + metrics wiring (ASP.NET Core + runtime
+- [x] OTEL traces + metrics wiring (ASP.NET Core + runtime
       instrumentation, OTLP + console exporters) in
       `Shared.Infrastructure`, consumed by `AppHost`
       ([ADR-0006](adr/0006-nlog-logging.md)) — observability
       from the start; Phase 7 only swaps the backend
-- [ ] One xUnit smoke test: host returns 200 on `/health`
-- [ ] `.github/workflows/ci.yml` — restore + build + test on
+- [x] One xUnit smoke test: host returns 200 on `/health`
+- [x] `.github/workflows/ci.yml` — restore + build + test on
       push / PR to `main`
 - [ ] Add the `dotnet test` status-check gate to branch
       protection once CI is green
