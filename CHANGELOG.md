@@ -27,14 +27,29 @@ and this project adheres to
   `AppHost`, test project
 - `Shared.Infrastructure`: NLog wiring
   (`AddArenaLogging`, ADR-0006) and OpenTelemetry
-  tracing/metrics (`AddArenaTelemetry`, OTLP +
-  console exporters)
+  tracing/metrics (`AddArenaTelemetry`, OTLP
+  always + console exporter in Development)
 - `AppHost`: composed host with `GET /health`
   and `nlog.config` (console target)
 - xUnit v3 tests: `/health` smoke test +
   NetArchTest guard for the ADR-0009 layering
 - `.github/workflows/ci.yml` — restore, build,
   test on push/PR to `main`
+
+##### Pre-publication polish
+- `global.json` — SDK pinned to 10.0.110
+  (`rollForward: latestFeature`); CI now resolves
+  the SDK via `global-json-file` instead of the
+  floating `10.0.x`
+- `.github/dependabot.yml` — weekly NuGet
+  (grouped: Orleans / ASP.NET+EF / OpenTelemetry
+  / testing) and GitHub Actions updates
+- `SECURITY.md` — private vulnerability reporting
+- `CONTRIBUTING.md` — showcase-project scope,
+  build commands, pointer to `CLAUDE.md` + ADRs
+- `ci.yml`: least-privilege
+  `permissions: contents: read` and a
+  `cancel-in-progress` concurrency group
 
 #### Changed
 - `Directory.Packages.props`: test stack moved to
@@ -61,6 +76,27 @@ and this project adheres to
 - OpenTelemetry pins 1.10.0 → 1.17.0 (1.10.0
   has known vulnerabilities, flagged by NU1902);
   `NetArchTest.Rules` 1.3.2 pin added
+
+#### Fixed
+- `nlog.config`: the `Microsoft.*` noise filter
+  also swallowed `Microsoft.Hosting.Lifetime`, so
+  the host booted with **no console output at all**
+  — not even "Now listening on: ...". Lifetime
+  logs are now allowed through ahead of the filter.
+- `AddArenaTelemetry` documented a console exporter
+  and `Shared.Infrastructure` referenced the
+  package, but `AddConsoleExporter()` was never
+  called. It is now wired for traces and metrics,
+  gated on `IHostEnvironment.IsDevelopment()`.
+- `.gitignore`: added `appsettings.Development.json`
+  and `appsettings.Local.json` — only
+  `appsettings.*.local.json` was covered, leaving
+  the file most likely to hold real Azure SQL /
+  Table Storage connection strings committable.
+- `HealthEndpointTests`: pass
+  `TestContext.Current.CancellationToken` to
+  `GetAsync` (clears xUnit1051; build is now
+  warning-free).
 
 ### Phase 0 — Foundations & ADRs ✅
 

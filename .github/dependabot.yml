@@ -1,0 +1,39 @@
+version: 2
+
+updates:
+  # NuGet versions live in Directory.Packages.props (Central
+  # Package Management) — Dependabot edits that file directly.
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    ignore:
+      # FluentAssertions 8+ switched to a commercial license;
+      # stay on the Apache-2.0 v7 line.
+      - dependency-name: "FluentAssertions"
+        update-types: ["version-update:semver-major"]
+    groups:
+      orleans:
+        patterns: ["Microsoft.Orleans.*"]
+      aspnetcore-and-ef:
+        patterns:
+          - "Microsoft.AspNetCore.*"
+          - "Microsoft.EntityFrameworkCore.*"
+          - "Microsoft.Extensions.*"
+      opentelemetry:
+        patterns: ["OpenTelemetry*"]
+      testing:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+          - "Testcontainers*"
+          - "NetArchTest.*"
+          - "FluentAssertions"
+          - "NSubstitute"
+          - "coverlet.*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

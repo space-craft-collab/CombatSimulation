@@ -7,7 +7,7 @@ using Shared.Infrastructure.Telemetry;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.AddArenaLogging();
-builder.Services.AddArenaTelemetry();
+builder.Services.AddArenaTelemetry(builder.Environment);
 
 builder.Services
     .AddCatalogModule()

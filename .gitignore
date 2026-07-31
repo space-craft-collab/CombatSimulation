@@ -72,6 +72,10 @@ Thumbs.db
 desktop.ini
 
 # Azure / secrets
+# Local dev config routinely holds real connection strings
+# (Azure SQL, Table Storage) — keep it out of the repo.
+appsettings.Development.json
+appsettings.Local.json
 appsettings.*.local.json
 *.pfx
 *.key
