@@ -9,7 +9,8 @@ backend, with a **SvelteKit** frontend.
 
 ## Status
 
-Phase 0 — Foundations & ADRs. Not yet runnable.
+Phase 1 — Walking skeleton (in progress). Not yet
+runnable. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Architecture (planned)
 
@@ -19,8 +20,7 @@ Phase 0 — Foundations & ADRs. Not yet runnable.
 - Cold path: EF Core + Azure SQL
 - Frontend: SvelteKit + Svelte 5 runes (separate deploy)
 
-See [`docs/adr/`](docs/adr/) for architecture decisions
-(coming in Phase 0).
+See [`docs/adr/`](docs/adr/) for architecture decisions.
 
 ## Tech Stack
 
@@ -33,7 +33,7 @@ See [`docs/adr/`](docs/adr/) for architecture decisions
 | Logging | NLog |
 | Frontend | SvelteKit + TypeScript |
 | OpenAPI client | Kiota |
-| Tests | xUnit + Orleans TestingHost + Testcontainers |
+| Tests | xUnit v3 + Orleans TestingHost + Testcontainers |
 | Hosting | Azure Container Apps + Static Web Apps |
 | CI/CD | GitHub Actions |
 

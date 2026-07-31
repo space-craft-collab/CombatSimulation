@@ -24,7 +24,7 @@ deployed environments without a redeploy.
 
 Use **NLog** as the logging provider, wired through the standard
 `Microsoft.Extensions.Logging` abstraction. Configuration lives
-in `nlog.config` next to the Bootstrapper. Structured properties
+in `nlog.config` next to the `AppHost`. Structured properties
 are passed via the standard `ILogger` message-template syntax
 (no NLog-specific call sites in domain code).
 

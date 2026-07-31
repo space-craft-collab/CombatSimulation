@@ -10,7 +10,32 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Phase 0 — Foundations & ADRs (in progress)
+### Phase 1 — Walking skeleton (in progress)
+
+#### Changed
+- `Directory.Packages.props`: test stack moved to
+  **xUnit v3** (`xunit.v3` 3.2.2 — the old `xunit`
+  2.9.2 pin was the v2 line, contradicting the
+  xUnit-v3 lock); runner + Test.Sdk bumped
+- Removed the legacy standalone
+  `Microsoft.AspNetCore.SignalR` 1.2.0 pin —
+  SignalR ships in the .NET 10 shared framework
+- Removed `Microsoft.EntityFrameworkCore.InMemory`
+  pin — integration tests use Testcontainers
+  (MsSql/Azurite) instead
+- ROADMAP: new **Phase 6 — Auth & accounts**
+  (closes the 5→7 numbering gap; JWT + Identity
+  had pinned packages but no phase); **OTEL
+  wiring pulled into Phase 1** so observability
+  exists from the start and Phase 7 only swaps
+  the backend (matches ADR-0006)
+- ADRs 0005/0006/0008/0009: unified host naming
+  to **`AppHost`** (was mixed with "Bootstrapper")
+- ADR-0009: diagram follow-up note updated —
+  `project-dependencies.html` is redrawn at
+  module granularity
+
+### Phase 0 — Foundations & ADRs ✅
 
 #### Added
 - Initial repo scaffolding: MIT `LICENSE`,
@@ -34,15 +59,22 @@ and this project adheres to
   ASP.NET Core 10, NLog, OpenTelemetry, xUnit +
   Testcontainers
 - `docs/adr/` — ADR directory with MADR template,
-  index `README.md`, and ADRs 0001–0008
+  index `README.md`, and ADRs 0001–0009
   (modular monolith, Orleans co-hosted, no outbox,
   SvelteKit frontend, inter-module service interfaces
   via per-module Contracts, NLog logging, turn-based
-  model, Shared layer split). All ADRs are `Proposed`
-  while the project is pre-code.
+  model, Shared layer split, per-module vertical-slice
+  structure). All ADRs are `Proposed` while the
+  project is pre-code.
+- `docs/ROADMAP.md` — phased delivery plan with the
+  Phase 1 walking-skeleton checklist
 - `docs/diagrams/project-dependencies.html` — interactive
   project reference graph + battle data-flow walkthrough
-  (ADR-0005, ADR-0008).
+  (ADR-0005, ADR-0008); redrawn at module granularity
+  after ADR-0009
+- `docs/diagrams/hot-cold-storage.html` — battle
+  lifecycle across the hot and cold storage paths
+  (ADR-0003, ADR-0007)
 
 #### Changed
 - ADR-0005 / ADR-0008 / ADR-0003: grain interfaces move out

@@ -29,9 +29,13 @@ sequences the work.
 - **Phase 5 — Scale-out**
   Multi-silo on Azure Container Apps, cluster membership over
   Table Storage.
+- **Phase 6 — Auth & accounts**
+  JWT bearer auth + ASP.NET Core Identity (cold-path EF store),
+  player accounts, protected SvelteKit routes
+  ([ADR-0004](adr/0004-sveltekit-frontend.md)).
 - **Phase 7 — Observability**
-  OTEL → Grafana stack (Alloy/Tempo/Loki/Prometheus); retire
-  NLog.
+  OTEL (wired since Phase 1) → Grafana stack
+  (Alloy/Tempo/Loki/Prometheus); retire NLog.
 - **Phase 8 — AI opponents**
   Per-turn Claude API call inside the round budget
   ([ADR-0007](adr/0007-turn-based.md)).
@@ -99,12 +103,18 @@ follows [ADR-0009](adr/0009-module-internal-structure.md).
 - [ ] `AppHost` boots; `GET /health` returns 200
 - [ ] Minimal NLog wiring in `Shared.Infrastructure`, consumed
       by `AppHost` ([ADR-0006](adr/0006-nlog-logging.md))
+- [ ] OTEL traces + metrics wiring (ASP.NET Core + runtime
+      instrumentation, OTLP + console exporters) in
+      `Shared.Infrastructure`, consumed by `AppHost`
+      ([ADR-0006](adr/0006-nlog-logging.md)) — observability
+      from the start; Phase 7 only swaps the backend
 - [ ] One xUnit smoke test: host returns 200 on `/health`
 - [ ] `.github/workflows/ci.yml` — restore + build + test on
       push / PR to `main`
 - [ ] Add the `dotnet test` status-check gate to branch
       protection once CI is green
-- [ ] README status → "Phase 1"; CHANGELOG Phase 1 entry
+- [ ] CHANGELOG Phase 1 completion entry (README status flips
+      at phase *start* and already shows Phase 1)
 - [ ] **Decision:** promote structural ADRs
       (0001/0002/0005/0008/0009) to `Accepted` now that code
       commits to them?
@@ -115,12 +125,12 @@ follows [ADR-0009](adr/0009-module-internal-structure.md).
   ASP.NET Core in Phase 1)
 - Any persistence — Table Storage, EF Core, migrations →
   Phase 3
-- SignalR endpoints → Phase 2.
-  **Known issue:** the pinned `Microsoft.AspNetCore.SignalR
-  1.2.0` is the legacy standalone package; in .NET 10 SignalR
-  ships in the shared framework. Re-evaluate the pin before
-  wiring SignalR.
-- Domain logic and DTOs beyond placeholders → per-module phases
+- SignalR endpoints → Phase 2. (The legacy standalone
+  `Microsoft.AspNetCore.SignalR 1.2.0` pin has been removed —
+  in .NET 10 SignalR ships in the shared framework, so no
+  package is needed.)
+- Auth (JWT bearer + Identity) → Phase 6
+- Domain logic and DTOs beyond placeholders → Phases 2–6
 
 ### Definition of done
 

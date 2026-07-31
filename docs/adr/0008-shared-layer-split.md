@@ -26,13 +26,13 @@ dependency direction:
   domain base types (`Entity`, `ValueObject`, `AggregateRoot`),
   guard helpers, abstractions. **No EF Core / Orleans / Azure
   references.** Referenced by the module project (its `Domain` and
-  `Features` folders) and the Bootstrapper.
+  `Features` folders) and the `AppHost`.
 - **`Shared.Infrastructure`** — concrete cross-cutting infra:
   base `DbContext` conventions, common EF mappings, NLog +
   OpenTelemetry registration extensions, Azure Table Storage /
   Orleans wiring helpers. References EF Core, Orleans, and Azure
   SDKs. Referenced by the module project (its `Infrastructure`
-  folder) and the Bootstrapper.
+  folder) and the `AppHost`.
 
 Inter-module service interfaces and DTOs live in per-module
 `<Module>.Contracts` projects — see [ADR-0005], not here.
@@ -86,8 +86,8 @@ they require. That Orleans reference deliberately stays out of
   pollutes Domain projects with infra dependencies.
 - **No shared infra; duplicate wiring per module** — rejected:
   repeated NLog/OTEL/EF setup across modules drifts out of sync.
-- **Push infra wiring into the Bootstrapper only** — rejected:
-  the Bootstrapper would need to know each module's internals;
+- **Push infra wiring into the `AppHost` only** — rejected:
+  the `AppHost` would need to know each module's internals;
   module Infrastructure projects still need shared base types.
 
 ## References

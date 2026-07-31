@@ -62,7 +62,7 @@ own `<Module>.Contracts` project.
   module consuming a Battles service contract never sees an Orleans
   type ([ADR-0002]).
 - **Other modules consume those interfaces via DI**, registered
-  in the Bootstrapper.
+  in the `AppHost` (composition root).
 - **No in-process bus, no MediatR.** Inside a single module,
   plain method calls and (where useful) plain C# events suffice.
 - `<Module>.Contracts` projects stay dependency-light (they may

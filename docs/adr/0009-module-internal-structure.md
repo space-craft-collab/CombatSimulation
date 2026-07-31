@@ -52,7 +52,7 @@ Additional conventions:
   composition entry point: a DI registration extension
   (`AddCatalogModule(this IServiceCollection)`) plus an endpoint
   registration extension (`MapCatalogEndpoints(this
-  IEndpointRouteBuilder)`) that the host/Bootstrapper calls. The
+  IEndpointRouteBuilder)`) that the `AppHost` calls. The
   host never reaches into a module's internals.
 - **`Battles` only** additionally has a **`Grains/`** folder for
   grain *implementations*; their interfaces stay in
@@ -100,9 +100,8 @@ Those cross-project edges remain compiler-enforced.
   - If a module ever outgrows a single project, the three folders
     map 1:1 onto extractable projects later — the decision is
     reversible.
-  - `docs/diagrams/project-dependencies.html` currently draws
-    per-layer project nodes and must be redrawn at module
-    granularity.
+  - `docs/diagrams/project-dependencies.html` has been redrawn
+    at module granularity to match this ADR.
 
 ## Alternatives considered
 
