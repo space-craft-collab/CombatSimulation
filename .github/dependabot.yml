@@ -8,11 +8,6 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-    ignore:
-      # FluentAssertions 8+ switched to a commercial license;
-      # stay on the Apache-2.0 v7 line.
-      - dependency-name: "FluentAssertions"
-        update-types: ["version-update:semver-major"]
     groups:
       orleans:
         patterns: ["Microsoft.Orleans.*"]
@@ -29,7 +24,6 @@ updates:
           - "Microsoft.NET.Test.Sdk"
           - "Testcontainers*"
           - "NetArchTest.*"
-          - "FluentAssertions"
           - "NSubstitute"
           - "coverlet.*"
 
