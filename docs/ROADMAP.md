@@ -11,10 +11,10 @@ sequences the work.
 - **Phase 0 — Foundations & ADRs** ✅ done
   Repo scaffolding, coding standards, build/package config,
   ADRs 0001–0009, architecture diagrams.
-- **Phase 1 — Walking skeleton** ⬅ current
+- **Phase 1 — Walking skeleton** ✅ done
   Compilable, runnable, CI-green solution that establishes the
   full project graph. No domain logic yet.
-- **Phase 2 — Orleans embedded**
+- **Phase 2 — Orleans embedded** ⬅ current
   Co-hosted silo ([ADR-0002](adr/0002-orleans-cohosted.md)),
   first grains (`IArenaGrain`, `ILiveBattleGrain`,
   `IMonsterInstanceGrain`), turn-based round loop

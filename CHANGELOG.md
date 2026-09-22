@@ -10,7 +10,23 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Phase 1 — Walking skeleton (in progress)
+### Phase 2 — Orleans embedded (in progress)
+
+#### Changed
+- Orleans **9.0.0 → 10.3.1** across all seven
+  `Microsoft.Orleans.*` pins. 9.0.0 resolved its
+  `net8.0` build under our `net10.0` TFM; 10.x
+  ships a native `net10.0` lib. Done before the
+  first grain exists, while it is still a
+  one-line edit.
+- `Microsoft.Extensions.*`, `Microsoft.AspNetCore.*`
+  and `Microsoft.EntityFrameworkCore.*` pins
+  **10.0.0 → 10.0.12**. Forced: Orleans 10.3.1
+  requires `Microsoft.Extensions.Hosting` >= 10.0.5,
+  so 10.0.0 tripped NU1109 (package downgrade).
+  Whole group moved together to stay coherent.
+
+### Phase 1 — Walking skeleton ✅
 
 #### Added
 - ADR-0010 — function-delegate test seams instead

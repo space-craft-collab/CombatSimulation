@@ -15,28 +15,28 @@
   </PropertyGroup>
 
   <ItemGroup Label="Orleans">
-    <PackageVersion Include="Microsoft.Orleans.Server" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Orleans.Sdk" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Orleans.Client" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Orleans.Clustering.AzureStorage" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Orleans.Persistence.AzureStorage" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Orleans.Reminders.AzureStorage" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Orleans.TestingHost" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Orleans.Server" Version="10.3.1" />
+    <PackageVersion Include="Microsoft.Orleans.Sdk" Version="10.3.1" />
+    <PackageVersion Include="Microsoft.Orleans.Client" Version="10.3.1" />
+    <PackageVersion Include="Microsoft.Orleans.Clustering.AzureStorage" Version="10.3.1" />
+    <PackageVersion Include="Microsoft.Orleans.Persistence.AzureStorage" Version="10.3.1" />
+    <PackageVersion Include="Microsoft.Orleans.Reminders.AzureStorage" Version="10.3.1" />
+    <PackageVersion Include="Microsoft.Orleans.TestingHost" Version="10.3.1" />
   </ItemGroup>
 
   <ItemGroup Label="ASP.NET Core + Hosting">
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
   </ItemGroup>
 
   <ItemGroup Label="Entity Framework Core (cold path)">
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12" />
   </ItemGroup>
 
   <ItemGroup Label="Logging (NLog)">

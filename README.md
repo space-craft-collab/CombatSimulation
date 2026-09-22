@@ -11,8 +11,9 @@ backend, with a **SvelteKit** frontend.
 
 ## Status
 
-Phase 1 — Walking skeleton (in progress). Builds,
-boots, and answers `GET /health`.
+Phase 2 — Orleans embedded (in progress).
+Phase 1 is done: the solution builds, boots, and
+answers `GET /health`.
 See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Architecture (planned)
@@ -30,7 +31,7 @@ See [`docs/adr/`](docs/adr/) for architecture decisions.
 | Layer | Choice |
 |---|---|
 | Runtime | .NET 10 |
-| Distributed | Microsoft Orleans 9 |
+| Distributed | Microsoft Orleans 10 |
 | API | ASP.NET Core Minimal API + SignalR |
 | Persistence | EF Core (cold), Azure Table Storage (hot) |
 | Logging | NLog |
