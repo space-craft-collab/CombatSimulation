@@ -89,3 +89,6 @@ secrets.json
 *.bak
 *.tmp
 *~
+
+# Personal working notes — scratch, not part of the repo
+workToday*.md
