@@ -98,6 +98,29 @@ and this project adheres to
   `GetAsync` (clears xUnit1051; build is now
   warning-free).
 
+#### Decided (process)
+- ADRs **0005** (inter-module services), **0008**
+  (Shared layer split) and **0009** (per-module
+  structure) promoted `Proposed` → **`Accepted`**:
+  the Phase 1 solution graph builds exactly that
+  structure and ADR-0009 is enforced by the
+  NetArchTest guard. From here they follow the
+  supersede workflow instead of in-place edits.
+  ADR-0001 and ADR-0002 stay `Proposed` until a
+  silo actually boots (Phase 2).
+- Branch protection on `main` completed: ruleset
+  active with the CI `build-test` status check as
+  a required gate (admin bypass kept for the
+  one-man workflow). The Phase 0 placeholder rule
+  is superseded by it.
+- Repository made **public** (2026-07-31), which
+  is what activates rulesets on the free plan.
+- Dependabot's opening batch merged: `actions/checkout`
+  4 → 7, `actions/setup-dotnet` 4 → 6, testing group
+  bump. `FluentAssertions` dropped — it was pinned
+  but never referenced (and its licence changed at
+  v8); assertions stay on plain xUnit `Assert`.
+
 ### Phase 0 — Foundations & ADRs ✅
 
 #### Added

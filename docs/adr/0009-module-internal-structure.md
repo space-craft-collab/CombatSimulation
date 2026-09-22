@@ -1,6 +1,6 @@
 # ADR-0009: Per-module internal structure — vertical slices in one project
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-22)
 - **Date:** 2026-06-21
 - **Deciders:** aha (solo maintainer)
 

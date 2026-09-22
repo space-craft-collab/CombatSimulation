@@ -1,6 +1,6 @@
 # ADR-0008: Split the Shared layer into Kernel and Infrastructure
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-22)
 - **Date:** 2026-05-24
 - **Deciders:** aha (solo maintainer)
 

@@ -1,6 +1,6 @@
 # ADR-0005: Inter-module communication via service interfaces
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-22)
 - **Date:** 2026-05-24
 - **Deciders:** aha (solo maintainer)
 

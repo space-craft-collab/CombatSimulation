@@ -13,11 +13,11 @@ new entries.
 | 0002 | [Orleans silo co-hosted with the web host](0002-orleans-cohosted.md) | Proposed |
 | 0003 | [No transactional outbox for hot→cold handoff](0003-no-outbox.md)    | Proposed |
 | 0004 | [SvelteKit + Svelte 5 for the frontend](0004-sveltekit-frontend.md)  | Proposed |
-| 0005 | [Inter-module communication via service interfaces](0005-inter-module-services.md) | Proposed |
+| 0005 | [Inter-module communication via service interfaces](0005-inter-module-services.md) | Accepted |
 | 0006 | [NLog for structured logging](0006-nlog-logging.md)                  | Proposed |
 | 0007 | [Turn-based interaction model](0007-turn-based.md)                   | Proposed |
-| 0008 | [Split the Shared layer: Kernel + Infrastructure](0008-shared-layer-split.md) | Proposed |
-| 0009 | [Per-module internal structure: vertical slices](0009-module-internal-structure.md) | Proposed |
+| 0008 | [Split the Shared layer: Kernel + Infrastructure](0008-shared-layer-split.md) | Accepted |
+| 0009 | [Per-module internal structure: vertical slices](0009-module-internal-structure.md) | Accepted |
 | 0010 | [Function-delegate test seams instead of test-only interfaces](0010-delegate-test-seams.md) | Proposed |
 
 ## Diagrams
@@ -37,9 +37,10 @@ Interactive HTML diagrams live in [`../diagrams/`](../diagrams/):
 - Filenames: `NNNN-short-kebab-title.md`, four-digit prefix.
 - Status values: `Proposed`, `Accepted`,
   `Superseded by ADR-XXXX`, `Deprecated`.
-- The project is pre-code: ADRs stay `Proposed` and are edited
-  in place as the design settles. The supersede workflow below
-  only kicks in once an ADR is marked `Accepted`.
+- An ADR is promoted to `Accepted` once code commits to it.
+  ADRs still `Proposed` are edited in place as the design
+  settles; the supersede workflow below only kicks in once an
+  ADR is marked `Accepted`.
 - Never edit an `Accepted` ADR's decision text after the fact.
   If a decision changes, write a new ADR and mark the old one
   `Superseded`.

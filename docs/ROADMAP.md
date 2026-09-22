@@ -111,13 +111,18 @@ follows [ADR-0009](adr/0009-module-internal-structure.md).
 - [x] One xUnit smoke test: host returns 200 on `/health`
 - [x] `.github/workflows/ci.yml` — restore + build + test on
       push / PR to `main`
-- [ ] Add the `dotnet test` status-check gate to branch
-      protection once CI is green
-- [ ] CHANGELOG Phase 1 completion entry (README status flips
+- [x] Add the `dotnet test` status-check gate to branch
+      protection once CI is green — ruleset active on `main`
+      (required check `build-test`, admin bypass)
+- [x] CHANGELOG Phase 1 completion entry (README status flips
       at phase *start* and already shows Phase 1)
-- [ ] **Decision:** promote structural ADRs
-      (0001/0002/0005/0008/0009) to `Accepted` now that code
-      commits to them?
+- [x] **Decision:** promote structural ADRs to `Accepted` now
+      that code commits to them — **0005**, **0008** and
+      **0009** are now `Accepted`: the solution graph builds
+      exactly that structure and ADR-0009 is enforced by the
+      NetArchTest guard. **0001** and **0002** stay `Proposed`
+      — no silo runs yet, so the code only half commits to
+      co-hosting; revisit at the end of Phase 2.
 
 ### Explicitly deferred
 
