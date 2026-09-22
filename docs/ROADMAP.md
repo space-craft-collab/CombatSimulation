@@ -42,6 +42,71 @@ sequences the work.
 
 Phases 5+ are indicative and will be detailed when reached.
 
+## Phase 2 — Orleans embedded
+
+**Goal:** the silo runs inside the web host and the Battles
+module drives a full turn-based battle through grains. Web-side
+code reaches grains through the local `IClusterClient`; round
+progress leaves the process as SignalR deltas. Still no
+persistence — grain state is in memory until Phase 3.
+
+### Checklist
+
+- [x] `AppHost` references `Microsoft.Orleans.Server` and calls
+      `UseOrleans()` — localhost clustering plus in-memory grain
+      storage ([ADR-0002](adr/0002-orleans-cohosted.md))
+- [x] `Battles/Grains/` folder created
+      ([ADR-0009](adr/0009-module-internal-structure.md)) with a
+      boot-probe grain (`IPingGrain` / `PingGrain`)
+- [x] Smoke test: web-side `IClusterClient`, resolved from the
+      host's DI, answers a grain call in the same process — the
+      concrete proof of ADR-0002
+- [x] Architecture guard extended: a module's `Domain` must not
+      depend on `Grains` either
+- [ ] Grain interfaces `IArenaGrain`, `ILiveBattleGrain`,
+      `IMonsterInstanceGrain` in `Battles.Grains.Abstractions`
+      ([ADR-0005](adr/0005-inter-module-services.md))
+- [ ] Grain implementations in `Battles/Grains/`, with the
+      `Created → InProgress → Completed` lifecycle from
+      [ADR-0007](adr/0007-turn-based.md)
+- [ ] Round loop: an Orleans **Reminder** for the 60s player-turn
+      deadline, a grain **Timer** for the bot-vs-bot loop
+      ([ADR-0007](adr/0007-turn-based.md)). Needs a new
+      `Microsoft.Orleans.Reminders` pin plus
+      `UseInMemoryReminderService()` — `Microsoft.Orleans.Server`
+      does not carry reminders, and the Table Storage provider
+      only arrives in Phase 3.
+- [ ] Battles feature slices that start a battle and submit a
+      turn; `IClusterClient` stays inside `Battles`, other modules
+      never see Orleans types
+      ([ADR-0005](adr/0005-inter-module-services.md))
+- [ ] SignalR hub streaming `BattleEventDto` round deltas
+      ([ADR-0007](adr/0007-turn-based.md))
+- [ ] Retire the boot-probe grain once the real grains carry the
+      smoke test
+- [ ] **Decision:** promote [ADR-0001](adr/0001-modular-monolith.md)
+      and [ADR-0002](adr/0002-orleans-cohosted.md) to `Accepted`
+      once the silo and real grains are in place — the open item
+      carried over from Phase 1
+- [ ] CHANGELOG Phase 2 completion entry (README status flips at
+      phase *start* and already shows Phase 2)
+
+### Explicitly deferred
+
+- Azure Table Storage grain state and reminders, EF Core cold
+  store → Phase 3. Phase 2 stays on in-memory providers.
+- Frontend → Phase 4; SignalR is exercised from tests until then.
+- Auth (JWT bearer + Identity) → Phase 6.
+- Multi-silo clustering → Phase 5. `UseLocalhostClustering()` is
+  deliberately single-silo.
+
+### Definition of done
+
+`dotnet build` and `dotnet test` are green locally and in CI; the
+host boots a silo; a battle runs end to end through grains and
+emits round deltas over SignalR; README and CHANGELOG are
+updated.
+
 ## Phase 1 — Walking skeleton
 
 **Goal:** one solution that compiles under

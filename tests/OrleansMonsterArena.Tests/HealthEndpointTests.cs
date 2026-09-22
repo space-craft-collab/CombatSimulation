@@ -1,21 +1,21 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace OrleansMonsterArena.Tests;
 
 /// <summary>
-/// Phase 1 smoke test: the composed host boots and answers the
-/// health probe.
+/// Smoke test: the composed host boots and answers the health
+/// probe.
 /// </summary>
-public sealed class HealthEndpointTests
+/// <param name="host">The shared booted host.</param>
+[Collection(AppHostFixture.CollectionName)]
+public sealed class HealthEndpointTests(AppHostFixture host)
 {
     [Fact]
     public async Task GetHealth_HostBoots_Returns200()
     {
         // Arrange
-        await using var factory = new WebApplicationFactory<Program>();
-        using var client = factory.CreateClient();
+        using var client = host.Factory.CreateClient();
 
         // Act
         using var response = await client.GetAsync(

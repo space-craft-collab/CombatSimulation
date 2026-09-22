@@ -31,7 +31,8 @@ public sealed class ArchitectureTests
             .ShouldNot()
             .HaveDependencyOnAny(
                 $"{moduleName}.Features",
-                $"{moduleName}.Infrastructure")
+                $"{moduleName}.Infrastructure",
+                $"{moduleName}.Grains")
             .GetResult();
 
         // Assert

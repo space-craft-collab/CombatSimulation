@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Phase 1 test project (xUnit v3): host smoke test plus the
+    Test project (xUnit v3): host + silo smoke tests plus the
     NetArchTest layering guard from ADR-0009.
   -->
 
@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\AppHost\AppHost.csproj" />
     <ProjectReference Include="..\..\src\Catalog\Catalog.csproj" />
     <ProjectReference Include="..\..\src\Battles\Battles.csproj" />
+    <ProjectReference Include="..\..\src\Battles.Grains.Abstractions\Battles.Grains.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Players\Players.csproj" />
   </ItemGroup>
 

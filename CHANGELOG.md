@@ -12,7 +12,32 @@ and this project adheres to
 
 ### Phase 2 — Orleans embedded (in progress)
 
+#### Added
+- **Co-hosted Orleans silo** — `AppHost` now
+  references `Microsoft.Orleans.Server` and calls
+  `UseOrleans()` with `UseLocalhostClustering()`
+  and in-memory grain storage. Web host and silo
+  share one process, as ADR-0002 specifies.
+  Azure Table Storage replaces both providers in
+  Phase 3/5.
+- `Battles/Grains/` — the Grains folder ADR-0009
+  reserves for the Battles module, holding a
+  boot-probe grain (`IPingGrain` in
+  `Battles.Grains.Abstractions`, `PingGrain` in
+  `Battles`). It carries no domain meaning and is
+  retired once real grains exist.
+- `SiloBootTests` — resolves `IClusterClient`
+  from the host's own DI and calls a grain,
+  which is the concrete proof of ADR-0002.
+- `AppHostFixture` — one booted host shared by
+  the host-level tests via an xUnit collection.
+  The silo binds fixed localhost ports, so only
+  one host may be up at a time.
+
 #### Changed
+- The ADR-0009 architecture guard now also
+  forbids `Domain` → `Grains`, alongside
+  `Features` and `Infrastructure`.
 - Orleans **9.0.0 → 10.3.1** across all seven
   `Microsoft.Orleans.*` pins. 9.0.0 resolved its
   `net8.0` build under our `net10.0` TFM; 10.x
