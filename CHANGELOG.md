@@ -62,6 +62,10 @@ and this project adheres to
   `coverlet.collector` 10.0.1 → 10.1.0. Applied by
   hand: Dependabot closed its grouped PR #9 as
   superseded after the `dotnet run` switch.
+- OpenTelemetry core packages (`OpenTelemetry`,
+  `Extensions.Hosting`, Console + OTLP exporters)
+  **1.17.0 → 1.19.1**, catching up with the 1.19.0
+  instrumentation packages from Dependabot PR #8.
 
 ### Phase 1 — Walking skeleton ✅
 
