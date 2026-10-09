@@ -69,6 +69,7 @@
     transition: box-shadow .2s, transform .15s, opacity .2s;
   }
   .node h3 { margin: 0; font-size: .85rem; }
+  .node .purpose { font-size: .8rem; color: var(--ink); margin-top: 3px; }
   .node .role { font-size: .74rem; color: var(--muted); margin-top: 2px; }
   .node .refs { font-size: .68rem; color: var(--muted); margin-top: 6px; }
   .node .refs b { color: var(--ink); font-weight: 600; }
@@ -171,6 +172,7 @@
       <div class="tier-row">
         <div class="node n-host touches-orleans">
           <h3>AppHost <span class="pill orleans">Orleans</span></h3>
+          <div class="purpose">Starts everything in one process: web API, SignalR and the Orleans silo.</div>
           <div class="role">Composition root · <code>UseOrleans()</code> · holds <code>IClusterClient</code></div>
           <div class="refs">refs <b>every module project</b>, Shared.Infrastructure, Battles.Grains.Abstractions</div>
         </div>
@@ -182,16 +184,19 @@
       <div class="tier-row">
         <div class="node n-catalog">
           <h3>Catalog</h3>
+          <div class="purpose">Knows every monster species with its base stats and abilities.</div>
           <div class="role"><code>Domain/</code> · <code>Features/</code> · <code>Infrastructure/</code> — monster definitions, implements <code>ICatalogQueryService</code></div>
           <div class="refs">refs <b>Catalog.Contracts</b>, Shared.Kernel, Shared.Infrastructure</div>
         </div>
         <div class="node n-battles touches-orleans">
           <h3>Battles <span class="pill orleans">Orleans</span></h3>
+          <div class="purpose">Runs battles round by round and archives the result.</div>
           <div class="role"><code>Domain/</code> · <code>Features/</code> · <code>Infrastructure/</code> · <code>Grains/</code> — round rules, grain impls, snapshot writer</div>
-          <div class="refs">refs <b>Catalog.Contracts</b>, <b>Players.Contracts</b>, Battles.Grains.Abstractions, Shared.Infrastructure</div>
+          <div class="refs">refs <b>Catalog.Contracts</b>, <b>Players.Contracts</b>, Battles.Contracts, Battles.Grains.Abstractions, Shared.Kernel, Shared.Infrastructure</div>
         </div>
         <div class="node n-players">
           <h3>Players</h3>
+          <div class="purpose">Manages players and their win/loss record.</div>
           <div class="role"><code>Domain/</code> · <code>Features/</code> · <code>Infrastructure/</code> — accounts · W/L, implements <code>IPlayerStatsService</code></div>
           <div class="refs">refs <b>Players.Contracts</b>, Shared.Kernel, Shared.Infrastructure</div>
         </div>
@@ -203,15 +208,23 @@
       <div class="tier-row">
         <div class="node n-catalog">
           <h3>Catalog.Contracts <span class="pill clean">no Orleans</span></h3>
+          <div class="purpose">The only part of Catalog other modules may see.</div>
           <div class="role"><code>ICatalogQueryService</code> + DTOs</div>
+        </div>
+        <div class="node n-battles">
+          <h3>Battles.Contracts <span class="pill clean">no Orleans</span></h3>
+          <div class="purpose">The Orleans-free public surface of Battles; no module consumes it yet.</div>
+          <div class="role">Service interfaces + DTOs, no grain types</div>
         </div>
         <div class="node n-orleans touches-orleans">
           <h3>Battles.Grains.Abstractions <span class="pill orleans">Orleans</span></h3>
-          <div class="role"><code>ILiveBattleGrain</code>, grain DTOs <code>[GenerateSerializer]</code></div>
-          <div class="refs">refs <b>Microsoft.Orleans.Sdk</b>, Shared.Kernel</div>
+          <div class="purpose">The contracts of the battle grains: arena, live battle, monster.</div>
+          <div class="role"><code>IArenaGrain</code>, <code>ILiveBattleGrain</code>, <code>IMonsterInstanceGrain</code>, grain DTOs <code>[GenerateSerializer]</code></div>
+          <div class="refs">refs <b>Microsoft.Orleans.Sdk</b> only</div>
         </div>
         <div class="node n-players">
           <h3>Players.Contracts <span class="pill clean">no Orleans</span></h3>
+          <div class="purpose">The only part of Players other modules may see.</div>
           <div class="role"><code>IPlayerStatsService</code> + DTOs</div>
         </div>
       </div>
@@ -222,10 +235,12 @@
       <div class="tier-row">
         <div class="node n-shared">
           <h3>Shared.Kernel <span class="pill clean">no Orleans</span></h3>
+          <div class="purpose">Common building blocks with no infrastructure attached.</div>
           <div class="role"><code>Result&lt;T&gt;</code>, Entity, guards — dependency-light</div>
         </div>
         <div class="node n-shared touches-orleans">
           <h3>Shared.Infrastructure <span class="pill orleans">Orleans</span></h3>
+          <div class="purpose">Shared wiring for logging, tracing, EF Core and Orleans.</div>
           <div class="role">EF/NLog/OTEL/Orleans wiring helpers</div>
         </div>
       </div>
@@ -273,7 +288,7 @@
       <div>
         <div class="where" style="color:var(--battles)">Battles · Grains/ folder</div>
         <h3>Grain wakes (state in RAM)</h3>
-        <p>Single-threaded, FIFO — one action = one message. State auto-persists to Azure Table Storage.</p>
+        <p>Single-threaded, FIFO — one action = one message. State lives in memory in Phase 2 and auto-persists to Azure Table Storage from Phase 3.</p>
       </div>
     </div>
     <div class="flowstep" data-i="2">
