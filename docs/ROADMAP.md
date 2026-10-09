@@ -102,7 +102,8 @@ persistence — grain state is in memory until Phase 3.
 
 ### Definition of done
 
-`dotnet build` and `dotnet test` are green locally and in CI; the
+`dotnet build` and the test run (`dotnet run` on the xUnit v3
+test project) are green locally and in CI; the
 host boots a silo; a battle runs end to end through grains and
 emits round deltas over SignalR; README and CHANGELOG are
 updated.

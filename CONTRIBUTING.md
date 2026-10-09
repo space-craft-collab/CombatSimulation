@@ -24,8 +24,12 @@ across the roadmap.
 ```bash
 dotnet restore
 dotnet build --configuration Release
-dotnet test --configuration Release
+dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests
 ```
+
+Tests use xUnit v3, whose test projects are
+self-hosting executables — run them with
+`dotnet run`, not `dotnet test`.
 
 The SDK version is pinned in `global.json`.
 

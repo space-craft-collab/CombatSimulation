@@ -50,6 +50,12 @@ and this project adheres to
   requires `Microsoft.Extensions.Hosting` >= 10.0.5,
   so 10.0.0 tripped NU1109 (package downgrade).
   Whole group moved together to stay coherent.
+- Tests now run via `dotnet run --project
+  tests/OrleansMonsterArena.Tests` (CI and
+  CONTRIBUTING) instead of `dotnet test`. xUnit v3
+  test projects are executables; `dotnet test` on
+  the .NET 10 SDK fails with xunit.v3 4.x unless
+  opted into Microsoft.Testing.Platform.
 
 ### Phase 1 — Walking skeleton ✅
 

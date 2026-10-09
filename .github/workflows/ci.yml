@@ -31,5 +31,7 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
+      # xUnit v3 test projects are executables; run them
+      # directly instead of going through dotnet test/VSTest.
       - name: Test
-        run: dotnet test --no-build --configuration Release
+        run: dotnet run --no-build --configuration Release --project tests/OrleansMonsterArena.Tests
