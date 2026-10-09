@@ -209,7 +209,7 @@
         <div class="node n-catalog">
           <h3>Catalog.Contracts <span class="pill clean">no Orleans</span></h3>
           <div class="purpose">The only part of Catalog other modules may see.</div>
-          <div class="role"><code>ICatalogQueryService</code> + DTOs</div>
+          <div class="role">Service interfaces + DTOs, e.g. <code>ICatalogQueryService</code></div>
         </div>
         <div class="node n-battles">
           <h3>Battles.Contracts <span class="pill clean">no Orleans</span></h3>
@@ -219,13 +219,13 @@
         <div class="node n-orleans touches-orleans">
           <h3>Battles.Grains.Abstractions <span class="pill orleans">Orleans</span></h3>
           <div class="purpose">The contracts of the battle grains: arena, live battle, monster.</div>
-          <div class="role"><code>IArenaGrain</code>, <code>ILiveBattleGrain</code>, <code>IMonsterInstanceGrain</code>, grain DTOs <code>[GenerateSerializer]</code></div>
+          <div class="role">Grain interfaces + <code>[GenerateSerializer]</code> DTOs, e.g. <code>ILiveBattleGrain</code></div>
           <div class="refs">refs <b>Microsoft.Orleans.Sdk</b> only</div>
         </div>
         <div class="node n-players">
           <h3>Players.Contracts <span class="pill clean">no Orleans</span></h3>
           <div class="purpose">The only part of Players other modules may see.</div>
-          <div class="role"><code>IPlayerStatsService</code> + DTOs</div>
+          <div class="role">Service interfaces + DTOs, e.g. <code>IPlayerStatsService</code></div>
         </div>
       </div>
     </div>
@@ -236,7 +236,7 @@
         <div class="node n-shared">
           <h3>Shared.Kernel <span class="pill clean">no Orleans</span></h3>
           <div class="purpose">Common building blocks with no infrastructure attached.</div>
-          <div class="role"><code>Result&lt;T&gt;</code>, Entity, guards — dependency-light</div>
+          <div class="role">Dependency-light primitives, e.g. <code>Result&lt;T&gt;</code>, guards</div>
         </div>
         <div class="node n-shared touches-orleans">
           <h3>Shared.Infrastructure <span class="pill orleans">Orleans</span></h3>
