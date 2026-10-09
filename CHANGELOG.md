@@ -66,6 +66,12 @@ and this project adheres to
   `Extensions.Hosting`, Console + OTLP exporters)
   **1.17.0 → 1.19.1**, catching up with the 1.19.0
   instrumentation packages from Dependabot PR #8.
+- ADR-0007 now defines arenas and battles: an
+  arena is a Catalog template (like a game map),
+  each arena hosts n concurrent battles, each with
+  n participants fielding n monsters.
+  `IArenaGrain` is one grain per arena, acting as
+  its battle browser. Phase 2 demo runs 1 vs 1.
 
 ### Phase 1 — Walking skeleton ✅
 

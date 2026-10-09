@@ -40,6 +40,29 @@ The combat model is **turn-based**:
   loop at sub-second cadence (no persistence required between
   ticks because the next tick re-enters the same grain).
 
+### Arenas and battles
+
+Think of a map in a multiplayer shooter: the map is a
+template, and many matches run on it at once.
+
+- **Arena** — the template (e.g. "Volcano"): name plus
+  optional rules such as "fire monsters only". It is rarely
+  changing reference data, so it lives in the **Catalog**
+  module next to the monster species. No grain.
+- **Battle** — one running match on an arena. An arena can
+  host any number of battles at the same time. Each battle is
+  one `ILiveBattleGrain` (Guid `BattleId`).
+- **Participants** — a battle has n players (or bots), each
+  fielding n monsters. Every monster in play is one
+  `IMonsterInstanceGrain` (key `"{BattleId}:{Slot}"`). The
+  model keeps participants as a list; the Phase 2 demo runs
+  **1 vs 1** to keep the round logic simple.
+- **`IArenaGrain`** — the server browser for one arena: one
+  grain **per arena**, keyed by the Catalog arena id. It
+  lists the arena's open and running battles and creates new
+  ones. Load therefore spreads across arenas instead of
+  funnelling through one global lobby grain.
+
 ## Consequences
 
 - **Positive:**
