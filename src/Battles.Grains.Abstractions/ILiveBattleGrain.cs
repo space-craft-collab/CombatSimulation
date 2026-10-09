@@ -5,6 +5,8 @@ namespace Battles.Grains.Abstractions;
 /// through <see cref="BattleStatus.Created"/> →
 /// <see cref="BattleStatus.InProgress"/> →
 /// <see cref="BattleStatus.Completed"/>, resolving one round at a time.
+/// Monster slots are numbered across the whole battle in participant
+/// order: with two monsters each, side one holds slots 0–1, side two 2–3.
 /// </summary>
 public interface ILiveBattleGrain : IGrainWithGuidKey
 {

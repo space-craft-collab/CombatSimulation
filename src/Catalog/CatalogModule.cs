@@ -1,3 +1,5 @@
+using Catalog.Contracts;
+using Catalog.Features.QuerySpecies;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,6 +19,8 @@ public static class CatalogModule
     public static IServiceCollection AddCatalogModule(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.AddSingleton<ICatalogQueryService, CatalogQueryService>();
 
         return services;
     }

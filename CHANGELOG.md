@@ -42,6 +42,27 @@ and this project adheres to
   implementations follow.
 - `GrainContractSerializationTests` — round-trips
   the DTOs through the silo's own serializer.
+- Grain implementations in `Battles/Grains/`, state
+  via `IPersistentState<T>` on the in-memory
+  provider (Phase 3 swaps in Table Storage):
+  - `ArenaGrain` creates battles and lists the
+    unfinished ones, pruning completed battles.
+  - `LiveBattleGrain` runs `Created → InProgress →
+    Completed`. A round resolves once every side
+    still standing has acted; actions play fastest
+    monster first, and the last side standing wins.
+  - `MonsterInstanceGrain` owns the hit points.
+  - Damage rule (`attack - defense`, at least 1) in
+    `Battles/Domain/`.
+  Bots do not act on their own yet; the grain
+  Timer for that comes with the round loop.
+- `ICatalogQueryService` in `Catalog.Contracts` —
+  the first cross-module contract (ADR-0005),
+  served from a hard-coded four-species seed until
+  EF Core arrives in Phase 3.
+- `BattleGrainTests` — a full 1 vs 1 battle through
+  the silo plus the guard rails (double action,
+  own target, unknown species, double start).
 - `AppHostFixture` — one booted host shared by
   the host-level tests via an xUnit collection.
   The silo binds fixed localhost ports, so only
@@ -85,6 +106,10 @@ and this project adheres to
   n participants fielding n monsters.
   `IArenaGrain` is one grain per arena, acting as
   its battle browser. Phase 2 demo runs 1 vs 1.
+- `Battles` references `Microsoft.Orleans.Runtime`
+  (new pin, 10.3.1): it carries `IPersistentState<T>`,
+  which `Microsoft.Orleans.Sdk` does not.
+- `BattleState` gained `WinnerId`.
 
 ### Phase 1 — Walking skeleton ✅
 

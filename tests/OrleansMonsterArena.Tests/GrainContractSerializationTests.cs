@@ -30,6 +30,7 @@ public sealed class GrainContractSerializationTests(AppHostFixture host)
         var copy = serializer.Deserialize<BattleSetup>(serializer.SerializeToArray(setup));
 
         // Assert
+        Assert.NotNull(copy);
         Assert.Equal(setup.ArenaId, copy.ArenaId);
         Assert.Equal(2, copy.Participants.Length);
         Assert.Equal(setup.Participants[0].MonsterSpeciesIds, copy.Participants[0].MonsterSpeciesIds);
@@ -41,7 +42,7 @@ public sealed class GrainContractSerializationTests(AppHostFixture host)
     {
         // Arrange
         var serializer = host.Factory.Services.GetRequiredService<Serializer>();
-        var state = new BattleState(Guid.NewGuid(), "volcano", BattleStatus.InProgress, 3);
+        var state = new BattleState(Guid.NewGuid(), "volcano", BattleStatus.Completed, 3, "player-1");
 
         // Act
         var copy = serializer.Deserialize<BattleState>(serializer.SerializeToArray(state));

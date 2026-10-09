@@ -2,14 +2,20 @@
 
   <!--
     Battles module (ADR-0009): one project, layered internally
-    via Domain/ Features/ Infrastructure/ folders (a Grains/
-    folder for grain implementations follows in Phase 2).
-    Consumes Catalog and Players via their Contracts projects
-    only (ADR-0005).
+    via Domain/ Features/ Infrastructure/ folders plus Grains/
+    for the grain implementations. Consumes Catalog and Players
+    via their Contracts projects only (ADR-0005).
+    Microsoft.Orleans.Runtime carries IPersistentState<T>, which
+    the stateful grains need; the abstractions project stays on
+    the lighter Orleans.Sdk.
   -->
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Runtime" />
   </ItemGroup>
 
   <ItemGroup>

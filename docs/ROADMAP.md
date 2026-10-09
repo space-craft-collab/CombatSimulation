@@ -66,7 +66,7 @@ persistence — grain state is in memory until Phase 3.
 - [x] Grain interfaces `IArenaGrain`, `ILiveBattleGrain`,
       `IMonsterInstanceGrain` in `Battles.Grains.Abstractions`
       ([ADR-0005](adr/0005-inter-module-services.md))
-- [ ] Grain implementations in `Battles/Grains/`, with the
+- [x] Grain implementations in `Battles/Grains/`, with the
       `Created → InProgress → Completed` lifecycle from
       [ADR-0007](adr/0007-turn-based.md)
 - [ ] Round loop: an Orleans **Reminder** for the 60s player-turn

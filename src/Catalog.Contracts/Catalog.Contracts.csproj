@@ -2,8 +2,8 @@
 
   <!--
     Catalog.Contracts (ADR-0005): the Catalog module's
-    cross-module surface. Orleans-free; Shared.Kernel only.
-    First contract (ICatalogQueryService) lands in Phase 2.
+    cross-module surface: ICatalogQueryService and its DTOs.
+    Orleans-free; Shared.Kernel only.
   -->
 
   <ItemGroup>
