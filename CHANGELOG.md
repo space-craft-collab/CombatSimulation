@@ -56,6 +56,12 @@ and this project adheres to
   test projects are executables; `dotnet test` on
   the .NET 10 SDK fails with xunit.v3 4.x unless
   opted into Microsoft.Testing.Platform.
+- Test stack bumped: `xunit.v3` **3.2.2 → 4.0.1**,
+  `xunit.runner.visualstudio` 3.1.5 → 4.0.0,
+  `Microsoft.NET.Test.Sdk` 18.8.1 → 18.10.1,
+  `coverlet.collector` 10.0.1 → 10.1.0. Applied by
+  hand: Dependabot closed its grouped PR #9 as
+  superseded after the `dotnet run` switch.
 
 ### Phase 1 — Walking skeleton ✅
 
