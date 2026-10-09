@@ -29,6 +29,19 @@ and this project adheres to
 - `SiloBootTests` — resolves `IClusterClient`
   from the host's own DI and calls a grain,
   which is the concrete proof of ADR-0002.
+- Grain interfaces in `Battles.Grains.Abstractions`:
+  `IArenaGrain` (one per arena, string key = Catalog
+  arena id), `ILiveBattleGrain` (Guid battle id) and
+  `IMonsterInstanceGrain` (`"{BattleId}:{Slot}"`),
+  plus `[GenerateSerializer]` record DTOs such as
+  `BattleSetup` and `BattleState`. Collections use
+  `ImmutableArray<T>`, a concrete type Orleans has a
+  codec for, rather than an `IReadOnlyList<T>` whose
+  runtime type a collection expression leaves to the
+  compiler. Interfaces only —
+  implementations follow.
+- `GrainContractSerializationTests` — round-trips
+  the DTOs through the silo's own serializer.
 - `AppHostFixture` — one booted host shared by
   the host-level tests via an xUnit collection.
   The silo binds fixed localhost ports, so only

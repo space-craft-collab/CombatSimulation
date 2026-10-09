@@ -63,7 +63,7 @@ persistence — grain state is in memory until Phase 3.
       concrete proof of ADR-0002
 - [x] Architecture guard extended: a module's `Domain` must not
       depend on `Grains` either
-- [ ] Grain interfaces `IArenaGrain`, `ILiveBattleGrain`,
+- [x] Grain interfaces `IArenaGrain`, `ILiveBattleGrain`,
       `IMonsterInstanceGrain` in `Battles.Grains.Abstractions`
       ([ADR-0005](adr/0005-inter-module-services.md))
 - [ ] Grain implementations in `Battles/Grains/`, with the

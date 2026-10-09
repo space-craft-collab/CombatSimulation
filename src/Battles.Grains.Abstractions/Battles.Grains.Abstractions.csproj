@@ -2,9 +2,10 @@
 
   <!--
     Battles.Grains.Abstractions (ADR-0005): the only
-    Orleans-bearing abstractions project. Grain interfaces
-    (IArenaGrain, ILiveBattleGrain, IMonsterInstanceGrain) land
-    in Phase 2. Consumed by Battles.* and the AppHost only.
+    Orleans-bearing abstractions project: grain interfaces
+    (IArenaGrain, ILiveBattleGrain, IMonsterInstanceGrain) and
+    their [GenerateSerializer] DTOs. Consumed by Battles.* and
+    the AppHost only.
   -->
 
   <ItemGroup>
