@@ -25,20 +25,54 @@ point the Orleans story collapses.
 The repository is explicitly a **showcase of Orleans**, not a
 showcase of netcode.
 
+Its audience — a recruiter or a business stakeholder — usually
+arrives **alone** and wants to play for a few minutes. A battle
+that needs a second human is unplayable for them, so a bot
+opponent is part of the core loop, not a late extra.
+
 ## Decision
 
 The combat model is **turn-based**:
 
-- `LiveBattleGrain` states: `Created` → `InProgress` →
-  `Completed`.
+- `LiveBattleGrain` states: `Created` → `WaitingForPlayers`
+  → `InProgress` → `Completed`. `WaitingForPlayers` is only
+  entered by battles that wait for a human opponent.
 - In `InProgress`, the grain consumes one action per actor per
   round and emits a `BattleEventDto` round delta over SignalR.
+- **Bot turns run inline.** Once every human side has acted,
+  the grain asks each bot for its action and resolves the
+  round in the same call. Human vs bot therefore needs no
+  timer at all.
 - For player turns, an Orleans **Reminder** drives the
   "60-second deadline → auto-resolve" path (1-minute Reminder
-  minimum is acceptable for this UX).
+  minimum is acceptable for this UX). It also ends battles a
+  visitor simply walked away from.
 - For bot-vs-bot fast battles, a Grain **Timer** drives the
   loop at sub-second cadence (no persistence required between
   ticks because the next tick re-enters the same grain).
+
+### Game modes
+
+A visitor picks one of two modes:
+
+- **Play vs bot** — the default and most prominent path. The
+  battle is created with a bot participant and starts
+  `InProgress` immediately.
+- **Wait for a human** — the battle is created with one human
+  and sits in `WaitingForPlayers`, listed by its arena. A
+  second human joining moves it to `InProgress`. While
+  waiting, the **"play vs bot instead"** offer is shown
+  **immediately**, not after a timeout: accepting it adds a
+  bot through the same join path and the battle starts.
+
+### Bot strategy
+
+The Phase 2 bot is a **simple rule-based strategy** in
+`Battles/Domain/` (e.g. "attack the weakest standing
+opponent"): a pure decision over the battle's current state,
+easy to unit-test. Phase 8 swaps that decision for a Claude
+API call inside the per-turn budget; the grain-side flow
+stays the same.
 
 ### Arenas and battles
 
@@ -68,6 +102,8 @@ template, and many matches run on it at once.
 - **Positive:**
   - Single-threaded grain model and turn-based gameplay fit
     each other — the simplest possible mental model.
+  - A solo visitor can always play: a bot opponent exists
+    from Phase 2 on, and waiting never blocks them.
   - The Phase 8 AI layer gets a **per-turn** latency budget
     (seconds) instead of a per-frame one (ms). That makes a
     Claude API call inside a turn realistic.

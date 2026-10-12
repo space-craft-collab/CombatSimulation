@@ -106,6 +106,14 @@ and this project adheres to
   n participants fielding n monsters.
   `IArenaGrain` is one grain per arena, acting as
   its battle browser. Phase 2 demo runs 1 vs 1.
+- ADR-0007 and the roadmap now make the showcase
+  playable solo: a rule-based bot opponent moves
+  into Phase 2 (Phase 8 only swaps its strategy
+  for Claude). Two modes — **play vs bot**
+  (default) and **wait for a human** with a new
+  `WaitingForPlayers` status, where the "play vs
+  bot instead" offer shows immediately. Bot turns
+  run inline, so human vs bot needs no timer.
 - `Battles` references `Microsoft.Orleans.Runtime`
   (new pin, 10.3.1): it carries `IPersistentState<T>`,
   which `Microsoft.Orleans.Sdk` does not.

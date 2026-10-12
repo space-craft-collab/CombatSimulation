@@ -17,8 +17,9 @@ sequences the work.
 - **Phase 2 — Orleans embedded** ⬅ current
   Co-hosted silo ([ADR-0002](adr/0002-orleans-cohosted.md)),
   first grains (`IArenaGrain`, `ILiveBattleGrain`,
-  `IMonsterInstanceGrain`), turn-based round loop
-  ([ADR-0007](adr/0007-turn-based.md)), SignalR round deltas.
+  `IMonsterInstanceGrain`), rule-based bot opponent and
+  turn-based round loop ([ADR-0007](adr/0007-turn-based.md)),
+  SignalR round deltas.
 - **Phase 3 — Persistence (hot/cold)**
   Azure Table Storage grain state + EF Core cold store, hot→cold
   snapshot bridge ([ADR-0003](adr/0003-no-outbox.md)).
@@ -37,7 +38,8 @@ sequences the work.
   OTEL (wired since Phase 1) → Grafana stack
   (Alloy/Tempo/Loki/Prometheus); retire NLog.
 - **Phase 8 — AI opponents**
-  Per-turn Claude API call inside the round budget
+  Per-turn Claude API call inside the round budget replaces
+  the Phase 2 rule-based bot strategy
   ([ADR-0007](adr/0007-turn-based.md)).
 
 Phases 5+ are indicative and will be detailed when reached.
@@ -45,7 +47,8 @@ Phases 5+ are indicative and will be detailed when reached.
 ## Phase 2 — Orleans embedded
 
 **Goal:** the silo runs inside the web host and the Battles
-module drives a full turn-based battle through grains. Web-side
+module drives a full turn-based battle through grains. A
+single visitor can play it alone against a bot. Web-side
 code reaches grains through the local `IClusterClient`; round
 progress leaves the process as SignalR deltas. Still no
 persistence — grain state is in memory until Phase 3.
@@ -69,6 +72,10 @@ persistence — grain state is in memory until Phase 3.
 - [x] Grain implementations in `Battles/Grains/`, with the
       `Created → InProgress → Completed` lifecycle from
       [ADR-0007](adr/0007-turn-based.md)
+- [ ] Rule-based bot strategy in `Battles/Domain/` and the
+      **play vs bot** mode: bot actions are decided inline
+      once every human side has acted, so human vs bot needs
+      no timer ([ADR-0007](adr/0007-turn-based.md))
 - [ ] Round loop: an Orleans **Reminder** for the 60s player-turn
       deadline, a grain **Timer** for the bot-vs-bot loop
       ([ADR-0007](adr/0007-turn-based.md)). Needs a new
@@ -82,6 +89,10 @@ persistence — grain state is in memory until Phase 3.
       ([ADR-0005](adr/0005-inter-module-services.md))
 - [ ] SignalR hub streaming `BattleEventDto` round deltas
       ([ADR-0007](adr/0007-turn-based.md))
+- [ ] **Wait for a human** mode: `WaitingForPlayers` status,
+      arena lists open battles, a second human joins; the
+      "play vs bot instead" offer is available immediately
+      while waiting ([ADR-0007](adr/0007-turn-based.md))
 - [ ] Retire the boot-probe grain once the real grains carry the
       smoke test
 - [ ] **Decision:** promote [ADR-0001](adr/0001-modular-monolith.md)
@@ -104,8 +115,8 @@ persistence — grain state is in memory until Phase 3.
 
 `dotnet build` and the test run (`dotnet run` on the xUnit v3
 test project) are green locally and in CI; the
-host boots a silo; a battle runs end to end through grains and
-emits round deltas over SignalR; README and CHANGELOG are
+host boots a silo; a battle — human vs bot included — runs end
+to end through grains and emits round deltas over SignalR; README and CHANGELOG are
 updated.
 
 ## Phase 1 — Walking skeleton
