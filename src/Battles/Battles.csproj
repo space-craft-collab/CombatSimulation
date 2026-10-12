@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Lets the tests unit-test pure Domain rules such as BotStrategy. -->
+    <InternalsVisibleTo Include="OrleansMonsterArena.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Shared.Kernel\Shared.Kernel.csproj" />
     <ProjectReference Include="..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
     <ProjectReference Include="..\Battles.Contracts\Battles.Contracts.csproj" />

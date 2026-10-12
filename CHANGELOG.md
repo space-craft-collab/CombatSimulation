@@ -54,8 +54,17 @@ and this project adheres to
   - `MonsterInstanceGrain` owns the hit points.
   - Damage rule (`attack - defense`, at least 1) in
     `Battles/Domain/`.
-  Bots do not act on their own yet; the grain
-  Timer for that comes with the round loop.
+- **Rule-based bot** (ADR-0007): `BotStrategy` in
+  `Battles/Domain/` attacks the weakest standing
+  opponent with the bot's strongest monster.
+  `LiveBattleGrain` lets bots act inline once every
+  human side has acted, so human vs bot needs no
+  timer; a bot's id submitting an action is
+  rejected. `Combatant` now mirrors hit points from
+  each damage snapshot (the monster grain stays the
+  authority) and `IsDefeated` is derived from them.
+  `BotStrategyTests` unit-test the rule via
+  `InternalsVisibleTo`.
 - `ICatalogQueryService` in `Catalog.Contracts` —
   the first cross-module contract (ADR-0005),
   served from a hard-coded four-species seed until

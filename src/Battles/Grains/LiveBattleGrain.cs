@@ -8,7 +8,8 @@ namespace Battles.Grains;
 /// <summary>
 /// Implementation of <see cref="ILiveBattleGrain"/>: runs the
 /// turn-based round loop from ADR-0007. A round resolves once every
-/// side still standing has submitted one action.
+/// human side still standing has submitted one action; bots then
+/// decide inline, so a human vs bot battle needs no timer.
 /// </summary>
 /// <param name="state">The battle's persistent state.</param>
 /// <param name="catalog">Source of the species base stats.</param>
@@ -17,6 +18,9 @@ internal sealed class LiveBattleGrain(
     ICatalogQueryService catalog)
     : Grain, ILiveBattleGrain
 {
+    // Abilities are not modelled yet; the bot uses the basic attack.
+    private const string BotAbilityId = "strike";
+
     private LiveBattleState Battle => state.State;
 
     /// <inheritdoc />
@@ -43,6 +47,8 @@ internal sealed class LiveBattleGrain(
                     Attack = species.Attack,
                     Defense = species.Defense,
                     Speed = species.Speed,
+                    HitPoints = species.MaxHitPoints,
+                    IsBot = participant.IsBot,
                 });
                 initializations.Add(Monster(slot).InitializeAsync(new MonsterStats(
                     species.Id, species.MaxHitPoints, species.Attack, species.Defense, species.Speed)));
@@ -66,8 +72,9 @@ internal sealed class LiveBattleGrain(
         ValidateAction(action);
 
         Battle.PendingActions[action.ParticipantId] = action;
-        if (Battle.PendingActions.Count == SidesStanding().Count)
+        if (Battle.PendingActions.Count == HumanSidesStanding().Count)
         {
+            AddBotActions();
             await ResolveRoundAsync();
         }
 
@@ -104,6 +111,11 @@ internal sealed class LiveBattleGrain(
             throw new ArgumentException($"'{action.ParticipantId}' is not fighting in this battle.", nameof(action));
         }
 
+        if (!HumanSidesStanding().Contains(action.ParticipantId))
+        {
+            throw new ArgumentException($"'{action.ParticipantId}' is a bot and acts on its own.", nameof(action));
+        }
+
         if (Battle.PendingActions.ContainsKey(action.ParticipantId))
         {
             throw new InvalidOperationException(
@@ -120,6 +132,20 @@ internal sealed class LiveBattleGrain(
         if (target is null || target.ParticipantId == action.ParticipantId)
         {
             throw new ArgumentException($"Slot {action.TargetSlot} is not a standing opponent.", nameof(action));
+        }
+    }
+
+    private void AddBotActions()
+    {
+        var fighters = Battle.Combatants
+            .Select(combatant => new Fighter(
+                combatant.Slot, combatant.ParticipantId, combatant.Attack, combatant.HitPoints))
+            .ToList();
+
+        foreach (var botId in Standing().Where(combatant => combatant.IsBot).Select(combatant => combatant.ParticipantId).Distinct())
+        {
+            var move = BotStrategy.Decide(botId, fighters);
+            Battle.PendingActions[botId] = new BattleAction(botId, move.ActorSlot, move.TargetSlot, BotAbilityId);
         }
     }
 
@@ -143,7 +169,7 @@ internal sealed class LiveBattleGrain(
             }
 
             var snapshot = await Monster(target.Slot).ApplyDamageAsync(DamageRule.Calculate(actor.Attack, target.Defense));
-            target.IsDefeated = snapshot.IsDefeated;
+            target.HitPoints = snapshot.HitPoints;
         }
 
         Battle.PendingActions.Clear();
@@ -160,8 +186,12 @@ internal sealed class LiveBattleGrain(
         }
     }
 
-    private HashSet<string> SidesStanding() =>
-        [.. Battle.Combatants.Where(combatant => !combatant.IsDefeated).Select(combatant => combatant.ParticipantId)];
+    private IEnumerable<Combatant> Standing() => Battle.Combatants.Where(combatant => !combatant.IsDefeated);
+
+    private HashSet<string> SidesStanding() => [.. Standing().Select(combatant => combatant.ParticipantId)];
+
+    private HashSet<string> HumanSidesStanding() =>
+        [.. Standing().Where(combatant => !combatant.IsBot).Select(combatant => combatant.ParticipantId)];
 
     private Combatant? FindStanding(int slot) =>
         Battle.Combatants.ElementAtOrDefault(slot) is { IsDefeated: false } combatant ? combatant : null;

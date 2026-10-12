@@ -13,12 +13,20 @@ namespace OrleansMonsterArena.Tests;
 [Collection(AppHostFixture.CollectionName)]
 public sealed class BattleGrainTests(AppHostFixture host)
 {
-    // Lava Crab (60 HP, 10 ATK, 8 DEF) beats Ember Fox (40 HP, 14 ATK,
-    // 4 DEF): both deal 6 per hit, the fox falls in round 7.
+    // Human Lava Crab (60 HP, 10 ATK, 8 DEF) beats the bot's Ember Fox
+    // (40 HP, 14 ATK, 4 DEF): both deal 6 per hit, the fox falls in
+    // round 7.
     private static readonly ImmutableArray<ParticipantSetup> OneVsOne =
     [
         new("player-1", false, ["lava-crab"]),
         new("bot-1", true, ["ember-fox"]),
+    ];
+
+    // Two humans: a round stays open until both have acted.
+    private static readonly ImmutableArray<ParticipantSetup> HumanVsHuman =
+    [
+        new("player-1", false, ["lava-crab"]),
+        new("player-2", false, ["ember-fox"]),
     ];
 
     private IGrainFactory Grains => host.Factory.Services.GetRequiredService<IClusterClient>();
@@ -44,7 +52,23 @@ public sealed class BattleGrainTests(AppHostFixture host)
     }
 
     [Fact]
-    public async Task SubmitActionAsync_UntilOneSideFalls_CompletesWithWinner()
+    public async Task SubmitActionAsync_HumanActs_BotAnswersInSameRound()
+    {
+        // Arrange
+        var battleId = await NewArena().CreateBattleAsync(OneVsOne);
+        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
+
+        // Act
+        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
+
+        // Assert
+        Assert.Equal(2, (await battle.GetStateAsync()).Round);
+        var crab = await Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:0").GetSnapshotAsync();
+        Assert.Equal(54, crab.HitPoints);
+    }
+
+    [Fact]
+    public async Task SubmitActionAsync_HumanVsBotUntilOneSideFalls_CompletesWithWinner()
     {
         // Arrange
         var arena = NewArena();
@@ -55,10 +79,6 @@ public sealed class BattleGrainTests(AppHostFixture host)
         for (var round = 0; round < 20 && (await battle.GetStateAsync()).Status == BattleStatus.InProgress; round++)
         {
             await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
-            if ((await battle.GetStateAsync()).Status == BattleStatus.InProgress)
-            {
-                await battle.SubmitActionAsync(new BattleAction("bot-1", 1, 0, "strike"));
-            }
         }
 
         // Assert
@@ -75,7 +95,7 @@ public sealed class BattleGrainTests(AppHostFixture host)
     public async Task SubmitActionAsync_SameParticipantTwiceInRound_Throws()
     {
         // Arrange
-        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().CreateBattleAsync(OneVsOne));
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().CreateBattleAsync(HumanVsHuman));
         await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
 
         // Act + Assert
@@ -92,6 +112,17 @@ public sealed class BattleGrainTests(AppHostFixture host)
         // Act + Assert
         await Assert.ThrowsAsync<ArgumentException>(
             () => battle.SubmitActionAsync(new BattleAction("player-1", 0, 0, "strike")));
+    }
+
+    [Fact]
+    public async Task SubmitActionAsync_AsBot_ThrowsArgumentException()
+    {
+        // Arrange
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().CreateBattleAsync(OneVsOne));
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => battle.SubmitActionAsync(new BattleAction("bot-1", 1, 0, "strike")));
     }
 
     [Fact]

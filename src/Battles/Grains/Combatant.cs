@@ -1,8 +1,10 @@
 namespace Battles.Grains;
 
 /// <summary>
-/// One monster slot as the battle sees it: owner, combat stats and
-/// whether it is still standing. Hit points live in the monster grain.
+/// One monster slot as the battle sees it: owner, combat stats and a
+/// mirror of its hit points. The monster grain stays the authority on
+/// hit points; the battle copies them from each damage snapshot so
+/// the bot can decide without extra grain calls.
 /// </summary>
 [GenerateSerializer]
 internal sealed class Combatant
@@ -23,5 +25,10 @@ internal sealed class Combatant
     public required int Speed { get; init; }
 
     [Id(5)]
-    public bool IsDefeated { get; set; }
+    public required int HitPoints { get; set; }
+
+    [Id(6)]
+    public required bool IsBot { get; init; }
+
+    public bool IsDefeated => HitPoints <= 0;
 }

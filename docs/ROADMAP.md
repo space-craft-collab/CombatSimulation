@@ -72,10 +72,12 @@ persistence — grain state is in memory until Phase 3.
 - [x] Grain implementations in `Battles/Grains/`, with the
       `Created → InProgress → Completed` lifecycle from
       [ADR-0007](adr/0007-turn-based.md)
-- [ ] Rule-based bot strategy in `Battles/Domain/` and the
+- [x] Rule-based bot strategy in `Battles/Domain/` and the
       **play vs bot** mode: bot actions are decided inline
       once every human side has acted, so human vs bot needs
-      no timer ([ADR-0007](adr/0007-turn-based.md))
+      no timer ([ADR-0007](adr/0007-turn-based.md)). Grain
+      side done; the HTTP entry comes with the feature slices.
+      Bot-only battles stall until the Timer below exists.
 - [ ] Round loop: an Orleans **Reminder** for the 60s player-turn
       deadline, a grain **Timer** for the bot-vs-bot loop
       ([ADR-0007](adr/0007-turn-based.md)). Needs a new
