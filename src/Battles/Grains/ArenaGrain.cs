@@ -6,7 +6,7 @@ namespace Battles.Grains;
 
 /// <summary>
 /// Implementation of <see cref="IArenaGrain"/>: the battle browser of
-/// one arena (ADR-0007). It only creates and lists battles; it never
+/// one arena (ADR-0007). It only creates, opens and lists battles; it never
 /// sits on the round path, so a busy battle does not block the arena.
 /// </summary>
 /// <param name="state">The arena's persistent state.</param>
@@ -21,8 +21,19 @@ internal sealed class ArenaGrain(
         await GrainFactory.GetGrain<ILiveBattleGrain>(battleId)
             .StartAsync(new BattleSetup(this.GetPrimaryKeyString(), participants));
 
-        state.State.Battles[battleId] = participants.Length;
-        await state.WriteStateAsync();
+        await RememberAsync(battleId);
+
+        return battleId;
+    }
+
+    /// <inheritdoc />
+    public async Task<Guid> OpenBattleAsync(ParticipantSetup host)
+    {
+        var battleId = Guid.NewGuid();
+        await GrainFactory.GetGrain<ILiveBattleGrain>(battleId)
+            .OpenAsync(this.GetPrimaryKeyString(), host);
+
+        await RememberAsync(battleId);
 
         return battleId;
     }
@@ -30,7 +41,7 @@ internal sealed class ArenaGrain(
     /// <inheritdoc />
     public async Task<ImmutableArray<BattleSummary>> GetBattlesAsync()
     {
-        var states = await Task.WhenAll(state.State.Battles.Keys
+        var states = await Task.WhenAll(state.State.Battles
             .Select(battleId => GrainFactory.GetGrain<ILiveBattleGrain>(battleId).GetStateAsync()));
 
         var completed = states.Where(battle => battle.Status == BattleStatus.Completed).ToList();
@@ -42,6 +53,15 @@ internal sealed class ArenaGrain(
 
         return [.. states
             .Where(battle => battle.Status != BattleStatus.Completed)
-            .Select(battle => new BattleSummary(battle.BattleId, battle.Status, state.State.Battles[battle.BattleId]))];
+            .Select(battle => new BattleSummary(
+                battle.BattleId,
+                battle.Status,
+                [.. battle.Combatants.Select(combatant => combatant.ParticipantId).Distinct()]))];
+    }
+
+    private async Task RememberAsync(Guid battleId)
+    {
+        state.State.Battles.Add(battleId);
+        await state.WriteStateAsync();
     }
 }

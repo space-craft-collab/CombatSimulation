@@ -37,6 +37,8 @@ public sealed class BattleGrainTests(AppHostFixture host)
         new("bot-2", true, ["ember-fox"]),
     ];
 
+    private static readonly ParticipantSetup Host = new("player-1", false, ["lava-crab"]);
+
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
 
     private IGrainFactory Grains => host.Factory.Services.GetRequiredService<IClusterClient>();
@@ -58,7 +60,9 @@ public sealed class BattleGrainTests(AppHostFixture host)
         Assert.Equal(BattleStatus.InProgress, state.Status);
         Assert.Equal(1, state.Round);
         var listed = Assert.Single(await arena.GetBattlesAsync());
-        Assert.Equal(new BattleSummary(battleId, BattleStatus.InProgress, 2), listed);
+        Assert.Equal(battleId, listed.BattleId);
+        Assert.Equal(BattleStatus.InProgress, listed.Status);
+        Assert.Equal(["player-1", "bot-1"], listed.ParticipantIds);
     }
 
     [Fact]
@@ -230,6 +234,125 @@ public sealed class BattleGrainTests(AppHostFixture host)
         // Assert
         Assert.Null(state.WinnerId);
         Assert.Equal(1, state.Round);
+        Assert.Null(state.TurnDeadline);
+        Assert.Empty(await arena.GetBattlesAsync());
+    }
+
+    [Fact]
+    public async Task OpenBattleAsync_HumanHost_WaitsForPlayersAndIsListed()
+    {
+        // Arrange
+        var arena = NewArena();
+
+        // Act
+        var battleId = await arena.OpenBattleAsync(Host);
+
+        // Assert
+        var state = await Grains.GetGrain<ILiveBattleGrain>(battleId).GetStateAsync();
+        Assert.Equal(BattleStatus.WaitingForPlayers, state.Status);
+        Assert.Equal(0, state.Round);
+        Assert.NotNull(state.TurnDeadline);
+        Assert.Equal("player-1", Assert.Single(state.Combatants).ParticipantId);
+        var listed = Assert.Single(await arena.GetBattlesAsync());
+        Assert.Equal(BattleStatus.WaitingForPlayers, listed.Status);
+        Assert.Equal(["player-1"], listed.ParticipantIds);
+    }
+
+    [Fact]
+    public async Task JoinAsync_SecondHuman_StartsRoundOne()
+    {
+        // Arrange
+        var arena = NewArena();
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await arena.OpenBattleAsync(Host));
+
+        // Act
+        await battle.JoinAsync(new ParticipantSetup("player-2", false, ["ember-fox"]));
+
+        // Assert
+        var state = await battle.GetStateAsync();
+        Assert.Equal(BattleStatus.InProgress, state.Status);
+        Assert.Equal(1, state.Round);
+        Assert.Equal(["player-1", "player-2"], state.Combatants.Select(combatant => combatant.ParticipantId));
+        Assert.Equal(["player-1", "player-2"], Assert.Single(await arena.GetBattlesAsync()).ParticipantIds);
+    }
+
+    [Fact]
+    public async Task JoinAsync_Bot_ActsInlineOnceTheHostActs()
+    {
+        // Arrange
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().OpenBattleAsync(Host));
+        await battle.JoinAsync(new ParticipantSetup("bot-1", true, ["lava-crab"]));
+
+        // Act
+        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
+
+        // Assert: both crabs deal 10 - 8 = 2.
+        var state = await battle.GetStateAsync();
+        Assert.Equal(2, state.Round);
+        Assert.All(state.Combatants, combatant => Assert.Equal(58, combatant.HitPoints));
+    }
+
+    [Fact]
+    public async Task JoinAsync_HostJoinsOwnBattle_ThrowsArgumentException()
+    {
+        // Arrange
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().OpenBattleAsync(Host));
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => battle.JoinAsync(Host));
+    }
+
+    [Fact]
+    public async Task JoinAsync_UnknownSpecies_ThrowsAndKeepsSeatOpen()
+    {
+        // Arrange
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().OpenBattleAsync(Host));
+
+        // Act
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => battle.JoinAsync(new ParticipantSetup("player-2", false, ["ember-fox", "no-such-monster"])));
+
+        // Assert
+        var state = await battle.GetStateAsync();
+        Assert.Equal(BattleStatus.WaitingForPlayers, state.Status);
+        Assert.Single(state.Combatants);
+    }
+
+    [Fact]
+    public async Task JoinAsync_BattleAlreadyRunning_Throws()
+    {
+        // Arrange
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().OpenBattleAsync(Host));
+        await battle.JoinAsync(new ParticipantSetup("player-2", false, ["ember-fox"]));
+
+        // Act + Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => battle.JoinAsync(new ParticipantSetup("player-3", false, ["ember-fox"])));
+    }
+
+    [Fact]
+    public async Task OpenAsync_BotHost_ThrowsArgumentException()
+    {
+        // Arrange
+        var battle = Grains.GetGrain<ILiveBattleGrain>(Guid.NewGuid());
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => battle.OpenAsync("volcano", new ParticipantSetup("bot-1", true, ["lava-crab"])));
+    }
+
+    [Fact]
+    public async Task ReceiveReminder_NobodyJoinsBeforeDeadline_AbandonsOpenBattle()
+    {
+        // Arrange
+        var arena = NewArena();
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await arena.OpenBattleAsync(Host));
+
+        // Act
+        var state = await WaitForAsync(battle, state => state.Status == BattleStatus.Completed);
+
+        // Assert
+        Assert.Null(state.WinnerId);
         Assert.Null(state.TurnDeadline);
         Assert.Empty(await arena.GetBattlesAsync());
     }

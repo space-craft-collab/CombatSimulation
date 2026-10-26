@@ -33,6 +33,24 @@ curl -X POST localhost:5000/battles/<battleId>/actions \
 curl localhost:5000/battles/<battleId>
 ```
 
+Or wait for a human opponent:
+
+```bash
+# Open a battle and wait; it shows up in the arena's list
+curl -X POST localhost:5000/arenas/volcano/battles \
+  -H 'Content-Type: application/json' \
+  -d '{"playerId":"me","monsterSpeciesIds":["ember-fox"],"opponent":"Human"}'
+curl localhost:5000/arenas/volcano/battles
+
+# A second player joins ...
+curl -X POST localhost:5000/battles/<battleId>/participants \
+  -H 'Content-Type: application/json' \
+  -d '{"playerId":"you","monsterSpeciesIds":["lava-crab"]}'
+
+# ... or the host plays the bot instead
+curl -X POST localhost:5000/battles/<battleId>/bot
+```
+
 Live clients watch the SignalR hub at `/hubs/battles`
 instead of polling: invoke `Watch(battleId)`, then
 receive a `RoundResolved` delta after every round.

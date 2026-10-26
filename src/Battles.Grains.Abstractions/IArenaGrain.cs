@@ -17,6 +17,14 @@ public interface IArenaGrain : IGrainWithStringKey
     Task<Guid> CreateBattleAsync(ImmutableArray<ParticipantSetup> participants);
 
     /// <summary>
+    /// Opens a new battle on this arena that waits for an opponent to
+    /// join ("wait for a human", ADR-0007).
+    /// </summary>
+    /// <param name="host">The human who opens the battle.</param>
+    /// <returns>The id of the new battle.</returns>
+    Task<Guid> OpenBattleAsync(ParticipantSetup host);
+
+    /// <summary>
     /// Lists the battles on this arena that have not completed.
     /// </summary>
     /// <returns>One summary per open or running battle.</returns>

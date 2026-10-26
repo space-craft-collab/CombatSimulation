@@ -6,7 +6,9 @@ namespace Battles.Features.WatchBattle;
 /// <summary>
 /// SignalR hub at <c>/hubs/battles</c>: a client watches a battle and
 /// receives a <see cref="BattleEventDto"/> on
-/// <see cref="RoundResolvedMethod"/> after every round.
+/// <see cref="RoundResolvedMethod"/> after every round. The host of an
+/// open battle also learns on <see cref="BattleStartedMethod"/> when an
+/// opponent joined.
 /// </summary>
 /// <param name="battles">Reads the battle's current state.</param>
 internal sealed class BattleHub(GetBattleService battles) : Hub
@@ -20,6 +22,12 @@ internal sealed class BattleHub(GetBattleService battles) : Hub
     /// The client method that receives the round deltas.
     /// </summary>
     public const string RoundResolvedMethod = "RoundResolved";
+
+    /// <summary>
+    /// The client method that receives the battle's first state once
+    /// an opponent joined an open battle.
+    /// </summary>
+    public const string BattleStartedMethod = "BattleStarted";
 
     /// <summary>
     /// The SignalR group of a battle's watchers.

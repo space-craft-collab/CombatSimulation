@@ -17,8 +17,9 @@ public sealed class AppHostFixture : IAsyncDisposable
     public const string CollectionName = "AppHost";
 
     /// <summary>
-    /// The human turn deadline the tests run with: short enough to
-    /// wait for, long enough that no test races it by accident.
+    /// The human turn deadline, and the join deadline of open
+    /// battles, the tests run with: short enough to wait for, long
+    /// enough that no test races it by accident.
     /// </summary>
     public static readonly TimeSpan TurnDeadline = TimeSpan.FromSeconds(2);
 
@@ -28,6 +29,7 @@ public sealed class AppHostFixture : IAsyncDisposable
     public WebApplicationFactory<Program> Factory { get; } = new WebApplicationFactory<Program>()
         .WithWebHostBuilder(builder => builder
             .UseSetting("Battles:Timing:TurnDeadline", TurnDeadline.ToString())
+            .UseSetting("Battles:Timing:JoinDeadline", TurnDeadline.ToString())
             .UseSetting("Battles:Timing:BotRoundInterval", "00:00:00.020"));
 
     /// <summary>

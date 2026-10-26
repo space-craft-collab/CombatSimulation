@@ -98,6 +98,35 @@ public sealed class BattleHubTests(AppHostFixture host)
         Assert.Empty(delta.Strikes);
     }
 
+    [Fact]
+    public async Task BattleStarted_OpponentJoinsOpenBattle_SendsFirstState()
+    {
+        // Arrange: the host opens a battle and watches it.
+        await using var connection = await ConnectAsync();
+        var started = new TaskCompletionSource<BattleResponse>();
+        connection.On<BattleResponse>(BattleHub.BattleStartedMethod, battle => started.TrySetResult(battle));
+        using var client = host.Factory.CreateClient();
+        using var opened = await client.PostAsJsonAsync(
+            new Uri($"/arenas/test-{Guid.NewGuid()}/battles", UriKind.Relative),
+            new { playerId = "player-1", monsterSpeciesIds = new[] { "lava-crab" }, opponent = "Human" },
+            Cancellation);
+        var battle = await opened.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
+        Assert.NotNull(battle);
+        var watched = await connection.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
+        Assert.Equal(BattleStatus.WaitingForPlayers, watched.Status);
+
+        // Act
+        using var joined = await client.PostAsync(
+            new Uri($"/battles/{battle.BattleId}/bot", UriKind.Relative), null, Cancellation);
+        joined.EnsureSuccessStatusCode();
+
+        // Assert
+        var first = await started.Task.WaitAsync(WaitLimit, Cancellation);
+        Assert.Equal(battle.BattleId, first.BattleId);
+        Assert.Equal(BattleStatus.InProgress, first.Status);
+        Assert.Equal(2, first.Combatants.Count);
+    }
+
     private static ChannelReader<BattleEventDto> Collect(HubConnection connection)
     {
         var channel = Channel.CreateUnbounded<BattleEventDto>();

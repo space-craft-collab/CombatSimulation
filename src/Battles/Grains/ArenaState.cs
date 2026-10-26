@@ -7,8 +7,8 @@ namespace Battles.Grains;
 internal sealed class ArenaState
 {
     /// <summary>
-    /// The battles not yet seen as completed, with their participant counts.
+    /// The battles not yet seen as completed.
     /// </summary>
     [Id(0)]
-    public Dictionary<Guid, int> Battles { get; set; } = [];
+    public HashSet<Guid> Battles { get; set; } = [];
 }

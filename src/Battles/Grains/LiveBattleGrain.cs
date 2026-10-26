@@ -1,4 +1,5 @@
 using Battles.Domain;
+using Battles.Features.GetBattle;
 using Battles.Features.WatchBattle;
 using Battles.Grains.Abstractions;
 using Catalog.Contracts;
@@ -9,7 +10,9 @@ namespace Battles.Grains;
 
 /// <summary>
 /// Implementation of <see cref="ILiveBattleGrain"/>: runs the
-/// turn-based round loop from ADR-0007. A round resolves once every
+/// turn-based round loop from ADR-0007. A battle either starts right
+/// away or is opened by one human and waits for an opponent to join;
+/// a reminder abandons it if nobody does. A round resolves once every
 /// human side still standing has submitted one action; bots then
 /// decide inline, so a human vs bot battle needs no timer. A reminder
 /// enforces the human turn deadline; a grain timer plays the rounds
@@ -29,7 +32,9 @@ internal sealed class LiveBattleGrain(
     BattleEventPublisher events)
     : Grain, ILiveBattleGrain, IRemindable
 {
-    private const string TurnDeadlineReminder = "turn-deadline";
+    // One reminder drives both deadlines: the join deadline while the
+    // battle waits for players, the turn deadline once it runs.
+    private const string DeadlineReminder = "deadline";
 
     // Orleans' minimum reminder period. The deadline itself is the
     // reminder's due time; the period only re-fires a tick that came
@@ -60,41 +65,49 @@ internal sealed class LiveBattleGrain(
         RequireStatus(BattleStatus.Created);
         ValidateSetup(setup);
 
-        var combatants = new List<Combatant>();
-        var initializations = new List<Task>();
         foreach (var participant in setup.Participants)
         {
-            foreach (var speciesId in participant.MonsterSpeciesIds)
-            {
-                var species = await catalog.FindSpeciesAsync(speciesId)
-                    ?? throw new ArgumentException($"Unknown species '{speciesId}'.", nameof(setup));
-                var slot = combatants.Count;
-
-                combatants.Add(new Combatant
-                {
-                    Slot = slot,
-                    ParticipantId = participant.ParticipantId,
-                    Attack = species.Attack,
-                    Defense = species.Defense,
-                    Speed = species.Speed,
-                    HitPoints = species.MaxHitPoints,
-                    IsBot = participant.IsBot,
-                    SpeciesId = species.Id,
-                    MaxHitPoints = species.MaxHitPoints,
-                });
-                initializations.Add(Monster(slot).InitializeAsync(new MonsterStats(
-                    species.Id, species.MaxHitPoints, species.Attack, species.Defense, species.Speed)));
-            }
+            await AddParticipantAsync(participant);
         }
 
-        await Task.WhenAll(initializations);
-
         Battle.ArenaId = setup.ArenaId;
-        Battle.Combatants = combatants;
-        Battle.Status = BattleStatus.InProgress;
-        Battle.Round = 1;
-        await ScheduleNextRoundAsync();
+        await BeginAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task OpenAsync(string arenaId, ParticipantSetup host)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(arenaId);
+        ArgumentNullException.ThrowIfNull(host);
+        RequireStatus(BattleStatus.Created);
+        if (host.IsBot)
+        {
+            throw new ArgumentException("Only a human opens a battle and waits for an opponent.", nameof(host));
+        }
+
+        ValidateTeam(host, nameof(host));
+
+        await AddParticipantAsync(host);
+        Battle.ArenaId = arenaId;
+        Battle.Status = BattleStatus.WaitingForPlayers;
+        await ArmDeadlineAsync(timing.Value.JoinDeadline);
         await state.WriteStateAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task JoinAsync(ParticipantSetup participant)
+    {
+        ArgumentNullException.ThrowIfNull(participant);
+        RequireStatus(BattleStatus.WaitingForPlayers);
+        ValidateTeam(participant, nameof(participant));
+        if (Battle.Combatants.Any(combatant => combatant.ParticipantId == participant.ParticipantId))
+        {
+            throw new ArgumentException($"'{participant.ParticipantId}' already takes part.", nameof(participant));
+        }
+
+        await AddParticipantAsync(participant);
+        await BeginAsync();
+        await events.PublishStartedAsync(BattleResponse.From(Snapshot()));
     }
 
     /// <inheritdoc />
@@ -116,39 +129,27 @@ internal sealed class LiveBattleGrain(
     }
 
     /// <inheritdoc />
-    public Task<BattleState> GetStateAsync() =>
-        Task.FromResult(new BattleState(
-            this.GetPrimaryKey(),
-            Battle.ArenaId,
-            Battle.Status,
-            Battle.Round,
-            Battle.WinnerId,
-            Battle.TurnDeadline,
-            [.. Battle.Combatants.Select(combatant => new CombatantSnapshot(
-                combatant.Slot,
-                combatant.ParticipantId,
-                combatant.IsBot,
-                combatant.SpeciesId,
-                combatant.HitPoints,
-                combatant.MaxHitPoints))]));
+    public Task<BattleState> GetStateAsync() => Task.FromResult(Snapshot());
 
     /// <summary>
-    /// The turn deadline passed: the round resolves with the actions
-    /// that arrived, and humans that missed it lose their move. If no
-    /// human acted at all, the visitors walked away and the battle
-    /// ends without a winner.
+    /// A deadline passed. While waiting for players, nobody joined and
+    /// the open battle is abandoned. While running, the round resolves
+    /// with the actions that arrived, and humans that missed it lose
+    /// their move; if no human acted at all, the visitors walked away
+    /// and the battle ends without a winner.
     /// </summary>
     /// <param name="reminderName">The reminder that fired.</param>
     /// <param name="status">Tick details from the runtime.</param>
     /// <returns>A task that completes once the tick is handled.</returns>
     public async Task ReceiveReminder(string reminderName, TickStatus status)
     {
-        if (reminderName != TurnDeadlineReminder)
+        if (reminderName != DeadlineReminder)
         {
             return;
         }
 
-        if (Battle.Status != BattleStatus.InProgress || Battle.TurnDeadline is not { } deadline)
+        if (Battle.Status is not (BattleStatus.WaitingForPlayers or BattleStatus.InProgress)
+            || Battle.TurnDeadline is not { } deadline)
         {
             await UnregisterDeadlineAsync();
             return;
@@ -161,7 +162,7 @@ internal sealed class LiveBattleGrain(
             return;
         }
 
-        if (Battle.PendingActions.Count == 0)
+        if (Battle.Status == BattleStatus.WaitingForPlayers || Battle.PendingActions.Count == 0)
         {
             Battle.Status = BattleStatus.Completed;
             await ScheduleNextRoundAsync();
@@ -174,6 +175,22 @@ internal sealed class LiveBattleGrain(
         await PlayRoundAsync();
     }
 
+    private BattleState Snapshot() =>
+        new(
+            this.GetPrimaryKey(),
+            Battle.ArenaId,
+            Battle.Status,
+            Battle.Round,
+            Battle.WinnerId,
+            Battle.TurnDeadline,
+            [.. Battle.Combatants.Select(combatant => new CombatantSnapshot(
+                combatant.Slot,
+                combatant.ParticipantId,
+                combatant.IsBot,
+                combatant.SpeciesId,
+                combatant.HitPoints,
+                combatant.MaxHitPoints))]);
+
     private static void ValidateSetup(BattleSetup setup)
     {
         if (setup.Participants.Length < 2)
@@ -181,15 +198,71 @@ internal sealed class LiveBattleGrain(
             throw new ArgumentException("A battle needs at least two participants.", nameof(setup));
         }
 
-        if (setup.Participants.Any(participant => participant.MonsterSpeciesIds.IsDefaultOrEmpty))
+        foreach (var participant in setup.Participants)
         {
-            throw new ArgumentException("Every participant needs at least one monster.", nameof(setup));
+            ValidateTeam(participant, nameof(setup));
         }
 
         if (setup.Participants.DistinctBy(participant => participant.ParticipantId).Count() != setup.Participants.Length)
         {
             throw new ArgumentException("Participant ids must be unique.", nameof(setup));
         }
+    }
+
+    private static void ValidateTeam(ParticipantSetup participant, string paramName)
+    {
+        if (participant.MonsterSpeciesIds.IsDefaultOrEmpty)
+        {
+            throw new ArgumentException("Every participant needs at least one monster.", paramName);
+        }
+    }
+
+    /// <summary>
+    /// Gives the participant's monsters the next free slots. Every
+    /// species is looked up first, so an unknown one leaves the battle
+    /// untouched.
+    /// </summary>
+    private async Task AddParticipantAsync(ParticipantSetup participant)
+    {
+        var species = new List<MonsterSpeciesDto>();
+        foreach (var speciesId in participant.MonsterSpeciesIds)
+        {
+            species.Add(await catalog.FindSpeciesAsync(speciesId)
+                ?? throw new ArgumentException($"Unknown species '{speciesId}'.", nameof(participant)));
+        }
+
+        var initializations = new List<Task>();
+        foreach (var monster in species)
+        {
+            var slot = Battle.Combatants.Count;
+            Battle.Combatants.Add(new Combatant
+            {
+                Slot = slot,
+                ParticipantId = participant.ParticipantId,
+                Attack = monster.Attack,
+                Defense = monster.Defense,
+                Speed = monster.Speed,
+                HitPoints = monster.MaxHitPoints,
+                IsBot = participant.IsBot,
+                SpeciesId = monster.Id,
+                MaxHitPoints = monster.MaxHitPoints,
+            });
+            initializations.Add(Monster(slot).InitializeAsync(new MonsterStats(
+                monster.Id, monster.MaxHitPoints, monster.Attack, monster.Defense, monster.Speed)));
+        }
+
+        await Task.WhenAll(initializations);
+    }
+
+    /// <summary>
+    /// Starts round 1 once every side has joined.
+    /// </summary>
+    private async Task BeginAsync()
+    {
+        Battle.Status = BattleStatus.InProgress;
+        Battle.Round = 1;
+        await ScheduleNextRoundAsync();
+        await state.WriteStateAsync();
     }
 
     private void ValidateAction(BattleAction action)
@@ -322,10 +395,14 @@ internal sealed class LiveBattleGrain(
         }
         else
         {
-            var deadline = timing.Value.TurnDeadline;
-            Battle.TurnDeadline = clock.GetUtcNow() + deadline;
-            await this.RegisterOrUpdateReminder(TurnDeadlineReminder, deadline, DeadlineRetryPeriod);
+            await ArmDeadlineAsync(timing.Value.TurnDeadline);
         }
+    }
+
+    private async Task ArmDeadlineAsync(TimeSpan dueIn)
+    {
+        Battle.TurnDeadline = clock.GetUtcNow() + dueIn;
+        await this.RegisterOrUpdateReminder(DeadlineReminder, dueIn, DeadlineRetryPeriod);
     }
 
     private async Task CancelDeadlineAsync()
@@ -341,7 +418,7 @@ internal sealed class LiveBattleGrain(
 
     private async Task UnregisterDeadlineAsync()
     {
-        if (await this.GetReminder(TurnDeadlineReminder) is { } reminder)
+        if (await this.GetReminder(DeadlineReminder) is { } reminder)
         {
             await this.UnregisterReminder(reminder);
         }

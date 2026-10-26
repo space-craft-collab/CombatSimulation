@@ -18,6 +18,12 @@ internal sealed class BattleTimingOptions
     public TimeSpan TurnDeadline { get; set; } = TimeSpan.FromSeconds(60);
 
     /// <summary>
+    /// How long an open battle waits for an opponent before it is
+    /// abandoned.
+    /// </summary>
+    public TimeSpan JoinDeadline { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
     /// The pause between two rounds of a battle with only bots left.
     /// </summary>
     public TimeSpan BotRoundInterval { get; set; } = TimeSpan.FromMilliseconds(500);

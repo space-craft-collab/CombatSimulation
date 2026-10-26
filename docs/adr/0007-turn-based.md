@@ -71,6 +71,11 @@ A visitor picks one of two modes:
   waiting, the **"play vs bot instead"** offer is shown
   **immediately**, not after a timeout: accepting it adds a
   bot through the same join path and the battle starts.
+  An open battle nobody joins before the **join deadline**
+  (5 minutes by default) is abandoned — `Completed` without
+  a winner — through the same reminder that later drives
+  the turn deadline, so the arena list does not fill up with
+  battles their hosts left.
 
 ### Bot strategy
 

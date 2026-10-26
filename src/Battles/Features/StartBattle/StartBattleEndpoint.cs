@@ -8,7 +8,7 @@ namespace Battles.Features.StartBattle;
 
 /// <summary>
 /// <c>POST /arenas/{arenaId}/battles</c>: starts a battle against
-/// the bot and answers with its first state.
+/// the bot, or opens one for a human, and answers with its first state.
 /// </summary>
 internal static class StartBattleEndpoint
 {
@@ -34,7 +34,7 @@ internal static class StartBattleEndpoint
 
         try
         {
-            var battle = await service.StartVsBotAsync(arenaId, request);
+            var battle = await service.StartAsync(arenaId, request);
             return TypedResults.Created($"/battles/{battle.BattleId}", battle);
         }
         catch (ArgumentException exception)

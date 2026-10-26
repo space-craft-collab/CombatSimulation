@@ -8,6 +8,12 @@ public enum BattleStatus
     /// <summary>The battle exists but has not started yet.</summary>
     Created,
 
+    /// <summary>
+    /// One human opened the battle and waits for an opponent, human
+    /// or bot, to join.
+    /// </summary>
+    WaitingForPlayers,
+
     /// <summary>Rounds are being played.</summary>
     InProgress,
 

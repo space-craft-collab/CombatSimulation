@@ -100,6 +100,19 @@ and this project adheres to
   `BattleHubTests` watch battles over long polling; new
   test-only pin `Microsoft.AspNetCore.SignalR.Client`
   10.0.14 (10.0.12 pulls a vulnerable `SignalR.Common`).
+- **Wait for a human** mode (ADR-0007): new status
+  `WaitingForPlayers`. `POST /arenas/{arenaId}/battles`
+  with `"opponent": "Human"` opens a battle through
+  `IArenaGrain.OpenBattleAsync`; `GET /arenas/{arenaId}/battles`
+  (`ListBattles`) lists open and running battles;
+  `POST /battles/{id}/participants` lets a second human
+  join and `POST /battles/{id}/bot` seats the bot instead,
+  mirroring the host's team — both through
+  `ILiveBattleGrain.JoinAsync` (`JoinBattle`). The hub sends
+  the first state on `BattleStarted` to watchers of the open
+  battle. A join deadline (`Battles:Timing:JoinDeadline`,
+  5 minutes) abandons battles nobody joins, through the same
+  reminder as the turn deadline.
 - `ICatalogQueryService` in `Catalog.Contracts` —
   the first cross-module contract (ADR-0005),
   served from a hard-coded four-species seed until
@@ -116,6 +129,12 @@ and this project adheres to
   one host may be up at a time.
 
 #### Changed
+- `BattleSummary` lists the joined `ParticipantIds` instead
+  of a participant count, read from the battle's own state;
+  `ArenaState` keeps only the battle ids.
+- The battle grain looks up every species of a side before
+  it takes a slot, so a failed join leaves the open battle
+  untouched.
 - The ADR-0009 architecture guard now also
   forbids `Domain` → `Grains`, alongside
   `Features` and `Infrastructure`.

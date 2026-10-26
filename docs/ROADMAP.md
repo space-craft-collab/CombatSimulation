@@ -100,10 +100,15 @@ persistence — grain state is in memory until Phase 3.
       state, `RoundResolved` carries each round's strikes.
       The grain publishes through the in-process hub context;
       several silos need a backplane (Phase 5)
-- [ ] **Wait for a human** mode: `WaitingForPlayers` status,
+- [x] **Wait for a human** mode: `WaitingForPlayers` status,
       arena lists open battles, a second human joins; the
       "play vs bot instead" offer is available immediately
-      while waiting ([ADR-0007](adr/0007-turn-based.md))
+      while waiting ([ADR-0007](adr/0007-turn-based.md)).
+      `opponent: "Human"` on the start request,
+      `GET /arenas/{arenaId}/battles`,
+      `POST /battles/{id}/participants`, `POST /battles/{id}/bot`;
+      the hub sends `BattleStarted` to the waiting host; a join
+      deadline abandons battles nobody joins
 - [ ] Retire the boot-probe grain once the real grains carry the
       smoke test
 - [ ] **Decision:** promote [ADR-0001](adr/0001-modular-monolith.md)

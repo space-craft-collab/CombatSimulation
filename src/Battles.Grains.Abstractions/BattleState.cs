@@ -10,10 +10,13 @@ namespace Battles.Grains.Abstractions;
 /// <param name="Status">The current lifecycle state.</param>
 /// <param name="Round">The current round, starting at 1 once in progress.</param>
 /// <param name="WinnerId">The winning participant once completed; otherwise <see langword="null"/>.
-/// A completed battle without a winner was abandoned: no human acted before the turn deadline.</param>
-/// <param name="TurnDeadline">When the current round resolves without the humans that have not acted;
-/// <see langword="null"/> when no human is due to act.</param>
-/// <param name="Combatants">Every monster slot in slot order, defeated ones included.</param>
+/// A completed battle without a winner was abandoned: no human acted before the turn deadline,
+/// or nobody joined before the join deadline.</param>
+/// <param name="TurnDeadline">When the current round resolves without the humans that have not acted,
+/// or, while waiting for players, when the open battle is abandoned;
+/// <see langword="null"/> when no deadline runs.</param>
+/// <param name="Combatants">Every monster slot in slot order, defeated ones included. While waiting
+/// for players, only the sides that have joined.</param>
 [GenerateSerializer]
 public sealed record BattleState(
     [property: Id(0)] Guid BattleId,

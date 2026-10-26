@@ -1,4 +1,6 @@
 using Battles.Features.GetBattle;
+using Battles.Features.JoinBattle;
+using Battles.Features.ListBattles;
 using Battles.Features.StartBattle;
 using Battles.Features.SubmitAction;
 using Battles.Features.WatchBattle;
@@ -32,6 +34,8 @@ public static class BattlesModule
         services.AddSingleton<StartBattleService>();
         services.AddSingleton<SubmitActionService>();
         services.AddSingleton<GetBattleService>();
+        services.AddSingleton<JoinBattleService>();
+        services.AddSingleton<ListBattlesService>();
 
         // Round deltas leave through SignalR (ADR-0007); the grain
         // publishes into the hub of the same process (ADR-0002).
@@ -54,6 +58,8 @@ public static class BattlesModule
             .MapStartBattleEndpoint()
             .MapSubmitActionEndpoint()
             .MapGetBattleEndpoint()
+            .MapJoinBattleEndpoint()
+            .MapListBattlesEndpoint()
             .MapWatchBattleEndpoint();
     }
 }

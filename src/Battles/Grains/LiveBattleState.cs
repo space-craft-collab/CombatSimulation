@@ -31,8 +31,9 @@ internal sealed class LiveBattleState
 
     /// <summary>
     /// When the current round resolves without the human sides that
-    /// have not acted; <see langword="null"/> while no human is waiting
-    /// on a deadline. A set value also means the deadline reminder is
+    /// have not acted, or, while waiting for players, when the open
+    /// battle is abandoned; <see langword="null"/> while no deadline
+    /// runs. A set value also means the deadline reminder is
     /// registered.
     /// </summary>
     [Id(6)]
