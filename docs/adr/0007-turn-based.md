@@ -125,6 +125,11 @@ template, and many matches run on it at once.
     battle's current state; not a configuration knob.
   - If the project later needs real-time, the grain layer
     is the wrong tool — that would be a separate service.
+  - The grain pushes each delta through the hub context of
+    its own process, after the round is stored. That holds
+    while one silo serves everything; several silos need a
+    SignalR backplane so a watcher on another silo still
+    gets the delta (Phase 5).
 
 ## Alternatives considered
 

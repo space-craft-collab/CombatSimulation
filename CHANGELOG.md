@@ -86,6 +86,20 @@ and this project adheres to
   (slot, side, species, HP) so a client can pick targets;
   the HTTP responses map them to their own records.
   `BattleEndpointTests` play the slices over HTTP.
+- **SignalR round deltas** (ADR-0007): the `WatchBattle`
+  slice maps `BattleHub` at `/hubs/battles`. `Watch(battleId)`
+  joins the battle's group and returns its current state;
+  after every resolved round the battle grain pushes a
+  `BattleEventDto` (round, status, winner, next deadline,
+  strikes with damage and remaining HP) on `RoundResolved`.
+  An abandoned battle sends one last delta without
+  strikes. The grain publishes only after the round is
+  stored, and reaches the hub context directly because
+  the silo shares the web host's process (ADR-0002); a
+  multi-silo setup needs a SignalR backplane (Phase 5).
+  `BattleHubTests` watch battles over long polling; new
+  test-only pin `Microsoft.AspNetCore.SignalR.Client`
+  10.0.14 (10.0.12 pulls a vulnerable `SignalR.Common`).
 - `ICatalogQueryService` in `Catalog.Contracts` —
   the first cross-module contract (ADR-0005),
   served from a hard-coded four-species seed until

@@ -1,6 +1,7 @@
 using Battles.Features.GetBattle;
 using Battles.Features.StartBattle;
 using Battles.Features.SubmitAction;
+using Battles.Features.WatchBattle;
 using Battles.Grains;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,11 @@ public static class BattlesModule
         services.AddSingleton<SubmitActionService>();
         services.AddSingleton<GetBattleService>();
 
+        // Round deltas leave through SignalR (ADR-0007); the grain
+        // publishes into the hub of the same process (ADR-0002).
+        services.AddSignalR();
+        services.AddSingleton<BattleEventPublisher>();
+
         return services;
     }
 
@@ -47,6 +53,7 @@ public static class BattlesModule
         return endpoints
             .MapStartBattleEndpoint()
             .MapSubmitActionEndpoint()
-            .MapGetBattleEndpoint();
+            .MapGetBattleEndpoint()
+            .MapWatchBattleEndpoint();
     }
 }

@@ -1,4 +1,5 @@
 using Battles.Domain;
+using Battles.Features.WatchBattle;
 using Battles.Grains.Abstractions;
 using Catalog.Contracts;
 using Microsoft.Extensions.Options;
@@ -12,17 +13,20 @@ namespace Battles.Grains;
 /// human side still standing has submitted one action; bots then
 /// decide inline, so a human vs bot battle needs no timer. A reminder
 /// enforces the human turn deadline; a grain timer plays the rounds
-/// of a battle that has only bots left.
+/// of a battle that has only bots left. Every resolved round leaves
+/// as a <see cref="BattleEventDto"/> over SignalR once it is stored.
 /// </summary>
 /// <param name="state">The battle's persistent state.</param>
 /// <param name="catalog">Source of the species base stats.</param>
 /// <param name="timing">The round loop's pacing.</param>
 /// <param name="clock">Source of the current time for the turn deadline.</param>
+/// <param name="events">Sends the round deltas to the battle's watchers.</param>
 internal sealed class LiveBattleGrain(
     [PersistentState("battle")] IPersistentState<LiveBattleState> state,
     ICatalogQueryService catalog,
     IOptions<BattleTimingOptions> timing,
-    TimeProvider clock)
+    TimeProvider clock,
+    BattleEventPublisher events)
     : Grain, ILiveBattleGrain, IRemindable
 {
     private const string TurnDeadlineReminder = "turn-deadline";
@@ -101,14 +105,14 @@ internal sealed class LiveBattleGrain(
         ValidateAction(action);
 
         Battle.PendingActions[action.ParticipantId] = action;
-        if (Battle.PendingActions.Count == HumanSidesStanding().Count)
+        if (Battle.PendingActions.Count != HumanSidesStanding().Count)
         {
-            AddBotActions();
-            await ResolveRoundAsync();
-            await ScheduleNextRoundAsync();
+            await state.WriteStateAsync();
+            return;
         }
 
-        await state.WriteStateAsync();
+        AddBotActions();
+        await PlayRoundAsync();
     }
 
     /// <inheritdoc />
@@ -160,15 +164,14 @@ internal sealed class LiveBattleGrain(
         if (Battle.PendingActions.Count == 0)
         {
             Battle.Status = BattleStatus.Completed;
-        }
-        else
-        {
-            AddBotActions();
-            await ResolveRoundAsync();
+            await ScheduleNextRoundAsync();
+            await state.WriteStateAsync();
+            await PublishAsync(Battle.Round, []);
+            return;
         }
 
-        await ScheduleNextRoundAsync();
-        await state.WriteStateAsync();
+        AddBotActions();
+        await PlayRoundAsync();
     }
 
     private static void ValidateSetup(BattleSetup setup)
@@ -235,11 +238,36 @@ internal sealed class LiveBattleGrain(
     }
 
     /// <summary>
+    /// Resolves the pending actions, arms the next round, stores the
+    /// result and only then tells the watchers, so no client sees a
+    /// round that is not stored yet.
+    /// </summary>
+    private async Task PlayRoundAsync(CancellationToken cancellationToken = default)
+    {
+        var round = Battle.Round;
+        var strikes = await ResolveRoundAsync();
+        await ScheduleNextRoundAsync();
+        await state.WriteStateAsync(cancellationToken);
+        await PublishAsync(round, strikes);
+    }
+
+    private Task PublishAsync(int round, IReadOnlyList<StrikeDto> strikes) =>
+        events.PublishAsync(new BattleEventDto(
+            this.GetPrimaryKey(),
+            round,
+            Battle.Status,
+            Battle.WinnerId,
+            Battle.TurnDeadline,
+            strikes));
+
+    /// <summary>
     /// Plays the round's actions fastest monster first. An action whose
     /// actor or target fell earlier in the same round is dropped.
     /// </summary>
-    private async Task ResolveRoundAsync()
+    /// <returns>The actions that landed, in resolution order.</returns>
+    private async Task<List<StrikeDto>> ResolveRoundAsync()
     {
+        var strikes = new List<StrikeDto>();
         var ordered = Battle.PendingActions.Values
             .Select(action => (Action: action, Actor: Battle.Combatants[action.ActorSlot]))
             .OrderByDescending(entry => entry.Actor.Speed)
@@ -254,6 +282,8 @@ internal sealed class LiveBattleGrain(
             }
 
             var snapshot = await Monster(target.Slot).ApplyDamageAsync(DamageRule.Calculate(actor.Attack, target.Defense));
+            strikes.Add(new StrikeDto(
+                actor.Slot, target.Slot, action.AbilityId, target.HitPoints - snapshot.HitPoints, snapshot.HitPoints));
             target.HitPoints = snapshot.HitPoints;
         }
 
@@ -269,6 +299,8 @@ internal sealed class LiveBattleGrain(
         {
             Battle.Round++;
         }
+
+        return strikes;
     }
 
     /// <summary>
@@ -338,9 +370,7 @@ internal sealed class LiveBattleGrain(
         }
 
         AddBotActions();
-        await ResolveRoundAsync();
-        await ScheduleNextRoundAsync();
-        await state.WriteStateAsync(cancellationToken);
+        await PlayRoundAsync(cancellationToken);
     }
 
     private IEnumerable<Combatant> Standing() => Battle.Combatants.Where(combatant => !combatant.IsDefeated);

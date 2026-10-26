@@ -29,7 +29,8 @@ sequences the work.
   ([ADR-0004](adr/0004-sveltekit-frontend.md)).
 - **Phase 5 — Scale-out**
   Multi-silo on Azure Container Apps, cluster membership over
-  Table Storage.
+  Table Storage, a SignalR backplane so round deltas reach
+  watchers connected to another silo.
 - **Phase 6 — Auth & accounts**
   JWT bearer auth + ASP.NET Core Identity (cold-path EF store),
   player accounts, protected SvelteKit routes
@@ -93,8 +94,12 @@ persistence — grain state is in memory until Phase 3.
       the team), `POST /battles/{id}/actions`,
       `GET /battles/{id}`; responses are mapped from the grain
       DTOs so no Orleans type reaches the wire
-- [ ] SignalR hub streaming `BattleEventDto` round deltas
-      ([ADR-0007](adr/0007-turn-based.md))
+- [x] SignalR hub streaming `BattleEventDto` round deltas
+      ([ADR-0007](adr/0007-turn-based.md)): `BattleHub` at
+      `/hubs/battles`, `Watch(battleId)` returns the current
+      state, `RoundResolved` carries each round's strikes.
+      The grain publishes through the in-process hub context;
+      several silos need a backplane (Phase 5)
 - [ ] **Wait for a human** mode: `WaitingForPlayers` status,
       arena lists open battles, a second human joins; the
       "play vs bot instead" offer is available immediately

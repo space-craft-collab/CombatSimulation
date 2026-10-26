@@ -33,6 +33,10 @@ curl -X POST localhost:5000/battles/<battleId>/actions \
 curl localhost:5000/battles/<battleId>
 ```
 
+Live clients watch the SignalR hub at `/hubs/battles`
+instead of polling: invoke `Watch(battleId)`, then
+receive a `RoundResolved` delta after every round.
+
 ## Architecture (planned)
 
 - One binary: ASP.NET Core host + Orleans silo co-hosted

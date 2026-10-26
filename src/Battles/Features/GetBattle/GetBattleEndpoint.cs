@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Routing;
 namespace Battles.Features.GetBattle;
 
 /// <summary>
-/// <c>GET /battles/{battleId}</c>: the battle's current state, for
-/// clients that poll until the SignalR deltas exist.
+/// <c>GET /battles/{battleId}</c>: the battle's current state. Live
+/// clients watch the SignalR hub instead of polling.
 /// </summary>
 internal static class GetBattleEndpoint
 {
