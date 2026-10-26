@@ -20,7 +20,7 @@ sequences the work.
   `IMonsterInstanceGrain`), rule-based bot opponent and
   turn-based round loop ([ADR-0007](adr/0007-turn-based.md)),
   SignalR round deltas.
-- **Phase 3 — Persistence (hot/cold)** ⬅ next
+- **Phase 3 — Persistence (hot/cold)** ⬅ current
   Azure Table Storage grain state + EF Core cold store, hot→cold
   snapshot bridge ([ADR-0003](adr/0003-no-outbox.md)).
   Completes the MVP.
@@ -44,6 +44,114 @@ sequences the work.
   ([ADR-0007](adr/0007-turn-based.md)).
 
 Phases 5+ are indicative and will be detailed when reached.
+
+## Phase 3 — Persistence (hot/cold)
+
+**Goal:** nothing a visitor plays is lost on a restart. Live
+battle state and reminders move from memory to Azure Table
+Storage (hot path); completed battles, the Catalog and player
+stats land in SQL through EF Core (cold path). A completed
+battle crosses from hot to cold in one straight-line call
+([ADR-0003](adr/0003-no-outbox.md)). Completes the MVP.
+
+### Checklist
+
+**Local infrastructure**
+
+- [ ] `docker compose` file with Azurite (Table Storage) and
+      SQL Server for local runs; connection strings in the
+      git-ignored `appsettings.Development.json`, with a
+      committed `appsettings.Development.example.json` to
+      copy from
+- [ ] Storage providers chosen by configuration: in-memory
+      stays the default for fast tests and a bare
+      `dotnet run`; Azure Table Storage when a connection
+      string is present
+
+**Hot path — Orleans on Table Storage**
+
+- [ ] Grain state on Azure Table Storage
+      (`Microsoft.Orleans.Persistence.AzureStorage`) instead of
+      `AddMemoryGrainStorage`
+- [ ] Reminders on Table Storage
+      (`Microsoft.Orleans.Reminders.AzureStorage`) instead of
+      `UseInMemoryReminderService()`, so a turn or join
+      deadline survives a restart
+- [ ] Grain state is now a stored format: freeze the `[Id]`
+      numbers and enum values (`BattleStatus`) from here on,
+      and note the rule in `CONTRIBUTING.md`
+- [ ] Test: a battle survives a host restart — state, round
+      and a pending deadline (Testcontainers Azurite)
+
+**Cold path — EF Core**
+
+- [ ] EF Core base wiring in `Shared.Infrastructure`
+      ([ADR-0008](adr/0008-shared-layer-split.md)); one
+      `DbContext` **per module**, each in its own SQL schema
+      (`catalog`, `battles`, `players`) — no shared context
+      ([ADR-0001](adr/0001-modular-monolith.md))
+- [ ] Migrations per module; applied on startup in
+      Development, a migration bundle for deployments
+- [ ] **Catalog:** species move from the hard-coded
+      `SpeciesSeed` into SQL (seeded through a migration);
+      `ICatalogQueryService` reads through a read repository
+- [ ] **Catalog arenas:** arena entity (name, optional rules)
+      as [ADR-0007](adr/0007-turn-based.md) describes;
+      `GET /arenas`; starting or opening a battle on an
+      unknown arena returns 404 instead of being accepted
+- [ ] **Players:** `IPlayerStatsService` in
+      `Players.Contracts` ([ADR-0005](adr/0005-inter-module-services.md)),
+      wins/losses per player id in the Players store, with
+      separate read and write repositories; `GET /players/{id}`
+      shows the stats
+
+**Hot → cold bridge**
+
+- [ ] **Decision:** the snapshot writer's shape. ADR-0003 names
+      an `IBattleSnapshotWriter` interface; under
+      [ADR-0010](adr/0010-delegate-test-seams.md) a concrete
+      write repository is enough unless a second implementation
+      appears. Settle it and edit ADR-0003 in place (still
+      `Proposed`)
+- [ ] On completion the battle grain writes a snapshot
+      (participants, teams, rounds played, winner or
+      abandoned) to the `battles` schema, reports the result
+      to `IPlayerStatsService`, then deactivates — no outbox,
+      at-most-once ([ADR-0003](adr/0003-no-outbox.md));
+      abandoned battles count for nobody
+- [ ] Battle history read slice from the cold store, e.g.
+      `GET /players/{id}/battles`
+- [ ] Test: a finished battle shows up in the cold store and
+      in the player's stats (Testcontainers SQL Server)
+
+**Wrap-up**
+
+- [ ] CI runs the Testcontainers suites (Docker is available
+      on the GitHub runners)
+- [ ] README quickstart: `docker compose up`, then `dotnet run`
+- [ ] **Decision:** promote [ADR-0003](adr/0003-no-outbox.md)
+      to `Accepted` once the bridge runs
+- [ ] CHANGELOG Phase 3 completion entry
+
+### Explicitly deferred
+
+- Cluster membership on Table Storage and multiple silos →
+  Phase 5. Clustering stays `UseLocalhostClustering()`.
+- SignalR backplane → Phase 5.
+- Azure resources (Storage account, Azure SQL) and deployment →
+  Phase 5. Phase 3 runs against the local emulators only.
+- Cleaning up the hot state of completed battles — they stay in
+  Table Storage as the recovery source ADR-0003 relies on.
+- Player accounts and auth → Phase 6; player ids stay
+  client-chosen strings.
+
+### Definition of done
+
+`dotnet build` and the test run are green locally and in CI,
+including the Testcontainers suites; a battle survives a host
+restart; a completed battle lands in SQL and updates both
+players' stats; `docker compose up` + `dotnet run` gives a
+working local setup; README and CHANGELOG are updated.
 
 ## Phase 2 — Orleans embedded
 

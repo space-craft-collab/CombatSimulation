@@ -15,7 +15,7 @@ new entries.
 | 0004 | [SvelteKit + Svelte 5 for the frontend](0004-sveltekit-frontend.md)  | Proposed |
 | 0005 | [Inter-module communication via service interfaces](0005-inter-module-services.md) | Accepted |
 | 0006 | [NLog for structured logging](0006-nlog-logging.md)                  | Proposed |
-| 0007 | [Turn-based interaction model](0007-turn-based.md)                   | Proposed |
+| 0007 | [Turn-based interaction model](0007-turn-based.md)                   | Accepted |
 | 0008 | [Split the Shared layer: Kernel + Infrastructure](0008-shared-layer-split.md) | Accepted |
 | 0009 | [Per-module internal structure: vertical slices](0009-module-internal-structure.md) | Accepted |
 | 0010 | [Function-delegate test seams instead of test-only interfaces](0010-delegate-test-seams.md) | Proposed |

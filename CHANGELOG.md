@@ -10,6 +10,21 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Phase 3 — Persistence (hot/cold) (in progress)
+
+#### Added
+- ROADMAP Phase 3 checklist: Azure Table Storage for grain
+  state and reminders, per-module EF Core stores (Catalog
+  species and arenas, player stats, battle snapshots), the
+  hot→cold bridge, Testcontainers-backed tests and a
+  `docker compose` setup for local runs.
+
+#### Decided (process)
+- ADR **0007** (turn-based interaction model) promoted
+  `Proposed` → **`Accepted`**: the round loop, bot
+  opponent, deadlines, both game modes and the SignalR
+  deltas are built as it describes.
+
 ### Phase 2 — Orleans embedded ✅
 
 #### Added
