@@ -1,5 +1,7 @@
+using Battles.Grains;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Battles;
 
@@ -17,6 +19,9 @@ public static class BattlesModule
     public static IServiceCollection AddBattlesModule(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.AddOptions<BattleTimingOptions>().BindConfiguration(BattleTimingOptions.SectionName);
+        services.TryAddSingleton(TimeProvider.System);
 
         return services;
     }

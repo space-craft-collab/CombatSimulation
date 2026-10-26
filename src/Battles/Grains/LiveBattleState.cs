@@ -28,4 +28,13 @@ internal sealed class LiveBattleState
 
     [Id(5)]
     public string? WinnerId { get; set; }
+
+    /// <summary>
+    /// When the current round resolves without the human sides that
+    /// have not acted; <see langword="null"/> while no human is waiting
+    /// on a deadline. A set value also means the deadline reminder is
+    /// registered.
+    /// </summary>
+    [Id(6)]
+    public DateTimeOffset? TurnDeadline { get; set; }
 }

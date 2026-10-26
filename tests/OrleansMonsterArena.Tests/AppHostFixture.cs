@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -16,9 +17,18 @@ public sealed class AppHostFixture : IAsyncDisposable
     public const string CollectionName = "AppHost";
 
     /// <summary>
-    /// The in-memory test host.
+    /// The human turn deadline the tests run with: short enough to
+    /// wait for, long enough that no test races it by accident.
     /// </summary>
-    public WebApplicationFactory<Program> Factory { get; } = new();
+    public static readonly TimeSpan TurnDeadline = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// The in-memory test host, with the round loop sped up.
+    /// </summary>
+    public WebApplicationFactory<Program> Factory { get; } = new WebApplicationFactory<Program>()
+        .WithWebHostBuilder(builder => builder
+            .UseSetting("Battles:Timing:TurnDeadline", TurnDeadline.ToString())
+            .UseSetting("Battles:Timing:BotRoundInterval", "00:00:00.020"));
 
     /// <summary>
     /// Shuts the host — and with it the silo — back down.

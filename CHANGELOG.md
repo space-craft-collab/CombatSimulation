@@ -65,13 +65,27 @@ and this project adheres to
   authority) and `IsDefeated` is derived from them.
   `BotStrategyTests` unit-test the rule via
   `InternalsVisibleTo`.
+- **Round loop** (ADR-0007): an Orleans **reminder**
+  enforces the human turn deadline (60s) — the
+  round resolves without humans who missed it; if
+  no human acted at all, the battle ends abandoned
+  (`Completed`, no winner). A **grain timer** plays
+  battles with only bots left (500ms per round) and
+  is re-armed on reactivation. Pacing comes from
+  `Battles:Timing`; `BattleState` exposes the
+  `TurnDeadline` for a client countdown. New pin
+  `Microsoft.Orleans.Reminders`, plus
+  `UseInMemoryReminderService()` in the AppHost.
 - `ICatalogQueryService` in `Catalog.Contracts` —
   the first cross-module contract (ADR-0005),
   served from a hard-coded four-species seed until
   EF Core arrives in Phase 3.
 - `BattleGrainTests` — a full 1 vs 1 battle through
   the silo plus the guard rails (double action,
-  own target, unknown species, double start).
+  own target, unknown species, double start), and
+  the round loop: bot vs bot to the end, missed
+  deadline, abandoned battle. The fixture shortens
+  the deadline to 2s and the bot interval to 20ms.
 - `AppHostFixture` — one booted host shared by
   the host-level tests via an xUnit collection.
   The silo binds fixed localhost ports, so only

@@ -47,6 +47,13 @@ The combat model is **turn-based**:
   "60-second deadline → auto-resolve" path (1-minute Reminder
   minimum is acceptable for this UX). It also ends battles a
   visitor simply walked away from.
+  - The deadline is the reminder's **due time**, re-armed
+    each round; the 1-minute minimum only bounds its retry
+    period.
+  - Humans who miss the deadline lose that round's move;
+    the round resolves with the actions that arrived.
+  - If **no human** acted before the deadline, the battle
+    is abandoned: `Completed` without a winner.
 - For bot-vs-bot fast battles, a Grain **Timer** drives the
   loop at sub-second cadence (no persistence required between
   ticks because the next tick re-enters the same grain).

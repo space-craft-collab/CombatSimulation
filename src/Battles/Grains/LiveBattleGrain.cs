@@ -1,6 +1,7 @@
 using Battles.Domain;
 using Battles.Grains.Abstractions;
 using Catalog.Contracts;
+using Microsoft.Extensions.Options;
 using Orleans.Runtime;
 
 namespace Battles.Grains;
@@ -9,19 +10,47 @@ namespace Battles.Grains;
 /// Implementation of <see cref="ILiveBattleGrain"/>: runs the
 /// turn-based round loop from ADR-0007. A round resolves once every
 /// human side still standing has submitted one action; bots then
-/// decide inline, so a human vs bot battle needs no timer.
+/// decide inline, so a human vs bot battle needs no timer. A reminder
+/// enforces the human turn deadline; a grain timer plays the rounds
+/// of a battle that has only bots left.
 /// </summary>
 /// <param name="state">The battle's persistent state.</param>
 /// <param name="catalog">Source of the species base stats.</param>
+/// <param name="timing">The round loop's pacing.</param>
+/// <param name="clock">Source of the current time for the turn deadline.</param>
 internal sealed class LiveBattleGrain(
     [PersistentState("battle")] IPersistentState<LiveBattleState> state,
-    ICatalogQueryService catalog)
-    : Grain, ILiveBattleGrain
+    ICatalogQueryService catalog,
+    IOptions<BattleTimingOptions> timing,
+    TimeProvider clock)
+    : Grain, ILiveBattleGrain, IRemindable
 {
     // Abilities are not modelled yet; the bot uses the basic attack.
     private const string BotAbilityId = "strike";
 
+    private const string TurnDeadlineReminder = "turn-deadline";
+
+    // Orleans' minimum reminder period. The deadline itself is the
+    // reminder's due time; the period only re-fires a tick that came
+    // in early and was ignored.
+    private static readonly TimeSpan DeadlineRetryPeriod = TimeSpan.FromMinutes(1);
+
+    private IGrainTimer? _botLoop;
+
     private LiveBattleState Battle => state.State;
+
+    /// <inheritdoc />
+    public override Task OnActivateAsync(CancellationToken cancellationToken)
+    {
+        // Timers die with their activation, unlike reminders; re-arm a
+        // bot-only battle that was still running.
+        if (Battle.Status == BattleStatus.InProgress && HumanSidesStanding().Count == 0)
+        {
+            StartBotLoop();
+        }
+
+        return base.OnActivateAsync(cancellationToken);
+    }
 
     /// <inheritdoc />
     public async Task StartAsync(BattleSetup setup)
@@ -61,6 +90,7 @@ internal sealed class LiveBattleGrain(
         Battle.Combatants = combatants;
         Battle.Status = BattleStatus.InProgress;
         Battle.Round = 1;
+        await ScheduleNextRoundAsync();
         await state.WriteStateAsync();
     }
 
@@ -76,6 +106,7 @@ internal sealed class LiveBattleGrain(
         {
             AddBotActions();
             await ResolveRoundAsync();
+            await ScheduleNextRoundAsync();
         }
 
         await state.WriteStateAsync();
@@ -84,7 +115,50 @@ internal sealed class LiveBattleGrain(
     /// <inheritdoc />
     public Task<BattleState> GetStateAsync() =>
         Task.FromResult(new BattleState(
-            this.GetPrimaryKey(), Battle.ArenaId, Battle.Status, Battle.Round, Battle.WinnerId));
+            this.GetPrimaryKey(), Battle.ArenaId, Battle.Status, Battle.Round, Battle.WinnerId, Battle.TurnDeadline));
+
+    /// <summary>
+    /// The turn deadline passed: the round resolves with the actions
+    /// that arrived, and humans that missed it lose their move. If no
+    /// human acted at all, the visitors walked away and the battle
+    /// ends without a winner.
+    /// </summary>
+    /// <param name="reminderName">The reminder that fired.</param>
+    /// <param name="status">Tick details from the runtime.</param>
+    /// <returns>A task that completes once the tick is handled.</returns>
+    public async Task ReceiveReminder(string reminderName, TickStatus status)
+    {
+        if (reminderName != TurnDeadlineReminder)
+        {
+            return;
+        }
+
+        if (Battle.Status != BattleStatus.InProgress || Battle.TurnDeadline is not { } deadline)
+        {
+            await UnregisterDeadlineAsync();
+            return;
+        }
+
+        // A tick queued just before the round resolved, or one that
+        // fired early; the re-armed reminder covers the new deadline.
+        if (clock.GetUtcNow() < deadline)
+        {
+            return;
+        }
+
+        if (Battle.PendingActions.Count == 0)
+        {
+            Battle.Status = BattleStatus.Completed;
+        }
+        else
+        {
+            AddBotActions();
+            await ResolveRoundAsync();
+        }
+
+        await ScheduleNextRoundAsync();
+        await state.WriteStateAsync();
+    }
 
     private static void ValidateSetup(BattleSetup setup)
     {
@@ -184,6 +258,78 @@ internal sealed class LiveBattleGrain(
         {
             Battle.Round++;
         }
+    }
+
+    /// <summary>
+    /// Arms what drives the next round: a deadline reminder while a
+    /// human side is standing, the bot loop once only bots are left,
+    /// and nothing after the battle completed.
+    /// </summary>
+    private async Task ScheduleNextRoundAsync()
+    {
+        if (Battle.Status != BattleStatus.InProgress)
+        {
+            StopBotLoop();
+            await CancelDeadlineAsync();
+        }
+        else if (HumanSidesStanding().Count == 0)
+        {
+            await CancelDeadlineAsync();
+            StartBotLoop();
+        }
+        else
+        {
+            var deadline = timing.Value.TurnDeadline;
+            Battle.TurnDeadline = clock.GetUtcNow() + deadline;
+            await this.RegisterOrUpdateReminder(TurnDeadlineReminder, deadline, DeadlineRetryPeriod);
+        }
+    }
+
+    private async Task CancelDeadlineAsync()
+    {
+        if (Battle.TurnDeadline is null)
+        {
+            return;
+        }
+
+        Battle.TurnDeadline = null;
+        await UnregisterDeadlineAsync();
+    }
+
+    private async Task UnregisterDeadlineAsync()
+    {
+        if (await this.GetReminder(TurnDeadlineReminder) is { } reminder)
+        {
+            await this.UnregisterReminder(reminder);
+        }
+    }
+
+    private void StartBotLoop()
+    {
+        var interval = timing.Value.BotRoundInterval;
+        _botLoop ??= this.RegisterGrainTimer(
+            PlayBotRoundAsync,
+            new GrainTimerCreationOptions(interval, interval) { KeepAlive = true });
+    }
+
+    private void StopBotLoop()
+    {
+        _botLoop?.Dispose();
+        _botLoop = null;
+    }
+
+    private async Task PlayBotRoundAsync(CancellationToken cancellationToken)
+    {
+        if (Battle.Status != BattleStatus.InProgress)
+        {
+            StopBotLoop();
+            return;
+        }
+
+        AddBotActions();
+        await ResolveRoundAsync();
+        await ScheduleNextRoundAsync();
+        await state.WriteStateAsync(cancellationToken);
     }
 
     private IEnumerable<Combatant> Standing() => Battle.Combatants.Where(combatant => !combatant.IsDefeated);

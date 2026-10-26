@@ -7,7 +7,8 @@
     via their Contracts projects only (ADR-0005).
     Microsoft.Orleans.Runtime carries IPersistentState<T>, which
     the stateful grains need; the abstractions project stays on
-    the lighter Orleans.Sdk.
+    the lighter Orleans.Sdk. Microsoft.Orleans.Reminders carries
+    the reminder API behind the turn deadline (ADR-0007).
   -->
 
   <ItemGroup>
@@ -16,6 +17,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Orleans.Runtime" />
+    <PackageReference Include="Microsoft.Orleans.Reminders" />
   </ItemGroup>
 
   <ItemGroup>

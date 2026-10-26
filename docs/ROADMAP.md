@@ -77,14 +77,14 @@ persistence — grain state is in memory until Phase 3.
       once every human side has acted, so human vs bot needs
       no timer ([ADR-0007](adr/0007-turn-based.md)). Grain
       side done; the HTTP entry comes with the feature slices.
-      Bot-only battles stall until the Timer below exists.
-- [ ] Round loop: an Orleans **Reminder** for the 60s player-turn
+- [x] Round loop: an Orleans **Reminder** for the 60s player-turn
       deadline, a grain **Timer** for the bot-vs-bot loop
       ([ADR-0007](adr/0007-turn-based.md)). Needs a new
       `Microsoft.Orleans.Reminders` pin plus
       `UseInMemoryReminderService()` — `Microsoft.Orleans.Server`
       does not carry reminders, and the Table Storage provider
-      only arrives in Phase 3.
+      only arrives in Phase 3. A deadline with no human action
+      at all abandons the battle.
 - [ ] Battles feature slices that start a battle and submit a
       turn; `IClusterClient` stays inside `Battles`, other modules
       never see Orleans types

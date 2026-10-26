@@ -29,6 +29,16 @@ public sealed class BattleGrainTests(AppHostFixture host)
         new("player-2", false, ["ember-fox"]),
     ];
 
+    // No human at all: the grain timer plays every round. Same
+    // matchup as OneVsOne, so the crab wins in round 7.
+    private static readonly ImmutableArray<ParticipantSetup> BotVsBot =
+    [
+        new("bot-1", true, ["lava-crab"]),
+        new("bot-2", true, ["ember-fox"]),
+    ];
+
+    private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
+
     private IGrainFactory Grains => host.Factory.Services.GetRequiredService<IClusterClient>();
 
     // A fresh arena per test keeps the battle lists independent.
@@ -160,6 +170,71 @@ public sealed class BattleGrainTests(AppHostFixture host)
     }
 
     [Fact]
+    public async Task CreateBattleAsync_BotVsBot_PlaysToTheEndOnItsOwn()
+    {
+        // Arrange
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().CreateBattleAsync(BotVsBot));
+
+        // Act
+        var state = await WaitForAsync(battle, state => state.Status == BattleStatus.Completed);
+
+        // Assert
+        Assert.Equal("bot-1", state.WinnerId);
+        Assert.Equal(7, state.Round);
+        Assert.Null(state.TurnDeadline);
+    }
+
+    [Fact]
+    public async Task CreateBattleAsync_WithHuman_SetsTurnDeadline()
+    {
+        // Arrange
+        var before = DateTimeOffset.UtcNow;
+
+        // Act
+        var state = await Grains.GetGrain<ILiveBattleGrain>(await NewArena().CreateBattleAsync(OneVsOne)).GetStateAsync();
+
+        // Assert
+        Assert.NotNull(state.TurnDeadline);
+        Assert.InRange(state.TurnDeadline.Value, before + AppHostFixture.TurnDeadline, DateTimeOffset.UtcNow + AppHostFixture.TurnDeadline);
+    }
+
+    [Fact]
+    public async Task ReceiveReminder_OneHumanMissesDeadline_RoundResolvesWithoutThem()
+    {
+        // Arrange
+        var battleId = await NewArena().CreateBattleAsync(HumanVsHuman);
+        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
+        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
+
+        // Act
+        var state = await WaitForAsync(battle, state => state.Round == 2);
+
+        // Assert
+        Assert.Equal(BattleStatus.InProgress, state.Status);
+        var crab = await Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:0").GetSnapshotAsync();
+        var fox = await Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:1").GetSnapshotAsync();
+        Assert.Equal(60, crab.HitPoints);
+        Assert.Equal(34, fox.HitPoints);
+    }
+
+    [Fact]
+    public async Task ReceiveReminder_NoHumanActsBeforeDeadline_AbandonsBattleWithoutWinner()
+    {
+        // Arrange
+        var arena = NewArena();
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await arena.CreateBattleAsync(OneVsOne));
+
+        // Act
+        var state = await WaitForAsync(battle, state => state.Status == BattleStatus.Completed);
+
+        // Assert
+        Assert.Null(state.WinnerId);
+        Assert.Equal(1, state.Round);
+        Assert.Null(state.TurnDeadline);
+        Assert.Empty(await arena.GetBattlesAsync());
+    }
+
+    [Fact]
     public async Task ApplyDamageAsync_MoreThanHitPoints_ClampsAtZeroAndDefeats()
     {
         // Arrange
@@ -172,5 +247,27 @@ public sealed class BattleGrainTests(AppHostFixture host)
         // Assert
         Assert.Equal(0, snapshot.HitPoints);
         Assert.True(snapshot.IsDefeated);
+    }
+
+    // Polls the battle until the condition holds; the round loop
+    // runs on reminders and timers, outside the test's own calls.
+    private static async Task<BattleState> WaitForAsync(ILiveBattleGrain battle, Func<BattleState, bool> condition)
+    {
+        var giveUp = DateTimeOffset.UtcNow + WaitLimit;
+        while (true)
+        {
+            var state = await battle.GetStateAsync();
+            if (condition(state))
+            {
+                return state;
+            }
+
+            if (DateTimeOffset.UtcNow > giveUp)
+            {
+                Assert.Fail($"Battle state {state} did not reach the expected condition within {WaitLimit}.");
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(50), TestContext.Current.CancellationToken);
+        }
     }
 }
