@@ -16,13 +16,14 @@ public sealed class SiloBootTests(AppHostFixture host)
     public async Task GetGrain_CoHostedSilo_AnswersGrainCall()
     {
         // Arrange
-        const string key = "boot-probe";
+        var battleId = Guid.NewGuid();
         var cluster = host.Factory.Services.GetRequiredService<IClusterClient>();
 
         // Act
-        var echoed = await cluster.GetGrain<IPingGrain>(key).PingAsync();
+        var state = await cluster.GetGrain<ILiveBattleGrain>(battleId).GetStateAsync();
 
-        // Assert
-        Assert.Equal(key, echoed);
+        // Assert: a fresh activation answers with its key and initial state.
+        Assert.Equal(battleId, state.BattleId);
+        Assert.Equal(BattleStatus.Created, state.Status);
     }
 }

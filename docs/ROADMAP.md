@@ -14,13 +14,13 @@ sequences the work.
 - **Phase 1 — Walking skeleton** ✅ done
   Compilable, runnable, CI-green solution that establishes the
   full project graph. No domain logic yet.
-- **Phase 2 — Orleans embedded** ⬅ current
+- **Phase 2 — Orleans embedded** ✅ done
   Co-hosted silo ([ADR-0002](adr/0002-orleans-cohosted.md)),
   first grains (`IArenaGrain`, `ILiveBattleGrain`,
   `IMonsterInstanceGrain`), rule-based bot opponent and
   turn-based round loop ([ADR-0007](adr/0007-turn-based.md)),
   SignalR round deltas.
-- **Phase 3 — Persistence (hot/cold)**
+- **Phase 3 — Persistence (hot/cold)** ⬅ next
   Azure Table Storage grain state + EF Core cold store, hot→cold
   snapshot bridge ([ADR-0003](adr/0003-no-outbox.md)).
   Completes the MVP.
@@ -109,13 +109,15 @@ persistence — grain state is in memory until Phase 3.
       `POST /battles/{id}/participants`, `POST /battles/{id}/bot`;
       the hub sends `BattleStarted` to the waiting host; a join
       deadline abandons battles nobody joins
-- [ ] Retire the boot-probe grain once the real grains carry the
-      smoke test
-- [ ] **Decision:** promote [ADR-0001](adr/0001-modular-monolith.md)
+- [x] Retire the boot-probe grain once the real grains carry the
+      smoke test — `SiloBootTests` now calls `ILiveBattleGrain`
+- [x] **Decision:** promote [ADR-0001](adr/0001-modular-monolith.md)
       and [ADR-0002](adr/0002-orleans-cohosted.md) to `Accepted`
       once the silo and real grains are in place — the open item
-      carried over from Phase 1
-- [ ] CHANGELOG Phase 2 completion entry (README status flips at
+      carried over from Phase 1. Both `Accepted` (2026-10-26):
+      one process now hosts all modules, the silo and the
+      SignalR hub, and the web side calls grains in-process
+- [x] CHANGELOG Phase 2 completion entry (README status flips at
       phase *start* and already shows Phase 2)
 
 ### Explicitly deferred

@@ -11,9 +11,9 @@ backend, with a **SvelteKit** frontend.
 
 ## Status
 
-Phase 2 — Orleans embedded (in progress).
-Phase 1 is done: the solution builds, boots, and
-answers `GET /health`.
+Phase 2 — Orleans embedded is done; Phase 3
+(hot/cold persistence) is next. Battles run through
+co-hosted Orleans grains, still with in-memory state.
 See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 A battle against the bot is already playable over HTTP:

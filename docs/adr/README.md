@@ -9,8 +9,8 @@ new entries.
 
 | #    | Title                                                                | Status   |
 |------|----------------------------------------------------------------------|----------|
-| 0001 | [Modular monolith over microservices](0001-modular-monolith.md)      | Proposed |
-| 0002 | [Orleans silo co-hosted with the web host](0002-orleans-cohosted.md) | Proposed |
+| 0001 | [Modular monolith over microservices](0001-modular-monolith.md)      | Accepted |
+| 0002 | [Orleans silo co-hosted with the web host](0002-orleans-cohosted.md) | Accepted |
 | 0003 | [No transactional outbox for hot→cold handoff](0003-no-outbox.md)    | Proposed |
 | 0004 | [SvelteKit + Svelte 5 for the frontend](0004-sveltekit-frontend.md)  | Proposed |
 | 0005 | [Inter-module communication via service interfaces](0005-inter-module-services.md) | Accepted |

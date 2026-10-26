@@ -1,6 +1,6 @@
 # ADR-0002: Orleans silo co-hosted with the web host
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-26)
 - **Date:** 2026-05-16
 - **Deciders:** aha (solo maintainer)
 
@@ -49,6 +49,10 @@ to multiple silos in Phase 5.
   - The `Battles` module is the only module that holds the
     `IClusterClient`; other modules never see Orleans types
     directly ([ADR-0005]).
+  - Grains push round deltas through the SignalR hub context
+    of their own process ([ADR-0007]). Once several silos run
+    (Phase 5), a SignalR backplane carries a delta to a
+    watcher connected to another replica.
 
 ## Alternatives considered
 
@@ -64,3 +68,4 @@ to multiple silos in Phase 5.
 
 [ADR-0001]: 0001-modular-monolith.md
 [ADR-0005]: 0005-inter-module-services.md
+[ADR-0007]: 0007-turn-based.md

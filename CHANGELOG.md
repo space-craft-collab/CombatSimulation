@@ -10,7 +10,7 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Phase 2 — Orleans embedded (in progress)
+### Phase 2 — Orleans embedded ✅
 
 #### Added
 - **Co-hosted Orleans silo** — `AppHost` now
@@ -184,6 +184,24 @@ and this project adheres to
   (new pin, 10.3.1): it carries `IPersistentState<T>`,
   which `Microsoft.Orleans.Sdk` does not.
 - `BattleState` gained `WinnerId`.
+
+#### Removed
+- The boot-probe grain (`IPingGrain` / `PingGrain`).
+  `SiloBootTests` proves ADR-0002 with a call to
+  `ILiveBattleGrain` instead.
+
+#### Decided (process)
+- ADRs **0001** (modular monolith) and **0002**
+  (co-hosted silo) promoted `Proposed` →
+  **`Accepted`**: one process now hosts every module,
+  the Orleans silo and the SignalR hub, and web-side
+  code calls grains in-process. ADR-0002 gained the
+  SignalR backplane follow-up for Phase 5 before
+  acceptance.
+- Phase 2 closed: a battle — human vs bot, human vs
+  human, bot vs bot — runs end to end through grains,
+  playable over HTTP and watchable over SignalR. Grain
+  state and reminders stay in memory until Phase 3.
 
 ### Phase 1 — Walking skeleton ✅
 
