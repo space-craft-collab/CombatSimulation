@@ -25,9 +25,6 @@ internal sealed class LiveBattleGrain(
     TimeProvider clock)
     : Grain, ILiveBattleGrain, IRemindable
 {
-    // Abilities are not modelled yet; the bot uses the basic attack.
-    private const string BotAbilityId = "strike";
-
     private const string TurnDeadlineReminder = "turn-deadline";
 
     // Orleans' minimum reminder period. The deadline itself is the
@@ -78,6 +75,8 @@ internal sealed class LiveBattleGrain(
                     Speed = species.Speed,
                     HitPoints = species.MaxHitPoints,
                     IsBot = participant.IsBot,
+                    SpeciesId = species.Id,
+                    MaxHitPoints = species.MaxHitPoints,
                 });
                 initializations.Add(Monster(slot).InitializeAsync(new MonsterStats(
                     species.Id, species.MaxHitPoints, species.Attack, species.Defense, species.Speed)));
@@ -115,7 +114,19 @@ internal sealed class LiveBattleGrain(
     /// <inheritdoc />
     public Task<BattleState> GetStateAsync() =>
         Task.FromResult(new BattleState(
-            this.GetPrimaryKey(), Battle.ArenaId, Battle.Status, Battle.Round, Battle.WinnerId, Battle.TurnDeadline));
+            this.GetPrimaryKey(),
+            Battle.ArenaId,
+            Battle.Status,
+            Battle.Round,
+            Battle.WinnerId,
+            Battle.TurnDeadline,
+            [.. Battle.Combatants.Select(combatant => new CombatantSnapshot(
+                combatant.Slot,
+                combatant.ParticipantId,
+                combatant.IsBot,
+                combatant.SpeciesId,
+                combatant.HitPoints,
+                combatant.MaxHitPoints))]));
 
     /// <summary>
     /// The turn deadline passed: the round resolves with the actions
@@ -219,7 +230,7 @@ internal sealed class LiveBattleGrain(
         foreach (var botId in Standing().Where(combatant => combatant.IsBot).Select(combatant => combatant.ParticipantId).Distinct())
         {
             var move = BotStrategy.Decide(botId, fighters);
-            Battle.PendingActions[botId] = new BattleAction(botId, move.ActorSlot, move.TargetSlot, BotAbilityId);
+            Battle.PendingActions[botId] = new BattleAction(botId, move.ActorSlot, move.TargetSlot, Ability.Strike);
         }
     }
 

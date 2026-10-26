@@ -1,3 +1,6 @@
+using Battles.Features.GetBattle;
+using Battles.Features.StartBattle;
+using Battles.Features.SubmitAction;
 using Battles.Grains;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +26,12 @@ public static class BattlesModule
         services.AddOptions<BattleTimingOptions>().BindConfiguration(BattleTimingOptions.SectionName);
         services.TryAddSingleton(TimeProvider.System);
 
+        // The slices reach grains through the co-hosted silo's
+        // IGrainFactory; no Orleans type leaves this module (ADR-0005).
+        services.AddSingleton<StartBattleService>();
+        services.AddSingleton<SubmitActionService>();
+        services.AddSingleton<GetBattleService>();
+
         return services;
     }
 
@@ -35,6 +44,9 @@ public static class BattlesModule
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        return endpoints;
+        return endpoints
+            .MapStartBattleEndpoint()
+            .MapSubmitActionEndpoint()
+            .MapGetBattleEndpoint();
     }
 }

@@ -85,10 +85,14 @@ persistence — grain state is in memory until Phase 3.
       does not carry reminders, and the Table Storage provider
       only arrives in Phase 3. A deadline with no human action
       at all abandons the battle.
-- [ ] Battles feature slices that start a battle and submit a
+- [x] Battles feature slices that start a battle and submit a
       turn; `IClusterClient` stays inside `Battles`, other modules
       never see Orleans types
-      ([ADR-0005](adr/0005-inter-module-services.md))
+      ([ADR-0005](adr/0005-inter-module-services.md)).
+      `POST /arenas/{arenaId}/battles` (vs bot, the bot mirrors
+      the team), `POST /battles/{id}/actions`,
+      `GET /battles/{id}`; responses are mapped from the grain
+      DTOs so no Orleans type reaches the wire
 - [ ] SignalR hub streaming `BattleEventDto` round deltas
       ([ADR-0007](adr/0007-turn-based.md))
 - [ ] **Wait for a human** mode: `WaitingForPlayers` status,

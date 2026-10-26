@@ -76,6 +76,16 @@ and this project adheres to
   `TurnDeadline` for a client countdown. New pin
   `Microsoft.Orleans.Reminders`, plus
   `UseInMemoryReminderService()` in the AppHost.
+- **Battles feature slices** (ADR-0009): `StartBattle`
+  (`POST /arenas/{arenaId}/battles` — play vs bot, the
+  bot mirrors the visitor's team), `SubmitAction`
+  (`POST /battles/{id}/actions` — 400 for an illegal
+  move, 409 once the battle is over or the side already
+  acted) and `GetBattle` (`GET /battles/{id}`). The
+  grain's `BattleState` now carries `CombatantSnapshot`s
+  (slot, side, species, HP) so a client can pick targets;
+  the HTTP responses map them to their own records.
+  `BattleEndpointTests` play the slices over HTTP.
 - `ICatalogQueryService` in `Catalog.Contracts` —
   the first cross-module contract (ADR-0005),
   served from a hard-coded four-species seed until

@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Battles.Grains.Abstractions;
 
 /// <summary>
@@ -11,6 +13,7 @@ namespace Battles.Grains.Abstractions;
 /// A completed battle without a winner was abandoned: no human acted before the turn deadline.</param>
 /// <param name="TurnDeadline">When the current round resolves without the humans that have not acted;
 /// <see langword="null"/> when no human is due to act.</param>
+/// <param name="Combatants">Every monster slot in slot order, defeated ones included.</param>
 [GenerateSerializer]
 public sealed record BattleState(
     [property: Id(0)] Guid BattleId,
@@ -18,4 +21,5 @@ public sealed record BattleState(
     [property: Id(2)] BattleStatus Status,
     [property: Id(3)] int Round,
     [property: Id(4)] string? WinnerId,
-    [property: Id(5)] DateTimeOffset? TurnDeadline);
+    [property: Id(5)] DateTimeOffset? TurnDeadline,
+    [property: Id(6)] ImmutableArray<CombatantSnapshot> Combatants);

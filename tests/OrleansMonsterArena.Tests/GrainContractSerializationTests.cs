@@ -42,12 +42,22 @@ public sealed class GrainContractSerializationTests(AppHostFixture host)
     {
         // Arrange
         var serializer = host.Factory.Services.GetRequiredService<Serializer>();
-        var state = new BattleState(Guid.NewGuid(), "volcano", BattleStatus.Completed, 3, "player-1", DateTimeOffset.UnixEpoch);
+        var state = new BattleState(
+            Guid.NewGuid(),
+            "volcano",
+            BattleStatus.Completed,
+            3,
+            "player-1",
+            DateTimeOffset.UnixEpoch,
+            [new CombatantSnapshot(0, "player-1", false, "lava-crab", 42, 60)]);
 
         // Act
         var copy = serializer.Deserialize<BattleState>(serializer.SerializeToArray(state));
 
-        // Assert
-        Assert.Equal(state, copy);
+        // Assert: ImmutableArray compares by reference, so the
+        // combatants are checked element-wise.
+        Assert.NotNull(copy);
+        Assert.Equal(state with { Combatants = [] }, copy with { Combatants = [] });
+        Assert.Equal(state.Combatants, copy.Combatants);
     }
 }

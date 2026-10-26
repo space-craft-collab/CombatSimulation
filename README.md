@@ -16,6 +16,23 @@ Phase 1 is done: the solution builds, boots, and
 answers `GET /health`.
 See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
+A battle against the bot is already playable over HTTP:
+
+```bash
+# Start a battle; the bot mirrors your team
+curl -X POST localhost:5000/arenas/volcano/battles \
+  -H 'Content-Type: application/json' \
+  -d '{"playerId":"me","monsterSpeciesIds":["ember-fox"]}'
+
+# Strike the bot's monster (slot 1) with yours (slot 0)
+curl -X POST localhost:5000/battles/<battleId>/actions \
+  -H 'Content-Type: application/json' \
+  -d '{"participantId":"me","actorSlot":0,"targetSlot":1}'
+
+# Read the state
+curl localhost:5000/battles/<battleId>
+```
+
 ## Architecture (planned)
 
 - One binary: ASP.NET Core host + Orleans silo co-hosted

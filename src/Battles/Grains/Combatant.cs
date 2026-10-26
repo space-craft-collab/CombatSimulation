@@ -30,5 +30,11 @@ internal sealed class Combatant
     [Id(6)]
     public required bool IsBot { get; init; }
 
+    [Id(7)]
+    public required string SpeciesId { get; init; }
+
+    [Id(8)]
+    public required int MaxHitPoints { get; init; }
+
     public bool IsDefeated => HitPoints <= 0;
 }
