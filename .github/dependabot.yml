@@ -8,6 +8,15 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # The framework packages follow the TFM (net10.0); a major
+    # bump (e.g. 11.0.0) belongs to a deliberate TFM upgrade.
+    ignore:
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.EntityFrameworkCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
     groups:
       orleans:
         patterns: ["Microsoft.Orleans.*"]
