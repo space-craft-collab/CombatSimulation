@@ -119,10 +119,26 @@ battle crosses from hot to cold in one straight-line call
       to `IPlayerStatsService`, then deactivates — no outbox,
       at-most-once ([ADR-0003](adr/0003-no-outbox.md));
       abandoned battles count for nobody
+- [ ] Hot state lifetime: Table Storage holds live battles
+      only (it has no TTL). Once the snapshot is written, the
+      battle grain clears its own state and its monster
+      grains' state (`ClearStateAsync`) before deactivating;
+      if the write fails, the hot state stays and the failure
+      is logged, so the final result survives for a replay
+      ([ADR-0003](adr/0003-no-outbox.md))
+- [ ] A cleared battle reads as `Created` ("never existed"):
+      `ArenaGrain.GetBattlesAsync` drops `Created` entries as
+      well as `Completed` ones, so a cleared battle never
+      shows up as an open one
+- [ ] `GET /battles/{id}` falls back to the cold store for a
+      completed battle whose hot state is gone; 404 only when
+      neither store knows the id
 - [ ] Battle history read slice from the cold store, e.g.
       `GET /players/{id}/battles`
 - [ ] Test: a finished battle shows up in the cold store and
-      in the player's stats (Testcontainers SQL Server)
+      in the player's stats, its hot state is gone from Table
+      Storage, and `GET /battles/{id}` still returns it
+      (Testcontainers SQL Server + Azurite)
 
 **Wrap-up**
 

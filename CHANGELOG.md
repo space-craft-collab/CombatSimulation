@@ -30,6 +30,11 @@ and this project adheres to
   Client and TestingHost pins were still on 10.3.1).
 
 #### Decided (process)
+- ADR **0003** (still `Proposed`) gains the hot-state
+  lifetime: Table Storage holds live battles only; after a
+  successful snapshot the battle grain clears its own and its
+  monsters' state, a failed write keeps it for a replay, and
+  `GET /battles/{id}` falls back to the cold store.
 - ADR **0007** (turn-based interaction model) promoted
   `Proposed` → **`Accepted`**: the round loop, bot
   opponent, deadlines, both game modes and the SignalR
