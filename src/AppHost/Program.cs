@@ -10,14 +10,12 @@ builder.Logging.AddArenaLogging();
 builder.Services.AddArenaTelemetry(builder.Environment);
 
 // The silo shares this process with the web host (ADR-0002).
-// Localhost clustering, in-memory grain storage and in-memory
-// reminders are the Phase 2 shape; Azure Table Storage replaces
-// them in Phase 3/5.
+// Clustering stays on localhost until Phase 5; grain storage and
+// reminders follow the configuration (in-memory or Table Storage).
 builder.UseOrleans(silo =>
 {
     silo.UseLocalhostClustering();
-    silo.AddMemoryGrainStorage("Default");
-    silo.UseInMemoryReminderService();
+    silo.AddArenaStorage(builder.Configuration);
 });
 
 builder.Services

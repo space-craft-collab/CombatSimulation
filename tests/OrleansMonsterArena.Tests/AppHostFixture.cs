@@ -24,10 +24,14 @@ public sealed class AppHostFixture : IAsyncDisposable
     public static readonly TimeSpan TurnDeadline = TimeSpan.FromSeconds(2);
 
     /// <summary>
-    /// The in-memory test host, with the round loop sped up.
+    /// The in-memory test host, with the round loop sped up. The
+    /// Table Storage connection string is blanked so a developer's
+    /// local <c>appsettings.Development.json</c> cannot switch these
+    /// tests onto Azurite.
     /// </summary>
     public WebApplicationFactory<Program> Factory { get; } = new WebApplicationFactory<Program>()
         .WithWebHostBuilder(builder => builder
+            .UseSetting($"ConnectionStrings:{SiloStorageExtensions.TableStorageConnectionName}", string.Empty)
             .UseSetting("Battles:Timing:TurnDeadline", TurnDeadline.ToString())
             .UseSetting("Battles:Timing:JoinDeadline", TurnDeadline.ToString())
             .UseSetting("Battles:Timing:BotRoundInterval", "00:00:00.020"));

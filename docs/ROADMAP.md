@@ -58,22 +58,22 @@ battle crosses from hot to cold in one straight-line call
 
 **Local infrastructure**
 
-- [ ] `docker compose` file with Azurite (Table Storage) and
+- [x] `docker compose` file with Azurite (Table Storage) and
       SQL Server for local runs; connection strings in the
       git-ignored `appsettings.Development.json`, with a
       committed `appsettings.Development.example.json` to
       copy from
-- [ ] Storage providers chosen by configuration: in-memory
+- [x] Storage providers chosen by configuration: in-memory
       stays the default for fast tests and a bare
       `dotnet run`; Azure Table Storage when a connection
       string is present
 
 **Hot path — Orleans on Table Storage**
 
-- [ ] Grain state on Azure Table Storage
+- [x] Grain state on Azure Table Storage
       (`Microsoft.Orleans.Persistence.AzureStorage`) instead of
       `AddMemoryGrainStorage`
-- [ ] Reminders on Table Storage
+- [x] Reminders on Table Storage
       (`Microsoft.Orleans.Reminders.AzureStorage`) instead of
       `UseInMemoryReminderService()`, so a turn or join
       deadline survives a restart

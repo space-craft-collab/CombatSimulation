@@ -18,6 +18,16 @@ and this project adheres to
   species and arenas, player stats, battle snapshots), the
   hot→cold bridge, Testcontainers-backed tests and a
   `docker compose` setup for local runs.
+- `compose.yaml` with Azurite (Table Storage) and SQL Server
+  for local runs, with `.env.example` and
+  `appsettings.Development.example.json` to copy from.
+- Grain state and reminders switch to Azure Table Storage
+  when `ConnectionStrings:TableStorage` is set; in-memory
+  stays the default for tests and a bare `dotnet run`.
+
+#### Changed
+- All Orleans packages aligned on 10.4.2 (the Azure Storage,
+  Client and TestingHost pins were still on 10.3.1).
 
 #### Decided (process)
 - ADR **0007** (turn-based interaction model) promoted

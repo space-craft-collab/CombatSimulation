@@ -16,6 +16,9 @@
     <PackageReference Include="Microsoft.Orleans.Server" />
     <!-- The turn-deadline reminder (ADR-0007); Server does not carry reminders. -->
     <PackageReference Include="Microsoft.Orleans.Reminders" />
+    <!-- Table Storage providers, chosen by configuration (Phase 3). -->
+    <PackageReference Include="Microsoft.Orleans.Persistence.AzureStorage" />
+    <PackageReference Include="Microsoft.Orleans.Reminders.AzureStorage" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +31,8 @@
 
   <ItemGroup>
     <None Update="nlog.config" CopyToOutputDirectory="PreserveNewest" />
+    <!-- A template to copy, never shipped with the build. -->
+    <Content Update="appsettings.Development.example.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
 </Project>
