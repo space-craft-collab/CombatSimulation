@@ -45,7 +45,8 @@ and this project adheres to
   through `SpeciesReadRepository`.
 
 #### Changed
-- SQL Server is now required to run the host. The tests share
+- SQL Server is now required to run the host
+  ([ADR-0011](docs/adr/0011-sql-server-required.md)). The tests share
   one Testcontainers SQL Server, with a database per host; the
   integration trait is renamed `Category=Containers` →
   `Category=Integration`, since every test now uses a container.
@@ -54,6 +55,10 @@ and this project adheres to
   Client and TestingHost pins were still on 10.3.1).
 
 #### Decided (process)
+- ADR **0011** — SQL Server required for the cold path, in
+  tests too: no seed, SQLite or InMemory fallback, so the code
+  path that ships is the one the tests run. **`Accepted`**
+  from the start, since the code already commits to it.
 - ADR **0003** (still `Proposed`) gains the hot-state
   lifetime: Table Storage holds live battles only; after a
   successful snapshot the battle grain clears its own and its

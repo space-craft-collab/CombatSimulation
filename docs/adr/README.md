@@ -19,6 +19,7 @@ new entries.
 | 0008 | [Split the Shared layer: Kernel + Infrastructure](0008-shared-layer-split.md) | Accepted |
 | 0009 | [Per-module internal structure: vertical slices](0009-module-internal-structure.md) | Accepted |
 | 0010 | [Function-delegate test seams instead of test-only interfaces](0010-delegate-test-seams.md) | Proposed |
+| 0011 | [Require SQL Server for the cold path, in tests too](0011-sql-server-required.md) | Accepted |
 
 ## Diagrams
 

@@ -68,6 +68,7 @@ battle crosses from hot to cold in one straight-line call
       `dotnet run`; Azure Table Storage when a connection
       string is present. SQL Server, in contrast, is required:
       the tests share one Testcontainers SQL Server
+      ([ADR-0011](adr/0011-sql-server-required.md))
 
 **Hot path — Orleans on Table Storage**
 
