@@ -4,15 +4,28 @@ using Catalog.Infrastructure;
 namespace Catalog.Features.QuerySpecies;
 
 /// <summary>
-/// Serves <see cref="ICatalogQueryService"/> from the Phase 2 species seed.
+/// Serves <see cref="ICatalogQueryService"/> from the species table.
 /// </summary>
-internal sealed class CatalogQueryService : ICatalogQueryService
+/// <param name="species">Reads the species table.</param>
+internal sealed class CatalogQueryService(SpeciesReadRepository species) : ICatalogQueryService
 {
     /// <inheritdoc />
-    public Task<MonsterSpeciesDto?> FindSpeciesAsync(string speciesId, CancellationToken cancellationToken = default)
+    public async Task<MonsterSpeciesDto?> FindSpeciesAsync(
+        string speciesId,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(speciesId);
 
-        return Task.FromResult(SpeciesSeed.All.GetValueOrDefault(speciesId));
+        var found = await species.FindAsync(speciesId, cancellationToken);
+
+        return found is null
+            ? null
+            : new MonsterSpeciesDto(
+                found.Id,
+                found.Name,
+                found.MaxHitPoints,
+                found.Attack,
+                found.Defense,
+                found.Speed);
     }
 }

@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using Battles.Features.GetBattle;
 using Battles.Grains.Abstractions;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace OrleansMonsterArena.Tests;
@@ -10,9 +11,10 @@ namespace OrleansMonsterArena.Tests;
 /// Storage: its state, its round and its pending turn deadline.
 /// </summary>
 /// <param name="azurite">The Table Storage both hosts share.</param>
-[Collection(ContainersCollectionDefinition.Name)]
-[Trait("Category", TestCategories.Containers)]
-public sealed class HostRestartTests(AzuriteFixture azurite) : IClassFixture<AzuriteFixture>
+/// <param name="sql">The SQL Server both hosts share.</param>
+[Collection(IntegrationCollectionDefinition.Name)]
+[Trait("Category", TestCategories.Integration)]
+public sealed class HostRestartTests(AzuriteFixture azurite, SqlServerFixture sql) : IClassFixture<AzuriteFixture>
 {
     // Long enough that the deadline cannot pass while the first host
     // shuts down and the second one boots.
@@ -25,7 +27,7 @@ public sealed class HostRestartTests(AzuriteFixture azurite) : IClassFixture<Azu
     {
         // Arrange: play one round on the first host, then shut it down.
         BattleResponse beforeRestart;
-        await using (var first = AppHostFixture.CreateFactory(azurite.ConnectionString, Deadline))
+        await using (var first = CreateFactory())
         {
             using var client = first.CreateClient();
             var battle = await StartAsync(client);
@@ -33,7 +35,7 @@ public sealed class HostRestartTests(AzuriteFixture azurite) : IClassFixture<Azu
         }
 
         // Act
-        await using var second = AppHostFixture.CreateFactory(azurite.ConnectionString, Deadline);
+        await using var second = CreateFactory();
         using var restartedClient = second.CreateClient();
         var afterRestart = await GetAsync(restartedClient, beforeRestart.BattleId);
 
@@ -49,6 +51,9 @@ public sealed class HostRestartTests(AzuriteFixture azurite) : IClassFixture<Azu
         var final = await WaitForCompletionAsync(restartedClient, afterRestart.BattleId);
         Assert.Null(final.WinnerId);
     }
+
+    private WebApplicationFactory<Program> CreateFactory() =>
+        AppHostFixture.CreateFactory(sql.ConnectionStringFor("HostRestartTests"), azurite.ConnectionString, Deadline);
 
     private static async Task<BattleResponse> StartAsync(HttpClient client)
     {

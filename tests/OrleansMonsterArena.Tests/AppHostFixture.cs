@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Shared.Infrastructure.Persistence;
 using Xunit;
 
 namespace OrleansMonsterArena.Tests;
@@ -9,7 +10,8 @@ namespace OrleansMonsterArena.Tests;
 /// The co-hosted silo (ADR-0002) binds fixed localhost ports, so
 /// only one host may be up at a time.
 /// </summary>
-public sealed class AppHostFixture : IAsyncDisposable
+/// <param name="sql">The SQL Server the cold path runs on.</param>
+public sealed class AppHostFixture(SqlServerFixture sql) : IAsyncDisposable
 {
     /// <summary>
     /// The collection name referenced by <c>[Collection]</c>.
@@ -24,23 +26,27 @@ public sealed class AppHostFixture : IAsyncDisposable
     public static readonly TimeSpan TurnDeadline = TimeSpan.FromSeconds(2);
 
     /// <summary>
-    /// The in-memory test host, with the round loop sped up. The
-    /// Table Storage connection string is blanked so a developer's
-    /// local <c>appsettings.Development.json</c> cannot switch these
-    /// tests onto Azurite.
+    /// The shared test host, with the round loop sped up: grain
+    /// state and reminders in memory, the cold path on its own
+    /// database. The Table Storage connection string is blanked so a
+    /// developer's local <c>appsettings.Development.json</c> cannot
+    /// switch these tests onto Azurite.
     /// </summary>
-    public WebApplicationFactory<Program> Factory { get; } = CreateFactory(string.Empty, TurnDeadline);
+    public WebApplicationFactory<Program> Factory { get; } =
+        CreateFactory(sql.ConnectionStringFor("AppHostTests"), string.Empty, TurnDeadline);
 
     /// <summary>
     /// Builds a test host with the round loop sped up.
     /// </summary>
+    /// <param name="sql">The cold-path SQL Server connection string.</param>
     /// <param name="tableStorage">The Table Storage connection string;
     /// empty keeps grain storage and reminders in memory.</param>
     /// <param name="deadline">The turn and join deadline.</param>
     /// <returns>A host factory that boots on first use.</returns>
-    public static WebApplicationFactory<Program> CreateFactory(string tableStorage, TimeSpan deadline) =>
+    public static WebApplicationFactory<Program> CreateFactory(string sql, string tableStorage, TimeSpan deadline) =>
         new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder => builder
+                .UseSetting($"ConnectionStrings:{ModuleDatabaseExtensions.ConnectionName}", sql)
                 .UseSetting($"ConnectionStrings:{SiloStorageExtensions.TableStorageConnectionName}", tableStorage)
                 .UseSetting("Battles:Timing:TurnDeadline", deadline.ToString())
                 .UseSetting("Battles:Timing:JoinDeadline", deadline.ToString())

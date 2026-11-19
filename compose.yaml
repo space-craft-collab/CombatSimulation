@@ -6,7 +6,9 @@
 #   docker compose up -d
 #   dotnet run --project src/AppHost
 #
-# Without these steps the host still runs on in-memory storage.
+# SQL Server is required: the Catalog and the other cold-path
+# stores live there. Without Azurite, grain state and reminders
+# fall back to memory.
 # Ports bind to localhost only.
 
 name: orleans-monster-arena

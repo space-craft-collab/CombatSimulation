@@ -16,4 +16,9 @@
     <ProjectReference Include="..\Catalog.Contracts\Catalog.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Design-time only: lets `dotnet ef` build migrations here. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+
 </Project>

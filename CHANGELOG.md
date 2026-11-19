@@ -35,8 +35,20 @@ and this project adheres to
 - CI `integration` job for the `Category=Containers` tests;
   it runs after `build-test`, which now skips them, and is
   not a required check.
+- EF Core base in `Shared.Infrastructure`: `ModuleDbContext`
+  (one schema per module), `AddModuleDatabase<T>` over a
+  context factory, per-schema migrations history, and pending
+  migrations applied on startup in Development. `dotnet-ef`
+  pinned as a local tool.
+- Catalog species in SQL (`catalog.Species`), seeded through
+  the `InitialCatalog` migration; `ICatalogQueryService` reads
+  through `SpeciesReadRepository`.
 
 #### Changed
+- SQL Server is now required to run the host. The tests share
+  one Testcontainers SQL Server, with a database per host; the
+  integration trait is renamed `Category=Containers` →
+  `Category=Integration`, since every test now uses a container.
 - Testcontainers pins 4.0.0 → 4.17.0.
 - All Orleans packages aligned on 10.4.2 (the Azure Storage,
   Client and TestingHost pins were still on 10.3.1).

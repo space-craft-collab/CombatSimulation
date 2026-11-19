@@ -13,8 +13,18 @@ backend, with a **SvelteKit** frontend.
 
 Phase 3 — Persistence (hot/cold) (in progress).
 Phase 2 is done: battles run through co-hosted
-Orleans grains, still with in-memory state.
-See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Orleans grains. Phase 3 moves grain state to Table
+Storage and the Catalog into SQL Server through
+EF Core. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+To run the host locally, start the infrastructure
+first (Docker; the steps are in
+[`compose.yaml`](compose.yaml)):
+
+```bash
+docker compose up -d
+dotnet run --project src/AppHost
+```
 
 A battle against the bot is already playable over HTTP:
 

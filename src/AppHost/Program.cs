@@ -2,6 +2,7 @@ using Battles;
 using Catalog;
 using Players;
 using Shared.Infrastructure.Logging;
+using Shared.Infrastructure.Persistence;
 using Shared.Infrastructure.Telemetry;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,7 +34,15 @@ app.MapPlayersEndpoints();
 
 app.MapHealthChecks("/health");
 
-app.Run();
+// Development (and the tests) bring every module schema up to date
+// before the silo serves the first grain; deployments apply a
+// migration bundle instead.
+if (app.Environment.IsDevelopment())
+{
+    await app.Services.MigrateModuleDatabasesAsync();
+}
+
+await app.RunAsync();
 
 /// <summary>
 /// Partial marker that makes the implicit entry-point class

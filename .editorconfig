@@ -200,3 +200,12 @@ dotnet_naming_rule.constants_pascal.style = pascal_case
 dotnet_naming_rule.locals_camel.severity = warning
 dotnet_naming_rule.locals_camel.symbols = locals_and_parameters
 dotnet_naming_rule.locals_camel.style = camel_case
+
+###############################################################################
+# EF Core migrations — scaffolded by `dotnet ef`, never hand-edited.
+# Treat them as generated so the analyzers and code-style rules
+# above do not fight the tool's output.
+###############################################################################
+
+[**/Migrations/*.cs]
+generated_code = true

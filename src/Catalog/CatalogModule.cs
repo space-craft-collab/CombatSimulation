@@ -1,7 +1,9 @@
 using Catalog.Contracts;
 using Catalog.Features.QuerySpecies;
+using Catalog.Infrastructure;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Shared.Infrastructure.Persistence;
 
 namespace Catalog;
 
@@ -12,7 +14,8 @@ namespace Catalog;
 public static class CatalogModule
 {
     /// <summary>
-    /// Registers the Catalog module's services.
+    /// Registers the Catalog module's services and its database in
+    /// the <c>catalog</c> schema.
     /// </summary>
     /// <param name="services">The service collection to register into.</param>
     /// <returns>The same service collection for chaining.</returns>
@@ -20,6 +23,8 @@ public static class CatalogModule
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddModuleDatabase<CatalogDbContext>(CatalogDbContext.SchemaName);
+        services.AddSingleton<SpeciesReadRepository>();
         services.AddSingleton<ICatalogQueryService, CatalogQueryService>();
 
         return services;

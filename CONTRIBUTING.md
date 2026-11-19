@@ -31,14 +31,17 @@ Tests use xUnit v3, whose test projects are
 self-hosting executables — run them with
 `dotnet run`, not `dotnet test`.
 
-Tests with the trait `Category=Containers` start
-Docker containers through Testcontainers, so they
-need a running Docker daemon. To skip them, or to
-run only them, as the CI jobs do:
+The tests need a running Docker daemon: one SQL
+Server container (Testcontainers) serves the whole
+run, since the host does not start without its
+cold-path database. Tests with the trait
+`Category=Integration` are slow end-to-end scenarios
+that start further containers of their own. To skip
+them, or to run only them, as the CI jobs do:
 
 ```bash
-dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests -- -trait- "Category=Containers"
-dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests -- -trait "Category=Containers"
+dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests -- -trait- "Category=Integration"
+dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests -- -trait "Category=Integration"
 ```
 
 The SDK version is pinned in `global.json`.
@@ -86,6 +89,24 @@ readable, so these values are **frozen**:
 
 `StoredFormatTests` pins the enum values and grain
 types.
+
+## Database migrations
+
+Each module owns a `DbContext` in its own SQL
+schema, with its migrations in
+`Infrastructure/Migrations` and its own history
+table. The host applies pending migrations on
+startup in Development. To add one (the `dotnet-ef`
+version is pinned in `.config/dotnet-tools.json`):
+
+```bash
+dotnet tool restore
+dotnet ef migrations add <Name> --project src/Catalog \
+  --startup-project src/Catalog --output-dir Infrastructure/Migrations
+```
+
+Never edit a migration that is already on `main`;
+add a new one instead.
 
 ## Architecture changes
 

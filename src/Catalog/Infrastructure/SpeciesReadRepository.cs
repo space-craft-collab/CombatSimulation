@@ -1,0 +1,27 @@
+using Catalog.Domain;
+using Microsoft.EntityFrameworkCore;
+
+namespace Catalog.Infrastructure;
+
+/// <summary>
+/// Read side of the species table. Every call uses its own
+/// short-lived, non-tracking context.
+/// </summary>
+/// <param name="contexts">Creates the Catalog contexts.</param>
+internal sealed class SpeciesReadRepository(IDbContextFactory<CatalogDbContext> contexts)
+{
+    /// <summary>
+    /// Looks up a species by id.
+    /// </summary>
+    /// <param name="speciesId">The species id.</param>
+    /// <param name="cancellationToken">Cancels the query.</param>
+    /// <returns>The species, or <see langword="null"/> if it does not exist.</returns>
+    public async Task<MonsterSpecies?> FindAsync(string speciesId, CancellationToken cancellationToken)
+    {
+        await using var context = await contexts.CreateDbContextAsync(cancellationToken);
+
+        return await context.Species
+            .AsNoTracking()
+            .SingleOrDefaultAsync(species => species.Id == speciesId, cancellationToken);
+    }
+}

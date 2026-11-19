@@ -6,9 +6,10 @@ namespace OrleansMonsterArena.Tests;
 internal static class TestCategories
 {
     /// <summary>
-    /// Tests that start Docker containers through Testcontainers.
-    /// The required <c>build-test</c> job skips them; the
-    /// <c>integration</c> job runs only them.
+    /// Slow end-to-end scenarios (host restarts, the hot → cold
+    /// bridge) that start containers of their own on top of the
+    /// shared SQL Server. The required <c>build-test</c> job skips
+    /// them; the <c>integration</c> job runs only them.
     /// </summary>
-    public const string Containers = "Containers";
+    public const string Integration = "Integration";
 }

@@ -66,7 +66,8 @@ battle crosses from hot to cold in one straight-line call
 - [x] Storage providers chosen by configuration: in-memory
       stays the default for fast tests and a bare
       `dotnet run`; Azure Table Storage when a connection
-      string is present
+      string is present. SQL Server, in contrast, is required:
+      the tests share one Testcontainers SQL Server
 
 **Hot path — Orleans on Table Storage**
 
@@ -86,14 +87,15 @@ battle crosses from hot to cold in one straight-line call
 
 **Cold path — EF Core**
 
-- [ ] EF Core base wiring in `Shared.Infrastructure`
+- [x] EF Core base wiring in `Shared.Infrastructure`
       ([ADR-0008](adr/0008-shared-layer-split.md)); one
       `DbContext` **per module**, each in its own SQL schema
       (`catalog`, `battles`, `players`) — no shared context
       ([ADR-0001](adr/0001-modular-monolith.md))
 - [ ] Migrations per module; applied on startup in
       Development, a migration bundle for deployments
-- [ ] **Catalog:** species move from the hard-coded
+      (startup part done; the bundle follows with a deployment)
+- [x] **Catalog:** species move from the hard-coded
       `SpeciesSeed` into SQL (seeded through a migration);
       `ICatalogQueryService` reads through a read repository
 - [ ] **Catalog arenas:** arena entity (name, optional rules)
@@ -145,7 +147,7 @@ battle crosses from hot to cold in one straight-line call
 
 - [x] CI runs the Testcontainers suites (Docker is available
       on the GitHub runners) in a separate `integration` job:
-      container tests carry a trait (e.g. `Category=Containers`)
+      integration tests carry a trait (`Category=Integration`)
       that the required `build-test` job filters out, so the
       required check stays fast; `integration` runs only after
       `build-test` passes (`needs: build-test`) and is not a
