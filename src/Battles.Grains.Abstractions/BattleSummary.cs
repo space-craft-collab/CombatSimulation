@@ -9,6 +9,7 @@ namespace Battles.Grains.Abstractions;
 /// <param name="Status">The battle's lifecycle state.</param>
 /// <param name="ParticipantIds">The sides that have joined so far, in join order.</param>
 [GenerateSerializer]
+[Alias("battles.BattleSummary")]
 public sealed record BattleSummary(
     [property: Id(0)] Guid BattleId,
     [property: Id(1)] BattleStatus Status,

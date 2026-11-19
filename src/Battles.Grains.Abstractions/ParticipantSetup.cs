@@ -9,6 +9,7 @@ namespace Battles.Grains.Abstractions;
 /// <param name="IsBot">Whether the participant is driven by a bot.</param>
 /// <param name="MonsterSpeciesIds">The Catalog species of each fielded monster, in slot order.</param>
 [GenerateSerializer]
+[Alias("battles.ParticipantSetup")]
 public sealed record ParticipantSetup(
     [property: Id(0)] string ParticipantId,
     [property: Id(1)] bool IsBot,

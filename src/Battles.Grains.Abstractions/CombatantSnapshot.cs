@@ -11,6 +11,7 @@ namespace Battles.Grains.Abstractions;
 /// <param name="HitPoints">Remaining hit points.</param>
 /// <param name="MaxHitPoints">Hit points at full health.</param>
 [GenerateSerializer]
+[Alias("battles.CombatantSnapshot")]
 public sealed record CombatantSnapshot(
     [property: Id(0)] int Slot,
     [property: Id(1)] string ParticipantId,

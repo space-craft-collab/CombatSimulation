@@ -8,6 +8,10 @@ namespace Battles.Grains;
 /// monster's hit points for the length of a battle.
 /// </summary>
 /// <param name="state">The monster's persistent state.</param>
+// Pinned to the name Orleans would derive anyway: the grain type is part
+// of every stored state and reminder key, so a class rename must not
+// change it.
+[GrainType("monsterinstance")]
 internal sealed class MonsterInstanceGrain(
     [PersistentState("monster")] IPersistentState<MonsterInstanceState> state)
     : Grain, IMonsterInstanceGrain

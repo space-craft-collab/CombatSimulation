@@ -9,6 +9,7 @@ namespace Battles.Grains.Abstractions;
 /// <param name="Defense">Damage reduction.</param>
 /// <param name="Speed">Decides turn order within a round.</param>
 [GenerateSerializer]
+[Alias("battles.MonsterStats")]
 public sealed record MonsterStats(
     [property: Id(0)] string SpeciesId,
     [property: Id(1)] int MaxHitPoints,

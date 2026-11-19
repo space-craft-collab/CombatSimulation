@@ -24,6 +24,10 @@ namespace Battles.Grains;
 /// <param name="timing">The round loop's pacing.</param>
 /// <param name="clock">Source of the current time for the turn deadline.</param>
 /// <param name="events">Sends the round deltas to the battle's watchers.</param>
+// Pinned to the name Orleans would derive anyway: the grain type is part
+// of every stored state and reminder key, so a class rename must not
+// change it.
+[GrainType("livebattle")]
 internal sealed class LiveBattleGrain(
     [PersistentState("battle")] IPersistentState<LiveBattleState> state,
     ICatalogQueryService catalog,

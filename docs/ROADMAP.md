@@ -77,9 +77,10 @@ battle crosses from hot to cold in one straight-line call
       (`Microsoft.Orleans.Reminders.AzureStorage`) instead of
       `UseInMemoryReminderService()`, so a turn or join
       deadline survives a restart
-- [ ] Grain state is now a stored format: freeze the `[Id]`
+- [x] Grain state is now a stored format: freeze the `[Id]`
       numbers and enum values (`BattleStatus`) from here on,
-      and note the rule in `CONTRIBUTING.md`
+      and note the rule in `CONTRIBUTING.md`; type `[Alias]`es
+      and `[GrainType]` names are pinned as well
 - [ ] Test: a battle survives a host restart — state, round
       and a pending deadline (Testcontainers Azurite)
 

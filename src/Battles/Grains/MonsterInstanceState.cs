@@ -6,6 +6,7 @@ namespace Battles.Grains;
 /// Persistent state of <see cref="MonsterInstanceGrain"/>.
 /// </summary>
 [GenerateSerializer]
+[Alias("battles.MonsterInstanceState")]
 internal sealed class MonsterInstanceState
 {
     /// <summary>

@@ -4,6 +4,7 @@ namespace Battles.Grains;
 /// Persistent state of <see cref="ArenaGrain"/>.
 /// </summary>
 [GenerateSerializer]
+[Alias("battles.ArenaState")]
 internal sealed class ArenaState
 {
     /// <summary>

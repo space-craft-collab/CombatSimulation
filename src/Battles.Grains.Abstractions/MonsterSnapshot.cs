@@ -7,6 +7,7 @@ namespace Battles.Grains.Abstractions;
 /// <param name="HitPoints">Remaining hit points.</param>
 /// <param name="MaxHitPoints">Hit points at full health.</param>
 [GenerateSerializer]
+[Alias("battles.MonsterSnapshot")]
 public sealed record MonsterSnapshot(
     [property: Id(0)] string SpeciesId,
     [property: Id(1)] int HitPoints,

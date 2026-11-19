@@ -24,6 +24,11 @@ and this project adheres to
 - Grain state and reminders switch to Azure Table Storage
   when `ConnectionStrings:TableStorage` is set; in-memory
   stays the default for tests and a bare `dotnet run`.
+- Stored grain format frozen: `[Alias]` on every serializable
+  grain type, explicit `BattleStatus` values, `[GrainType]`
+  pinned on the three grains (same names Orleans derived
+  before, so existing data stays readable); rules in
+  `CONTRIBUTING.md`, guarded by `StoredFormatTests`.
 
 #### Changed
 - All Orleans packages aligned on 10.4.2 (the Azure Storage,

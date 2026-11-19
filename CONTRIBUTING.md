@@ -52,6 +52,31 @@ standard, not just an AI prompt. Highlights:
 Warnings are errors. `dotnet build` must be clean
 before you push.
 
+## Grain state is a stored format
+
+Grain state is persisted in Table Storage with the
+Orleans binary serializer, which knows members only
+by their `[Id]` number. Existing data must stay
+readable, so these values are **frozen**:
+
+- **`[Id(n)]` numbers** on `[GenerateSerializer]`
+  types: never renumber, never reuse. A new member
+  takes the next free number; a removed member's
+  number stays retired (leave a comment).
+- **Enum values** stored in state (`BattleStatus`)
+  carry explicit numbers. Never renumber; add new
+  members at the end with the next number.
+- **`[Alias("...")]`** on every serializable type
+  keeps its identity independent of the CLR name, so
+  a type may be renamed or moved, but the alias
+  string never changes.
+- **`[GrainType("...")]`** on every grain class
+  keys its stored state and reminders. Never change
+  it, even when the class is renamed.
+
+`StoredFormatTests` pins the enum values and grain
+types.
+
 ## Architecture changes
 
 Anything that changes structure needs an ADR in

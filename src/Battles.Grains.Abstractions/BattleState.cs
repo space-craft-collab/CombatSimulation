@@ -18,6 +18,7 @@ namespace Battles.Grains.Abstractions;
 /// <param name="Combatants">Every monster slot in slot order, defeated ones included. While waiting
 /// for players, only the sides that have joined.</param>
 [GenerateSerializer]
+[Alias("battles.BattleState")]
 public sealed record BattleState(
     [property: Id(0)] Guid BattleId,
     [property: Id(1)] string ArenaId,

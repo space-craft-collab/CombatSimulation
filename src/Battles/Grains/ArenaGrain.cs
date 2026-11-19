@@ -10,6 +10,10 @@ namespace Battles.Grains;
 /// sits on the round path, so a busy battle does not block the arena.
 /// </summary>
 /// <param name="state">The arena's persistent state.</param>
+// Pinned to the name Orleans would derive anyway: the grain type is part
+// of every stored state and reminder key, so a class rename must not
+// change it.
+[GrainType("arena")]
 internal sealed class ArenaGrain(
     [PersistentState("arena")] IPersistentState<ArenaState> state)
     : Grain, IArenaGrain

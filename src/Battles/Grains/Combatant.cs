@@ -7,6 +7,7 @@ namespace Battles.Grains;
 /// the bot can decide without extra grain calls.
 /// </summary>
 [GenerateSerializer]
+[Alias("battles.Combatant")]
 internal sealed class Combatant
 {
     [Id(0)]
