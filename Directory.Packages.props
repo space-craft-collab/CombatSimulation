@@ -67,7 +67,7 @@
     <PackageVersion Include="Testcontainers" Version="4.17.0" />
     <PackageVersion Include="Testcontainers.MsSql" Version="4.17.0" />
     <PackageVersion Include="Testcontainers.Azurite" Version="4.17.0" />
-    <PackageVersion Include="coverlet.collector" Version="10.1.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.1.1" />
   </ItemGroup>
 
 </Project>
