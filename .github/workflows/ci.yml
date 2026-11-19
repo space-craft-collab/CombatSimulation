@@ -33,5 +33,34 @@ jobs:
 
       # xUnit v3 test projects are executables; run them
       # directly instead of going through dotnet test/VSTest.
+      # Container tests run in the integration job instead, so
+      # this required check stays fast.
       - name: Test
-        run: dotnet run --no-build --configuration Release --project tests/OrleansMonsterArena.Tests
+        run: >-
+          dotnet run --no-build --configuration Release
+          --project tests/OrleansMonsterArena.Tests
+          -- -trait- "Category=Containers"
+
+  # Testcontainers suites (Docker is preinstalled on the runner).
+  # Runs only after build-test passes and is not a required check.
+  integration:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test (containers)
+        run: >-
+          dotnet run --no-build --configuration Release
+          --project tests/OrleansMonsterArena.Tests
+          -- -trait "Category=Containers"

@@ -2,7 +2,8 @@
 
   <!--
     Test project (xUnit v3): host + silo smoke tests plus the
-    NetArchTest layering guard from ADR-0009.
+    NetArchTest layering guard from ADR-0009, and Testcontainers
+    suites (trait Category=Containers) for the persistence path.
   -->
 
   <PropertyGroup>
@@ -16,6 +17,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="Testcontainers.Azurite" />
     <PackageReference Include="coverlet.collector" />
   </ItemGroup>
 

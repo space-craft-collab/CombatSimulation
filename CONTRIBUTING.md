@@ -31,6 +31,16 @@ Tests use xUnit v3, whose test projects are
 self-hosting executables — run them with
 `dotnet run`, not `dotnet test`.
 
+Tests with the trait `Category=Containers` start
+Docker containers through Testcontainers, so they
+need a running Docker daemon. To skip them, or to
+run only them, as the CI jobs do:
+
+```bash
+dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests -- -trait- "Category=Containers"
+dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests -- -trait "Category=Containers"
+```
+
 The SDK version is pinned in `global.json`.
 
 ## Ground rules for code

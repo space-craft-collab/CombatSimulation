@@ -29,12 +29,22 @@ public sealed class AppHostFixture : IAsyncDisposable
     /// local <c>appsettings.Development.json</c> cannot switch these
     /// tests onto Azurite.
     /// </summary>
-    public WebApplicationFactory<Program> Factory { get; } = new WebApplicationFactory<Program>()
-        .WithWebHostBuilder(builder => builder
-            .UseSetting($"ConnectionStrings:{SiloStorageExtensions.TableStorageConnectionName}", string.Empty)
-            .UseSetting("Battles:Timing:TurnDeadline", TurnDeadline.ToString())
-            .UseSetting("Battles:Timing:JoinDeadline", TurnDeadline.ToString())
-            .UseSetting("Battles:Timing:BotRoundInterval", "00:00:00.020"));
+    public WebApplicationFactory<Program> Factory { get; } = CreateFactory(string.Empty, TurnDeadline);
+
+    /// <summary>
+    /// Builds a test host with the round loop sped up.
+    /// </summary>
+    /// <param name="tableStorage">The Table Storage connection string;
+    /// empty keeps grain storage and reminders in memory.</param>
+    /// <param name="deadline">The turn and join deadline.</param>
+    /// <returns>A host factory that boots on first use.</returns>
+    public static WebApplicationFactory<Program> CreateFactory(string tableStorage, TimeSpan deadline) =>
+        new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder => builder
+                .UseSetting($"ConnectionStrings:{SiloStorageExtensions.TableStorageConnectionName}", tableStorage)
+                .UseSetting("Battles:Timing:TurnDeadline", deadline.ToString())
+                .UseSetting("Battles:Timing:JoinDeadline", deadline.ToString())
+                .UseSetting("Battles:Timing:BotRoundInterval", "00:00:00.020"));
 
     /// <summary>
     /// Shuts the host — and with it the silo — back down.

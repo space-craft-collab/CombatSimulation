@@ -29,8 +29,15 @@ and this project adheres to
   pinned on the three grains (same names Orleans derived
   before, so existing data stays readable); rules in
   `CONTRIBUTING.md`, guarded by `StoredFormatTests`.
+- Host restart test on Testcontainers Azurite: a live battle
+  keeps its state, round and pending turn deadline across a
+  restart, and the deadline reminder fires on the new host.
+- CI `integration` job for the `Category=Containers` tests;
+  it runs after `build-test`, which now skips them, and is
+  not a required check.
 
 #### Changed
+- Testcontainers pins 4.0.0 → 4.17.0.
 - All Orleans packages aligned on 10.4.2 (the Azure Storage,
   Client and TestingHost pins were still on 10.3.1).
 

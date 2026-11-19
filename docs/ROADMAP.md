@@ -81,7 +81,7 @@ battle crosses from hot to cold in one straight-line call
       numbers and enum values (`BattleStatus`) from here on,
       and note the rule in `CONTRIBUTING.md`; type `[Alias]`es
       and `[GrainType]` names are pinned as well
-- [ ] Test: a battle survives a host restart — state, round
+- [x] Test: a battle survives a host restart — state, round
       and a pending deadline (Testcontainers Azurite)
 
 **Cold path — EF Core**
@@ -143,7 +143,7 @@ battle crosses from hot to cold in one straight-line call
 
 **Wrap-up**
 
-- [ ] CI runs the Testcontainers suites (Docker is available
+- [x] CI runs the Testcontainers suites (Docker is available
       on the GitHub runners) in a separate `integration` job:
       container tests carry a trait (e.g. `Category=Containers`)
       that the required `build-test` job filters out, so the
