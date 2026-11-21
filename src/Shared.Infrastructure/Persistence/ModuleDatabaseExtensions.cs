@@ -18,12 +18,17 @@ public static class ModuleDatabaseExtensions
     /// </summary>
     public const string ConnectionName = "Sql";
 
+    // A readiness probe has to answer quickly; SQL Server's own
+    // connect timeout is 15 seconds.
+    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(5);
+
     /// <summary>
     /// Registers an <see cref="IDbContextFactory{TContext}"/> for a
-    /// module context on SQL Server, and its migration for
-    /// <see cref="MigrateModuleDatabasesAsync"/>. Callers create a
-    /// short-lived context per unit of work, so the factory is safe
-    /// to use from singletons and grains.
+    /// module context on SQL Server, its migration for
+    /// <see cref="MigrateModuleDatabasesAsync"/> and a health check
+    /// named <c>sql-&lt;schema&gt;</c>. Callers create a short-lived
+    /// context per unit of work, so the factory is safe to use from
+    /// singletons and grains.
     /// </summary>
     /// <typeparam name="TContext">The module's context.</typeparam>
     /// <param name="services">The service collection to register into.</param>
@@ -44,6 +49,9 @@ public static class ModuleDatabaseExtensions
             await using var context = await factory.CreateDbContextAsync(cancellationToken);
             await context.Database.MigrateAsync(cancellationToken);
         }));
+
+        services.AddHealthChecks()
+            .AddCheck<ModuleDatabaseHealthCheck<TContext>>($"sql-{schema}", timeout: HealthCheckTimeout);
 
         return services;
     }
