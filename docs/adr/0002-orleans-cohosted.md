@@ -45,7 +45,15 @@ to multiple silos in Phase 5.
     replicas once Phase 5 lands.
 - **Neutral / follow-ups:**
   - Cluster membership provider is Azure Table Storage (see
-    Phase 3 / 5 work).
+    Phase 3 / 5 work). Grain state and reminders use the same
+    account: grain state is key-value, so Table Storage fits
+    without schema or migrations, and the hot path adds no
+    store beyond the one membership needs once Phase 5 runs
+    several silos (until then, clustering is localhost). Without a
+    connection string, both fall back to Orleans' in-memory
+    providers ([ADR-0011]). Keeping hot state out of the
+    cold-path SQL database has a price: no transaction spans
+    both stores ([ADR-0003]).
   - The `Battles` module is the only module that holds the
     `IClusterClient`; other modules never see Orleans types
     directly ([ADR-0005]).
@@ -67,5 +75,7 @@ to multiple silos in Phase 5.
 - [ADR-0001]: Modular monolith
 
 [ADR-0001]: 0001-modular-monolith.md
+[ADR-0003]: 0003-no-outbox.md
 [ADR-0005]: 0005-inter-module-services.md
 [ADR-0007]: 0007-turn-based.md
+[ADR-0011]: 0011-sql-server-required.md
