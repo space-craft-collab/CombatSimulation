@@ -15,6 +15,8 @@ namespace OrleansMonsterArena.Tests;
 [Collection(AppHostFixture.CollectionName)]
 public sealed class OpenBattleEndpointTests(AppHostFixture host)
 {
+    private static readonly string[] CrabTeam = ["lava-crab"];
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private static Uri Participants(Guid battleId) => new($"/battles/{battleId}/participants", UriKind.Relative);
@@ -215,7 +217,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     private static async Task<BattleResponse> OpenAsync(HttpClient client, Uri arena)
     {
         using var response = await client.PostAsJsonAsync(
-            arena, new { playerId = "player-1", monsterSpeciesIds = new[] { "lava-crab" }, opponent = "Human" }, Cancellation);
+            arena, new { playerId = "player-1", monsterSpeciesIds = CrabTeam, opponent = "Human" }, Cancellation);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
         return await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation)

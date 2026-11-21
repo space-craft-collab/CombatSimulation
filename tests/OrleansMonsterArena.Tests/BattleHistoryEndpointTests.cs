@@ -17,6 +17,8 @@ namespace OrleansMonsterArena.Tests;
 [Collection(AppHostFixture.CollectionName)]
 public sealed class BattleHistoryEndpointTests(AppHostFixture host)
 {
+    private static readonly string[] FoxTeam = ["ember-fox"];
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -110,7 +112,7 @@ public sealed class BattleHistoryEndpointTests(AppHostFixture host)
     {
         using var response = await client.PostAsJsonAsync(
             TestArenas.VolcanoBattles,
-            new { playerId = player, monsterSpeciesIds = new[] { "ember-fox" } },
+            new { playerId = player, monsterSpeciesIds = FoxTeam },
             Cancellation);
         response.EnsureSuccessStatusCode();
 

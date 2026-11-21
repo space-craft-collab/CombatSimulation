@@ -20,6 +20,8 @@ public sealed class BattleHubTests(AppHostFixture host)
 {
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
 
+    private static readonly string[] CrabTeam = ["lava-crab"];
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -159,7 +161,7 @@ public sealed class BattleHubTests(AppHostFixture host)
         using var client = host.Factory.CreateClient();
         using var opened = await client.PostAsJsonAsync(
             TestArenas.VolcanoBattles,
-            new { playerId = "player-1", monsterSpeciesIds = new[] { "lava-crab" }, opponent = "Human" },
+            new { playerId = "player-1", monsterSpeciesIds = CrabTeam, opponent = "Human" },
             Cancellation);
         var battle = await opened.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
         Assert.NotNull(battle);
