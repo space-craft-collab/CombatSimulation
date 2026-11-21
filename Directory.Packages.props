@@ -43,9 +43,9 @@
   </ItemGroup>
 
   <ItemGroup Label="Logging (NLog)">
-    <PackageVersion Include="NLog" Version="5.3.4" />
-    <PackageVersion Include="NLog.Extensions.Logging" Version="5.3.15" />
-    <PackageVersion Include="NLog.Web.AspNetCore" Version="5.3.15" />
+    <PackageVersion Include="NLog" Version="6.2.2" />
+    <PackageVersion Include="NLog.Extensions.Logging" Version="6.3.0" />
+    <PackageVersion Include="NLog.Web.AspNetCore" Version="6.3.0" />
   </ItemGroup>
 
   <ItemGroup Label="OpenTelemetry">

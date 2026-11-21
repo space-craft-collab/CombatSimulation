@@ -17,6 +17,9 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "Microsoft.Extensions.*"
         update-types: ["version-update:semver-major"]
+      # The EF CLI tool (.config/dotnet-tools.json) follows EF Core.
+      - dependency-name: "dotnet-ef"
+        update-types: ["version-update:semver-major"]
     groups:
       orleans:
         patterns: ["Microsoft.Orleans.*"]
@@ -27,6 +30,10 @@ updates:
           - "Microsoft.Extensions.*"
       opentelemetry:
         patterns: ["OpenTelemetry*"]
+      # NLog.Extensions.Logging pulls a matching NLog core; with
+      # transitive pinning they must move together.
+      nlog:
+        patterns: ["NLog*"]
       testing:
         patterns:
           - "xunit*"
