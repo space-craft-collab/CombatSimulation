@@ -16,6 +16,32 @@ in [this file's history][full-changelog].
 
 ## [Unreleased]
 
+### Phase 4 — Frontend (in progress)
+
+#### Added
+- ROADMAP Phase 4 checklist: the container-only toolchain
+  and the adapter spike, the backend pieces the frontend
+  needs (OpenAPI document, `GET /species`, Kiota client),
+  the solo path against the bot first, then waiting for a
+  human and the player dashboard, frontend tests and CI.
+- `CONTRIBUTING.md`: rules for npm dependencies.
+
+#### Changed
+- [ADR-0004](docs/adr/0004-sveltekit-frontend.md) records
+  what was settled at the phase start: toolchain in
+  containers only, Tailwind CSS with inline-SVG monsters, a
+  nickname in `localStorage` as the player id until Phase 6,
+  Vitest plus one Playwright smoke test. The adapter stays
+  open until the spike.
+- Kiota is the only client generator: the
+  `@hey-api/openapi-ts` fallback is dropped, since it is a
+  community project and the generator should come from
+  Microsoft.
+
+#### Decided (process)
+- Every npm package is pinned to an exact version and
+  checked for known malware before it is installed.
+
 ### Phase 3 — Persistence (hot/cold) ✅
 
 Closed 2026-11-21.

@@ -134,6 +134,31 @@ keys. Changing the collation of a key column needs
 the primary key dropped and re-added around the
 `AlterColumn`; EF does not generate that.
 
+## Frontend dependencies (npm)
+
+Node and npm run in containers only; nothing is
+installed on the host
+([ADR-0004](docs/adr/0004-sveltekit-frontend.md)).
+
+Every npm package is pinned to an exact version (no
+`^` or `~` ranges) and `package-lock.json` is
+committed; images and CI install with `npm ci`.
+
+Before a package is added or bumped, check it for
+known malware. The query returns the number of
+malware advisories for the package and must print
+`0`:
+
+```bash
+gh api "/advisories?type=malware&ecosystem=npm&affects=<package>" --jq length
+```
+
+Then look at its npm page: the exact name (typos are
+a common trap), who publishes it, how old the
+version is, and whether it runs install scripts. A
+Dependabot PR for npm gets the same check before it
+is merged.
+
 ## Architecture changes
 
 Anything that changes structure needs an ADR in

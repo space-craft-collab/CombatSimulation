@@ -11,11 +11,10 @@ backend, with a **SvelteKit** frontend.
 
 ## Status
 
-Phase 3 — Persistence (hot/cold) is done; Phase 4
-(the SvelteKit frontend) is next. Live battles keep
-their state in Table Storage and survive a restart;
-finished battles, the Catalog and the player stats
-live in SQL Server through EF Core.
+Phase 4 — Frontend (in progress). Phase 3 is done:
+live battles keep their state in Table Storage and
+survive a restart; finished battles, the Catalog and
+the player stats live in SQL Server through EF Core.
 See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 To run the host locally, start the infrastructure
@@ -75,7 +74,7 @@ receive a `RoundResolved` delta after every round.
 - Modular monolith: `Catalog`, `Battles`, `Players`
 - Hot path: Orleans + Azure Table Storage
 - Cold path: EF Core + Azure SQL
-- Frontend (planned, Phase 4): SvelteKit + Svelte 5 runes
+- Frontend (Phase 4, in progress): SvelteKit + Svelte 5 runes
   (separate deploy)
 
 See [`docs/adr/`](docs/adr/) for architecture decisions.

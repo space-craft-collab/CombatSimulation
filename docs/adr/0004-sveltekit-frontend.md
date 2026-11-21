@@ -28,6 +28,25 @@ The exact adapter is **not locked yet** — `adapter-auto` /
 SignalR, and SSR for protected routes. The lock-in happens at
 the start of Phase 4 after a 1-day spike.
 
+Settled at the start of Phase 4 (2026-11-21):
+
+- **Toolchain in containers only.** Node and npm are not
+  installed on the host; scaffolding, the dev server, builds
+  and tests all run in Docker, which also pins the Node
+  version for this project.
+- **npm dependencies are pinned to exact versions**, and each
+  package is checked for known malware before it is
+  installed. The steps are in `CONTRIBUTING.md`.
+- **API client: Kiota, with no fallback generator.**
+- **Styling: Tailwind CSS.** Monsters are drawn as inline
+  SVG; the repository carries no image assets.
+- **Player identity until Phase 6:** a nickname the visitor
+  types on the first visit, kept in `localStorage`. It is
+  the client-chosen player id the API already takes, so
+  anyone can use anyone's name until auth exists.
+- **Tests:** Vitest for logic, and one Playwright smoke test
+  that plays a battle against the bot.
+
 ## Consequences
 
 - **Positive:**
@@ -46,13 +65,19 @@ the start of Phase 4 after a 1-day spike.
 - **Neutral / follow-ups:**
   - **Open:** SvelteKit adapter (`auto` vs `node` vs `static`)
     — decided in Phase 4 after the spike.
-  - OpenAPI → TS client tooling is locked separately: Kiota
-    primary, `@hey-api/openapi-ts` as fallback if Kiota's TS
-    output is too verbose for SvelteKit consumption. NSwag was
-    rejected, as a fallback too: it rests largely on a single
-    maintainer and carries a long issue backlog, a risk for a
-    repository meant to stay current. Kiota is maintained by
-    Microsoft.
+  - OpenAPI → TS client: **Kiota**, maintained by Microsoft
+    like the rest of the backend stack. Two generators were
+    rejected. NSwag rests largely on a single maintainer and
+    carries a long issue backlog, a risk for a repository
+    meant to stay current. `@hey-api/openapi-ts` was the
+    planned fallback for the case that Kiota's TypeScript
+    output is too verbose; it was dropped on 2026-11-21
+    because it is a community project with no large
+    organisation behind it. Verbose output is hidden behind
+    a thin hand-written wrapper instead.
+  - Kiota covers the HTTP API only. The SignalR hub's
+    messages (`BattleEventDto`, `StrikeDto`) are typed by
+    hand in the frontend.
 
 ## Alternatives considered
 
