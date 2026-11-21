@@ -48,7 +48,11 @@ the start of Phase 4 after a 1-day spike.
     — decided in Phase 4 after the spike.
   - OpenAPI → TS client tooling is locked separately: Kiota
     primary, `@hey-api/openapi-ts` as fallback if Kiota's TS
-    output is too verbose for SvelteKit consumption.
+    output is too verbose for SvelteKit consumption. NSwag was
+    rejected, as a fallback too: it rests largely on a single
+    maintainer and carries a long issue backlog, a risk for a
+    repository meant to stay current. Kiota is maintained by
+    Microsoft.
 
 ## Alternatives considered
 

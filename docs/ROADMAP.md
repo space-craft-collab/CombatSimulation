@@ -6,6 +6,10 @@ definition of done. The ADRs in [`adr/`](adr/) are the
 authoritative source for *architecture* — this file only
 sequences the work.
 
+Finished phases are not kept here. What they delivered is in
+the [`CHANGELOG`](../CHANGELOG.md); their checklists are in
+[this file's history][full-roadmap].
+
 ## Phases at a glance
 
 - **Phase 0 — Foundations & ADRs** ✅ done
@@ -46,359 +50,42 @@ sequences the work.
 
 Phases 5+ are indicative and will be detailed when reached.
 
-## Phase 3 — Persistence (hot/cold)
+## Phase 4 — Frontend
 
-**Goal:** nothing a visitor plays is lost on a restart. Live
-battle state and reminders move from memory to Azure Table
-Storage (hot path); completed battles, the Catalog and player
-stats land in SQL through EF Core (cold path). A completed
-battle crosses from hot to cold in one straight-line call
-([ADR-0003](adr/0003-no-outbox.md)). Completes the MVP.
+Not started. Its checklist is written when the phase begins;
+the first item is the one-day SvelteKit adapter spike
+([ADR-0004](adr/0004-sveltekit-frontend.md)).
 
-### Checklist
+## Carried over
 
-**Local infrastructure**
+Deferred by the finished phases and still open.
 
-- [x] `docker compose` file with Azurite (Table Storage) and
-      SQL Server for local runs; connection strings in the
-      git-ignored `appsettings.Development.json`, with a
-      committed `appsettings.Development.example.json` to
-      copy from
-- [x] Storage providers chosen by configuration: in-memory
-      stays the default for fast tests and a bare
-      `dotnet run`; Azure Table Storage when a connection
-      string is present. SQL Server, in contrast, is required:
-      the tests share one Testcontainers SQL Server
-      ([ADR-0011](adr/0011-sql-server-required.md))
+**Phase 5 — Scale-out**
 
-**Hot path — Orleans on Table Storage**
+- Cluster membership on Table Storage and several silos.
+  Clustering stays `UseLocalhostClustering()` until then.
+- A SignalR backplane
+  ([ADR-0002](adr/0002-orleans-cohosted.md)).
+- Azure resources (Storage account, Azure SQL) and the first
+  deployment. So far everything runs against the local
+  emulators.
+- The migration bundle. Until then the host applies migrations
+  on startup, in Development only.
 
-- [x] Grain state on Azure Table Storage
-      (`Microsoft.Orleans.Persistence.AzureStorage`) instead of
-      `AddMemoryGrainStorage`
-- [x] Reminders on Table Storage
-      (`Microsoft.Orleans.Reminders.AzureStorage`) instead of
-      `UseInMemoryReminderService()`, so a turn or join
-      deadline survives a restart
-- [x] Grain state is now a stored format: freeze the `[Id]`
-      numbers and enum values (`BattleStatus`) from here on,
-      and note the rule in `CONTRIBUTING.md`; type `[Alias]`es
-      and `[GrainType]` names are pinned as well
-- [x] Test: a battle survives a host restart — state, round
-      and a pending deadline (Testcontainers Azurite)
+**Phase 6 — Auth & accounts**
 
-**Cold path — EF Core**
+- Player accounts and auth; player ids stay client-chosen
+  strings until then.
 
-- [x] EF Core base wiring in `Shared.Infrastructure`
-      ([ADR-0008](adr/0008-shared-layer-split.md)); one
-      `DbContext` **per module**, each in its own SQL schema
-      (`catalog`, `battles`, `players`) — no shared context
-      ([ADR-0001](adr/0001-modular-monolith.md))
-- [x] Migrations per module, applied on startup in
-      Development. The migration bundle for deployments is
-      deferred to Phase 5 (see below)
-- [x] **Catalog:** species move from the hard-coded
-      `SpeciesSeed` into SQL (seeded through a migration);
-      `ICatalogQueryService` reads through a read repository
-- [x] **Catalog arenas:** arena entity (id, name) as
-      [ADR-0007](adr/0007-turn-based.md) describes, seeded
-      through a migration; `GET /arenas`; starting, opening or
-      listing battles on an unknown arena returns 404 instead
-      of being accepted (arena rules are deferred, see below)
-- [x] **Players:** `IPlayerStatsService` in
-      `Players.Contracts` ([ADR-0005](adr/0005-inter-module-services.md)),
-      wins/losses per player id in the Players store, with
-      separate read and write repositories; `GET /players/{id}`
-      shows the stats (404 until a player's first decided
-      battle). Counters rise in SQL, so concurrent battles lose
-      no count; player ids are capped at 64 characters. Nothing
-      reports results yet — the bridge below does
+**No phase yet**
 
-**Hot → cold bridge**
-
-- [x] **Decision:** the snapshot writer's shape. Settled in
-      [ADR-0003](adr/0003-no-outbox.md): a concrete
-      `BattleSnapshotWriteRepository`, no `IBattleSnapshotWriter`
-      ([ADR-0010](adr/0010-delegate-test-seams.md)). The failed
-      write is tested against SQL Server by a primary-key
-      collision instead of a stub, so the write is not
-      idempotent
-- [x] On completion the battle grain writes a snapshot
-      (participants, teams, rounds played, winner or
-      abandoned) to the `battles` schema, reports the result
-      to `IPlayerStatsService`, then deactivates — no outbox,
-      at-most-once ([ADR-0003](adr/0003-no-outbox.md));
-      abandoned battles count for nobody. Battles against the
-      bot count for the human side, so `BattleResultDto` takes
-      a missing winner (the bot won) or no loser (the bot
-      lost); bots themselves are never counted
-- [x] Test: a failed snapshot write keeps the hot state and
-      reports no result (SQL Server only, in the fast suite)
-- [x] Hot state lifetime: Table Storage holds live battles
-      only (it has no TTL). Once the snapshot is written, the
-      battle grain clears its own state and its monster
-      grains' state (`ClearStateAsync`) before deactivating;
-      if the write fails, the hot state stays and the failure
-      is logged, so the final result survives for a replay
-      ([ADR-0003](adr/0003-no-outbox.md))
-- [x] A cleared battle reads as `Created` ("never existed"):
-      `ArenaGrain.GetBattlesAsync` drops `Created` entries as
-      well as `Completed` ones, so a cleared battle never
-      shows up as an open one
-- [x] `GET /battles/{id}` falls back to the cold store for a
-      completed battle whose hot state is gone; 404 only when
-      neither store knows the id
-- [x] Battle history read slice from the cold store:
-      `GET /players/{id}/battles`, newest first, at most 50;
-      the slice lives in Battles, which owns the data
-- [x] Test: a finished battle shows up in the cold store and
-      in the player's stats, its hot state is gone from Table
-      Storage, and `GET /battles/{id}` still returns it
-      (Testcontainers SQL Server + Azurite). Table Storage needs
-      `DeleteStateOnClear`: by default `ClearStateAsync` only
-      blanks the row
-
-**Wrap-up**
-
-- [x] CI runs the Testcontainers suites (Docker is available
-      on the GitHub runners) in a separate `integration` job:
-      integration tests carry a trait (`Category=Integration`)
-      that the `build-test` job filters out, so it stays fast
-      and fails first; `integration` runs only after
-      `build-test` passes (`needs: build-test`). Both are
-      required checks on `main` (`integration` since 2026-11-21)
-- [x] README quickstart: `docker compose up`, then `dotnet run`
-- [x] **Decision:** promote [ADR-0003](adr/0003-no-outbox.md)
-      to `Accepted` once the bridge runs — done. **0006** and
-      **0010** are promoted with it: NLog has been wired since
-      Phase 1, and the code holds no test-only interface
-- [x] Follow-ups from the test audit: `GET /health/ready`
-      checks SQL Server and Table Storage while `/health` stays
-      a pure liveness probe; the container images are pinned in
-      `compose.yaml`, which the test fixtures read; both CI jobs
-      have a timeout; the fast suite's coverage is measured in
-      CI (`dotnet-coverage`, since coverlet's collector needs
-      `dotnet test`); the `ExactIds` migrations are tested on
-      databases that already hold rows
-- [x] CHANGELOG Phase 3 completion entry
-
-### Explicitly deferred
-
-- Cluster membership on Table Storage and multiple silos →
-  Phase 5. Clustering stays `UseLocalhostClustering()`.
-- SignalR backplane → Phase 5.
-- Azure resources (Storage account, Azure SQL) and deployment →
-  Phase 5. Phase 3 runs against the local emulators only.
-- The migration bundle → Phase 5, with the first deployment.
-  Until then the host applies migrations on startup, in
-  Development only.
 - A sweep for hot rows a crash left behind between the snapshot
   write and the clear ([ADR-0003](adr/0003-no-outbox.md)).
-- Player accounts and auth → Phase 6; player ids stay
-  client-chosen strings.
 - Arena rules such as "fire monsters only"
   ([ADR-0007](adr/0007-turn-based.md)): species carry no
   element or type yet, so a rule would have nothing to check.
   They arrive together with the species attribute they need.
+- Event-storming notes (paper, photo in the README), pending
+  since Phase 0.
 
-### Definition of done
-
-`dotnet build` and the test run are green locally and in CI,
-including the Testcontainers suites; a battle survives a host
-restart; a completed battle lands in SQL and counts in the
-stats of its human players; `docker compose up` + `dotnet run`
-gives a working local setup; README and CHANGELOG are updated.
-
-## Phase 2 — Orleans embedded
-
-**Goal:** the silo runs inside the web host and the Battles
-module drives a full turn-based battle through grains. A
-single visitor can play it alone against a bot. Web-side
-code reaches grains through the local `IClusterClient`; round
-progress leaves the process as SignalR deltas. Still no
-persistence — grain state is in memory until Phase 3.
-
-### Checklist
-
-- [x] `AppHost` references `Microsoft.Orleans.Server` and calls
-      `UseOrleans()` — localhost clustering plus in-memory grain
-      storage ([ADR-0002](adr/0002-orleans-cohosted.md))
-- [x] `Battles/Grains/` folder created
-      ([ADR-0009](adr/0009-module-internal-structure.md)) with a
-      boot-probe grain (`IPingGrain` / `PingGrain`)
-- [x] Smoke test: web-side `IClusterClient`, resolved from the
-      host's DI, answers a grain call in the same process — the
-      concrete proof of ADR-0002
-- [x] Architecture guard extended: a module's `Domain` must not
-      depend on `Grains` either
-- [x] Grain interfaces `IArenaGrain`, `ILiveBattleGrain`,
-      `IMonsterInstanceGrain` in `Battles.Grains.Abstractions`
-      ([ADR-0005](adr/0005-inter-module-services.md))
-- [x] Grain implementations in `Battles/Grains/`, with the
-      `Created → InProgress → Completed` lifecycle from
-      [ADR-0007](adr/0007-turn-based.md)
-- [x] Rule-based bot strategy in `Battles/Domain/` and the
-      **play vs bot** mode: bot actions are decided inline
-      once every human side has acted, so human vs bot needs
-      no timer ([ADR-0007](adr/0007-turn-based.md)). Grain
-      side done; the HTTP entry comes with the feature slices.
-- [x] Round loop: an Orleans **Reminder** for the 60s player-turn
-      deadline, a grain **Timer** for the bot-vs-bot loop
-      ([ADR-0007](adr/0007-turn-based.md)). Needs a new
-      `Microsoft.Orleans.Reminders` pin plus
-      `UseInMemoryReminderService()` — `Microsoft.Orleans.Server`
-      does not carry reminders, and the Table Storage provider
-      only arrives in Phase 3. A deadline with no human action
-      at all abandons the battle.
-- [x] Battles feature slices that start a battle and submit a
-      turn; `IClusterClient` stays inside `Battles`, other modules
-      never see Orleans types
-      ([ADR-0005](adr/0005-inter-module-services.md)).
-      `POST /arenas/{arenaId}/battles` (vs bot, the bot mirrors
-      the team), `POST /battles/{id}/actions`,
-      `GET /battles/{id}`; responses are mapped from the grain
-      DTOs so no Orleans type reaches the wire
-- [x] SignalR hub streaming `BattleEventDto` round deltas
-      ([ADR-0007](adr/0007-turn-based.md)): `BattleHub` at
-      `/hubs/battles`, `Watch(battleId)` returns the current
-      state, `RoundResolved` carries each round's strikes.
-      The grain publishes through the in-process hub context;
-      several silos need a backplane (Phase 5)
-- [x] **Wait for a human** mode: `WaitingForPlayers` status,
-      arena lists open battles, a second human joins; the
-      "play vs bot instead" offer is available immediately
-      while waiting ([ADR-0007](adr/0007-turn-based.md)).
-      `opponent: "Human"` on the start request,
-      `GET /arenas/{arenaId}/battles`,
-      `POST /battles/{id}/participants`, `POST /battles/{id}/bot`;
-      the hub sends `BattleStarted` to the waiting host; a join
-      deadline abandons battles nobody joins
-- [x] Retire the boot-probe grain once the real grains carry the
-      smoke test — `SiloBootTests` now calls `ILiveBattleGrain`
-- [x] **Decision:** promote [ADR-0001](adr/0001-modular-monolith.md)
-      and [ADR-0002](adr/0002-orleans-cohosted.md) to `Accepted`
-      once the silo and real grains are in place — the open item
-      carried over from Phase 1. Both `Accepted` (2026-10-26):
-      one process now hosts all modules, the silo and the
-      SignalR hub, and the web side calls grains in-process
-- [x] CHANGELOG Phase 2 completion entry (README status flips at
-      phase *start* and already shows Phase 2)
-
-### Explicitly deferred
-
-- Azure Table Storage grain state and reminders, EF Core cold
-  store → Phase 3. Phase 2 stays on in-memory providers.
-- Frontend → Phase 4; SignalR is exercised from tests until then.
-- Auth (JWT bearer + Identity) → Phase 6.
-- Multi-silo clustering → Phase 5. `UseLocalhostClustering()` is
-  deliberately single-silo.
-
-### Definition of done
-
-`dotnet build` and the test run (`dotnet run` on the xUnit v3
-test project) are green locally and in CI; the
-host boots a silo; a battle — human vs bot included — runs end
-to end through grains and emits round deltas over SignalR; README and CHANGELOG are
-updated.
-
-## Phase 1 — Walking skeleton
-
-**Goal:** one solution that compiles under
-`TreatWarningsAsErrors`, boots the host, answers a health probe,
-and passes CI — with every project from the ADR graph present
-and wired with the correct references. No business logic; this
-is the structural skeleton that later phases fill in.
-
-### Project graph
-
-Per module (`Catalog`, `Battles`, `Players`):
-
-- `<Module>` — a **single project**
-  ([ADR-0009](adr/0009-module-internal-structure.md)) with
-  `Domain/`, `Features/`, `Infrastructure/` folders. References
-  `Shared.Kernel`, `Shared.Infrastructure`, consumed
-  `<Module>.Contracts`, and `<FrameworkReference
-  Include="Microsoft.AspNetCore.App" />` for feature-local Minimal
-  API endpoints. Intra-module layering is enforced by an
-  architecture test, not csproj edges.
-- `<Module>.Contracts` → `Shared.Kernel` only (Orleans-free)
-
-Battles-only:
-
-- `Battles.Grains.Abstractions` → `Microsoft.Orleans.Sdk`
-  (consumed by `Battles.*` and the host only)
-
-Shared:
-
-- `Shared.Kernel` → no infra packages
-- `Shared.Infrastructure` → EF Core / Orleans / Azure / NLog
-
-Host + tests:
-
-- `AppHost` (ASP.NET Core composition root) → each module
-  project, `Battles.Grains.Abstractions`, `Shared.Infrastructure`
-- `*.Tests` (xUnit v3)
-
-This is the [ADR-0005](adr/0005-inter-module-services.md) /
-[ADR-0008](adr/0008-shared-layer-split.md) dependency
-direction. No module references another module's implementation
-assembly; consumers see only `<Module>.Contracts`. The internal
-`Domain`/`Features`/`Infrastructure` folder layout per module
-follows [ADR-0009](adr/0009-module-internal-structure.md).
-
-### Checklist
-
-- [x] `OrleansMonsterArena.slnx` (modern solution format) with
-      the project graph above, projects under `src/` and `tests/`
-- [x] References wired per ADR-0005 / ADR-0008 / ADR-0009; no
-      forbidden edges (no module → another module's implementation)
-- [x] Each module is one project with `Domain/`, `Features/`,
-      `Infrastructure/` folders + `<Module>Module.cs` registration
-      entry; ASP.NET via `FrameworkReference`
-      ([ADR-0009](adr/0009-module-internal-structure.md))
-- [x] Architecture test (NetArchTest): per module, `Domain` does
-      not depend on `Features`/`Infrastructure`; runs in CI
-      ([ADR-0009](adr/0009-module-internal-structure.md))
-- [x] `AppHost` boots; `GET /health` returns 200
-- [x] Minimal NLog wiring in `Shared.Infrastructure`, consumed
-      by `AppHost` ([ADR-0006](adr/0006-nlog-logging.md))
-- [x] OTEL traces + metrics wiring (ASP.NET Core + runtime
-      instrumentation, OTLP + console exporters) in
-      `Shared.Infrastructure`, consumed by `AppHost`
-      ([ADR-0006](adr/0006-nlog-logging.md)) — observability
-      from the start; Phase 7 only swaps the backend
-- [x] One xUnit smoke test: host returns 200 on `/health`
-- [x] `.github/workflows/ci.yml` — restore + build + test on
-      push / PR to `main`
-- [x] Add the `dotnet test` status-check gate to branch
-      protection once CI is green — ruleset active on `main`
-      (required check `build-test`, admin bypass)
-- [x] CHANGELOG Phase 1 completion entry (README status flips
-      at phase *start* and already shows Phase 1)
-- [x] **Decision:** promote structural ADRs to `Accepted` now
-      that code commits to them — **0005**, **0008** and
-      **0009** are now `Accepted`: the solution graph builds
-      exactly that structure and ADR-0009 is enforced by the
-      NetArchTest guard. **0001** and **0002** stay `Proposed`
-      — no silo runs yet, so the code only half commits to
-      co-hosting; revisit at the end of Phase 2.
-
-### Explicitly deferred
-
-- Orleans wiring and grains → Phase 2 (the host is plain
-  ASP.NET Core in Phase 1)
-- Any persistence — Table Storage, EF Core, migrations →
-  Phase 3
-- SignalR endpoints → Phase 2. (The legacy standalone
-  `Microsoft.AspNetCore.SignalR 1.2.0` pin has been removed —
-  in .NET 10 SignalR ships in the shared framework, so no
-  package is needed.)
-- Auth (JWT bearer + Identity) → Phase 6
-- Domain logic and DTOs beyond placeholders → Phases 2–6
-
-### Definition of done
-
-`dotnet build` and `dotnet test` are green locally and in CI;
-the host runs and answers `/health`; the full project graph
-exists with ADR-correct references; README and CHANGELOG are
-updated.
+[full-roadmap]: https://github.com/space-craft-collab/CombatSimulation/blob/54da1cd2d0c3e3772e18a4766cfff9ca939b3087/docs/ROADMAP.md
