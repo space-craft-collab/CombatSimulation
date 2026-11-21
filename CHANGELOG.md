@@ -10,7 +10,7 @@ and this project adheres to
 
 ## [Unreleased]
 
-### Phase 3 — Persistence (hot/cold) (in progress)
+### Phase 3 — Persistence (hot/cold) ✅
 
 #### Added
 - ROADMAP Phase 3 checklist: Azure Table Storage for grain
@@ -92,6 +92,25 @@ and this project adheres to
   assemblies reference no Orleans, EF Core or ASP.NET Core, and
   every module's `Domain` namespace has types, so the layering
   rule cannot pass on an empty set.
+- `GET /health/ready`, a readiness probe: one check per module
+  database (`sql-catalog`, `sql-battles`, `sql-players`) and,
+  when the silo persists to it, one for Table Storage
+  (`table-storage`), each cut off after five seconds. An
+  unreachable store answers 503. Tested against a host without
+  its SQL Server and against one whose Azurite is stopped.
+- Tests of the `ExactIds` migrations on databases that already
+  hold rows: each module stops one migration earlier, gets rows
+  under the old collation and is then migrated the way the host
+  does it on startup. Stats, snapshots and the seeded Catalog
+  rows are kept, the primary keys are back, and ids that differ
+  only in case are separate from then on.
+- Test coverage in CI: `dotnet-coverage` wraps the fast suite's
+  `dotnet run` and `reportgenerator` writes the result into the
+  run summary and an HTML artifact. Both are pinned as local
+  tools; `tests/coverage.settings.xml` limits the measurement to
+  the project's own assemblies, without migrations and generated
+  code. The fast suite covers 96 % of the lines.
+- Dependabot watches the images in `compose.yaml`.
 
 #### Changed
 - Player ids are capped at 64 characters; longer ones get a
@@ -124,8 +143,28 @@ and this project adheres to
   integration trait is renamed `Category=Containers` →
   `Category=Integration`, since every test now uses a container.
 - Testcontainers pins 4.0.0 → 4.17.0.
+- `GET /health` is the liveness probe and runs no check, so an
+  outage of SQL Server or Table Storage never gets the host
+  restarted; the dependencies are asked on `/health/ready`.
+- The container images are pinned to a version instead of
+  `latest`: Azurite `3.38.0` and SQL Server
+  `2022-CU28-ubuntu-22.04`, the versions `latest` pointed to.
+  `compose.yaml` is the one place they are named; the test
+  fixtures read their images from it.
+- Both CI jobs stop after ten minutes (`timeout-minutes`)
+  instead of GitHub's six-hour default.
+- Grain storage, the reminder service and the Table Storage
+  health check share one `TableServiceClient`.
 - All Orleans packages aligned on 10.4.2 (the Azure Storage,
   Client and TestingHost pins were still on 10.3.1).
+
+#### Removed
+- `coverlet.collector`: it only attaches through VSTest
+  (`dotnet test`), which the xUnit v3 `dotnet run` never starts,
+  so it never measured anything here.
+- The unused `Microsoft.Orleans.TestingHost` pin; the README no
+  longer lists the TestingHost either. The tests boot the real
+  `AppHost` with its co-hosted silo.
 
 #### Fixed
 - Table Storage grain storage sets `DeleteStateOnClear`: Orleans'
@@ -205,6 +244,13 @@ and this project adheres to
   `## Corrections`). The Phase 3 definition of done no longer
   promises stats for "both players": bots and abandoned
   battles count for nobody.
+- Phase 3 closed: a live battle keeps its state, round and
+  deadline in Table Storage across a host restart; a finished
+  one moves to SQL Server, counts in the stats of its human
+  players and leaves no hot rows behind. The Catalog and the
+  player stats live in SQL Server, one schema per module. The
+  migration bundle moves to Phase 5, where the first deployment
+  needs it.
 
 ### Phase 2 — Orleans embedded ✅
 

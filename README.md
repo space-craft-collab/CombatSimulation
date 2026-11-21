@@ -11,11 +11,12 @@ backend, with a **SvelteKit** frontend.
 
 ## Status
 
-Phase 3 — Persistence (hot/cold) (in progress).
-Phase 2 is done: battles run through co-hosted
-Orleans grains. Phase 3 moves grain state to Table
-Storage and the Catalog into SQL Server through
-EF Core. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Phase 3 — Persistence (hot/cold) is done; Phase 4
+(the SvelteKit frontend) is next. Live battles keep
+their state in Table Storage and survive a restart;
+finished battles, the Catalog and the player stats
+live in SQL Server through EF Core.
+See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 To run the host locally, start the infrastructure
 first (Docker; the steps are in
@@ -90,7 +91,7 @@ See [`docs/adr/`](docs/adr/) for architecture decisions.
 | Logging | NLog |
 | Frontend | SvelteKit + TypeScript |
 | OpenAPI client | Kiota |
-| Tests | xUnit v3 + Orleans TestingHost + Testcontainers |
+| Tests | xUnit v3 + Testcontainers |
 | Hosting | Azure Container Apps + Static Web Apps |
 | CI/CD | GitHub Actions |
 

@@ -20,17 +20,18 @@ sequences the work.
   `IMonsterInstanceGrain`), rule-based bot opponent and
   turn-based round loop ([ADR-0007](adr/0007-turn-based.md)),
   SignalR round deltas.
-- **Phase 3 — Persistence (hot/cold)** ⬅ current
+- **Phase 3 — Persistence (hot/cold)** ✅ done
   Azure Table Storage grain state + EF Core cold store, hot→cold
   snapshot bridge ([ADR-0003](adr/0003-no-outbox.md)).
   Completes the MVP.
-- **Phase 4 — Frontend**
+- **Phase 4 — Frontend** ⬅ next
   SvelteKit + Svelte 5 runes, Kiota client; adapter spike
   ([ADR-0004](adr/0004-sveltekit-frontend.md)).
 - **Phase 5 — Scale-out**
   Multi-silo on Azure Container Apps, cluster membership over
   Table Storage, a SignalR backplane so round deltas reach
-  watchers connected to another silo.
+  watchers connected to another silo, a migration bundle for
+  the cold-path schemas.
 - **Phase 6 — Auth & accounts**
   JWT bearer auth + ASP.NET Core Identity (cold-path EF store),
   player accounts, protected SvelteKit routes
@@ -93,9 +94,9 @@ battle crosses from hot to cold in one straight-line call
       `DbContext` **per module**, each in its own SQL schema
       (`catalog`, `battles`, `players`) — no shared context
       ([ADR-0001](adr/0001-modular-monolith.md))
-- [ ] Migrations per module; applied on startup in
-      Development, a migration bundle for deployments
-      (startup part done; the bundle follows with a deployment)
+- [x] Migrations per module, applied on startup in
+      Development. The migration bundle for deployments is
+      deferred to Phase 5 (see below)
 - [x] **Catalog:** species move from the hard-coded
       `SpeciesSeed` into SQL (seeded through a migration);
       `ICatalogQueryService` reads through a read repository
@@ -171,7 +172,15 @@ battle crosses from hot to cold in one straight-line call
       to `Accepted` once the bridge runs — done. **0006** and
       **0010** are promoted with it: NLog has been wired since
       Phase 1, and the code holds no test-only interface
-- [ ] CHANGELOG Phase 3 completion entry
+- [x] Follow-ups from the test audit: `GET /health/ready`
+      checks SQL Server and Table Storage while `/health` stays
+      a pure liveness probe; the container images are pinned in
+      `compose.yaml`, which the test fixtures read; both CI jobs
+      have a timeout; the fast suite's coverage is measured in
+      CI (`dotnet-coverage`, since coverlet's collector needs
+      `dotnet test`); the `ExactIds` migrations are tested on
+      databases that already hold rows
+- [x] CHANGELOG Phase 3 completion entry
 
 ### Explicitly deferred
 
@@ -180,6 +189,9 @@ battle crosses from hot to cold in one straight-line call
 - SignalR backplane → Phase 5.
 - Azure resources (Storage account, Azure SQL) and deployment →
   Phase 5. Phase 3 runs against the local emulators only.
+- The migration bundle → Phase 5, with the first deployment.
+  Until then the host applies migrations on startup, in
+  Development only.
 - A sweep for hot rows a crash left behind between the snapshot
   write and the clear ([ADR-0003](adr/0003-no-outbox.md)).
 - Player accounts and auth → Phase 6; player ids stay

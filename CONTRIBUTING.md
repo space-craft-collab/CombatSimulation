@@ -44,6 +44,25 @@ dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests -- 
 dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests -- -trait "Category=Integration"
 ```
 
+The container images are pinned in `compose.yaml`;
+the tests read them from there, so a version is
+changed in that one place.
+
+Coverage is measured by wrapping the run in
+`dotnet-coverage` (coverlet's collector only works
+under `dotnet test`); `reportgenerator` turns the
+result into HTML under `coverage/report`:
+
+```bash
+dotnet tool restore
+dotnet dotnet-coverage collect \
+  --settings tests/coverage.settings.xml \
+  --output coverage/fast.cobertura.xml --output-format cobertura \
+  -- dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests
+dotnet reportgenerator -reports:coverage/fast.cobertura.xml \
+  -targetdir:coverage/report -reporttypes:Html
+```
+
 The SDK version is pinned in `global.json`.
 
 ## Ground rules for code
