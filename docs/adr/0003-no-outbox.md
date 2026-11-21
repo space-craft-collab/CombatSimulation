@@ -1,6 +1,6 @@
 # ADR-0003: No transactional outbox for hot→cold handoff
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-21)
 - **Date:** 2026-05-16
 - **Deciders:** aha (solo maintainer)
 
@@ -93,6 +93,11 @@ as an id that never existed, so:
     cold-path write. The grain state still has the final
     result, so a manual replay job could recover it — not
     built.
+  - If the stats report fails after the snapshot is stored, the
+    hot state stays although the cold store already has the
+    snapshot. A replay would have to skip the write, since a
+    second insert fails on the primary key; with no replay job
+    built, that battle simply stays uncounted.
   - Not suitable as-is for a workload where missing the cold
     write has business consequences.
   - A crash between the snapshot write and the clear leaves the

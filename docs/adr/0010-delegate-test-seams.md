@@ -1,6 +1,6 @@
 # ADR-0010: Function-delegate test seams instead of test-only interfaces
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-21)
 - **Date:** 2026-07-31
 - **Deciders:** aha (solo maintainer)
 
@@ -30,37 +30,42 @@ honest seam.
 a dependency, inject a function delegate (`Func<...>` /
 `Action<...>`), not an interface.**
 
-Example — a handler that needs a player's level, not a
-repository:
+Example (illustrative) — a `Players` handler that needs a
+player's win count, not a repository:
 
 ```csharp
-public sealed class StartBattleHandler(
-    Func<Guid, Task<int>> getPlayerLevel)
+public sealed class GetRankHandler(
+    Func<string, Task<int>> getWinCount)
 {
-    public async Task<StartBattleResult> HandleAsync(
-        StartBattleRequest request)
+    public async Task<Rank> HandleAsync(string playerId)
     {
-        var level = await getPlayerLevel(request.PlayerId);
+        var wins = await getWinCount(playerId);
         // ...
     }
 }
 ```
 
-Composition wires the delegate to the concrete read repository
-([read/write split][ADR-0009]) in the feature's registration:
+Composition wires the delegate to the module's own concrete
+read repository ([read/write split][ADR-0009]) in the feature's
+registration:
 
 ```csharp
-services.AddScoped<StartBattleHandler>(sp =>
-    new StartBattleHandler(
-        sp.GetRequiredService<PlayerReadRepository>()
-          .GetLevelAsync));
+services.AddScoped<GetRankHandler>(sp =>
+    new GetRankHandler(
+        sp.GetRequiredService<PlayerStatsReadRepository>()
+          .GetWinCountAsync));
 ```
 
 The unit test substitutes a lambda — no mocking library needed:
 
 ```csharp
-var handler = new StartBattleHandler(_ => Task.FromResult(5));
+var handler = new GetRankHandler(_ => Task.FromResult(5));
 ```
+
+Handler and repository live in the same module. A value from
+another module comes through that module's `.Contracts`
+interface ([ADR-0005]) — an interface with real value, not a
+test seam.
 
 Conventions:
 
@@ -70,7 +75,7 @@ Conventions:
   would collide.
 - If the same seam recurs across several consumers, promote it
   to a **named delegate type**
-  (`public delegate Task<int> GetPlayerLevel(Guid playerId);`)
+  (`public delegate Task<int> GetWinCount(string playerId);`)
   for readability and unambiguous DI registration.
 - The rule is about *test-only* seams. Interfaces with real
   architectural value stay: `<Module>.Contracts`, grain
@@ -88,7 +93,7 @@ Conventions:
   - One less file and registration per seam; no
     `IFoo`/`Foo` pairs that exist for ceremony.
 - **Negative:**
-  - A bare `Func<Guid, Task<int>>` carries less meaning than a
+  - A bare `Func<string, Task<int>>` carries less meaning than a
     named interface method; parameter names in the primary
     constructor (and named delegate types where shared) carry
     the intent instead.
@@ -102,6 +107,10 @@ Conventions:
     mock; feature-level unit tests should not need it.
   - Integration tests are unaffected — they hit real
     infrastructure via Testcontainers, no seam involved.
+  - At acceptance the code has not needed a delegate seam yet.
+    What it shows is the default: concrete classes and no
+    test-only interface, e.g. `BattleSnapshotWriteRepository`
+    ([ADR-0003]).
 
 ## Alternatives considered
 
@@ -124,5 +133,6 @@ Conventions:
 - `CLAUDE.md` — "Dependencies & Abstractions" section states
   the same rule for day-to-day coding.
 
+[ADR-0003]: 0003-no-outbox.md
 [ADR-0005]: 0005-inter-module-services.md
 [ADR-0009]: 0009-module-internal-structure.md

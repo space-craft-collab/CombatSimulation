@@ -167,8 +167,10 @@ battle crosses from hot to cold in one straight-line call
       `build-test` passes (`needs: build-test`) and is not a
       required check
 - [x] README quickstart: `docker compose up`, then `dotnet run`
-- [ ] **Decision:** promote [ADR-0003](adr/0003-no-outbox.md)
-      to `Accepted` once the bridge runs
+- [x] **Decision:** promote [ADR-0003](adr/0003-no-outbox.md)
+      to `Accepted` once the bridge runs — done. **0006** and
+      **0010** are promoted with it: NLog has been wired since
+      Phase 1, and the code holds no test-only interface
 - [ ] CHANGELOG Phase 3 completion entry
 
 ### Explicitly deferred

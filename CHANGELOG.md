@@ -145,6 +145,15 @@ and this project adheres to
   key marker) and ADR **0008** (`Shared.Infrastructure`
   holds no Orleans or Table Storage wiring; that lives in
   the `AppHost`).
+- ADRs **0003** (no outbox), **0006** (NLog) and **0010**
+  (delegate test seams) promoted `Proposed` → **`Accepted`**:
+  the hot→cold bridge runs as 0003 describes, NLog has been
+  wired since Phase 1, and the code holds no test-only
+  interface. Before the freeze, 0003 gained the case of a
+  failed stats report after a stored snapshot, 0006 lost its
+  future tense and notes that retiring NLog in Phase 7 needs
+  a superseding ADR, and 0010's example now stays inside one
+  module. **0004** stays `Proposed` until the frontend exists.
 
 ### Phase 2 — Orleans embedded ✅
 

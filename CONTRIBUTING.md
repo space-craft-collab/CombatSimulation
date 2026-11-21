@@ -114,4 +114,7 @@ Anything that changes structure needs an ADR in
 [`docs/adr/`](docs/adr/), using
 [`0000-template.md`](docs/adr/0000-template.md).
 ADRs start as `Proposed` and are edited in place;
-once `Accepted`, changes require a superseding ADR.
+once `Accepted`, a changed decision requires a
+superseding ADR. A factual correction that leaves the
+decision unchanged goes into the ADR's `## Corrections`
+section (see the ADR conventions).

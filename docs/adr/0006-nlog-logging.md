@@ -1,6 +1,6 @@
 # ADR-0006: NLog for structured logging
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-21)
 - **Date:** 2026-05-16
 - **Deciders:** aha (solo maintainer)
 
@@ -28,9 +28,9 @@ in `nlog.config` next to the `AppHost`. Structured properties
 are passed via the standard `ILogger` message-template syntax
 (no NLog-specific call sites in domain code).
 
-OpenTelemetry traces and metrics are added on top in Phase 1
-(separate from the logging-provider choice — they can coexist
-with any `ILogger` backend).
+OpenTelemetry traces and metrics sit on top (separate from the
+logging-provider choice — they coexist with any `ILogger`
+backend).
 
 ## Consequences
 
@@ -46,10 +46,14 @@ with any `ILogger` backend).
   - Some third-party sinks ship Serilog-first; NLog equivalents
     sometimes lag.
 - **Neutral / follow-ups:**
-  - Trace/metric export to OTLP is set up in Phase 1; NLog only
-    handles logs.
-  - The `nlog.config` location and rolling-file vs console
-    target choice is fixed in Phase 1.
+  - Traces and metrics are exported through OpenTelemetry (OTLP
+    and console); NLog only handles logs.
+  - `nlog.config` sits in the `AppHost` content root and logs
+    to a coloured console target; no rolling-file target is
+    configured.
+  - The roadmap's Phase 7 moves logs to a Grafana stack and
+    retires NLog. That is a changed decision and will need a
+    new ADR that supersedes this one.
 
 ## Alternatives considered
 
