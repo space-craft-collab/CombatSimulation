@@ -20,8 +20,12 @@ internal sealed class SpeciesReadRepository(IDbContextFactory<CatalogDbContext> 
     {
         await using var context = await contexts.CreateDbContextAsync(cancellationToken);
 
-        return await context.Species
+        var species = await context.Species
             .AsNoTracking()
             .SingleOrDefaultAsync(species => species.Id == speciesId, cancellationToken);
+
+        // SQL Server ignores trailing spaces when it compares, so
+        // "ember-fox " would find "ember-fox" too; an id matches only exactly.
+        return species?.Id == speciesId ? species : null;
     }
 }

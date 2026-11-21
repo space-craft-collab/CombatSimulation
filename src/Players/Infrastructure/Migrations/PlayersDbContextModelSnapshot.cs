@@ -26,7 +26,8 @@ namespace Players.Infrastructure.Migrations
                 {
                     b.Property<string>("PlayerId")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
 
                     b.Property<int>("Losses")
                         .HasColumnType("int");

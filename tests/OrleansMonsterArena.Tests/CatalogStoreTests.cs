@@ -69,6 +69,37 @@ public sealed class CatalogStoreTests(AppHostFixture host)
         Assert.Null(arena);
     }
 
+    [Theory]
+    [InlineData("Volcano")]
+    [InlineData("VOLCANO")]
+    [InlineData("volcano ")]
+    public async Task FindArenaAsync_IdInOtherCaseOrPadded_ReturnsNull(string arenaId)
+    {
+        // Arrange: ids match exactly, as they do as grain keys.
+        var catalog = host.Factory.Services.GetRequiredService<ICatalogQueryService>();
+
+        // Act
+        var arena = await catalog.FindArenaAsync(arenaId, Cancellation);
+
+        // Assert
+        Assert.Null(arena);
+    }
+
+    [Theory]
+    [InlineData("Lava-Crab")]
+    [InlineData("lava-crab ")]
+    public async Task FindSpeciesAsync_IdInOtherCaseOrPadded_ReturnsNull(string speciesId)
+    {
+        // Arrange
+        var catalog = host.Factory.Services.GetRequiredService<ICatalogQueryService>();
+
+        // Act
+        var species = await catalog.FindSpeciesAsync(speciesId, Cancellation);
+
+        // Assert
+        Assert.Null(species);
+    }
+
     [Fact]
     public async Task Migrate_CatalogModule_KeepsTablesAndHistoryInOwnSchema()
     {

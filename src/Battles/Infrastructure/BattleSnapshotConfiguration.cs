@@ -2,6 +2,7 @@ using Battles.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Players.Contracts;
+using Shared.Infrastructure.Persistence;
 
 namespace Battles.Infrastructure;
 
@@ -24,8 +25,8 @@ internal sealed class BattleSnapshotConfiguration : IEntityTypeConfiguration<Bat
         // The key is the grain's id; a second write of the same battle
         // must fail rather than be generated anew (ADR-0003).
         builder.Property(battle => battle.BattleId).ValueGeneratedNever();
-        builder.Property(battle => battle.ArenaId).HasMaxLength(CatalogIdMaxLength);
-        builder.Property(battle => battle.WinnerId).HasMaxLength(PlayerIds.MaxLength);
+        builder.Property(battle => battle.ArenaId).HasMaxLength(CatalogIdMaxLength).UseCollation(IdCollation.Ordinal);
+        builder.Property(battle => battle.WinnerId).HasMaxLength(PlayerIds.MaxLength).UseCollation(IdCollation.Ordinal);
 
         builder.OwnsMany(battle => battle.Combatants, combatant =>
         {
@@ -33,8 +34,12 @@ internal sealed class BattleSnapshotConfiguration : IEntityTypeConfiguration<Bat
             combatant.WithOwner().HasForeignKey("BattleId");
             combatant.HasKey("BattleId", nameof(SnapshotCombatant.Slot));
             combatant.Property(entry => entry.Slot).ValueGeneratedNever();
-            combatant.Property(entry => entry.ParticipantId).HasMaxLength(PlayerIds.MaxLength);
-            combatant.Property(entry => entry.SpeciesId).HasMaxLength(CatalogIdMaxLength);
+            combatant.Property(entry => entry.ParticipantId)
+                .HasMaxLength(PlayerIds.MaxLength)
+                .UseCollation(IdCollation.Ordinal);
+            combatant.Property(entry => entry.SpeciesId)
+                .HasMaxLength(CatalogIdMaxLength)
+                .UseCollation(IdCollation.Ordinal);
             combatant.HasIndex(entry => entry.ParticipantId);
         });
     }

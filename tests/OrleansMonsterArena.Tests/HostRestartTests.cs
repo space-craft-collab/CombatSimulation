@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using Battles.Features.GetBattle;
+using Battles.Features.ListBattles;
 using Battles.Grains.Abstractions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
@@ -8,7 +9,9 @@ namespace OrleansMonsterArena.Tests;
 
 /// <summary>
 /// Proves that a live battle survives a host restart on Table
-/// Storage: its state, its round and its pending turn deadline.
+/// Storage: its state, its round and its pending turn deadline,
+/// and an open battle its place in the arena's list and its free
+/// seat.
 /// </summary>
 /// <param name="azurite">The Table Storage both hosts share.</param>
 /// <param name="sql">The SQL Server both hosts share.</param>
@@ -19,6 +22,10 @@ public sealed class HostRestartTests(AzuriteFixture azurite, SqlServerFixture sq
     // Long enough that the deadline cannot pass while the first host
     // shuts down and the second one boots.
     private static readonly TimeSpan Deadline = TimeSpan.FromSeconds(15);
+
+    private static readonly string[] CrabTeam = ["lava-crab"];
+
+    private static readonly string[] FoxTeam = ["ember-fox"];
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
@@ -52,6 +59,48 @@ public sealed class HostRestartTests(AzuriteFixture azurite, SqlServerFixture sq
         Assert.Null(final.WinnerId);
     }
 
+    [Fact]
+    public async Task RestartHost_OpenBattleWaiting_StaysListedAndJoinable()
+    {
+        // Arrange: a human opens a battle on the first host, which
+        // shuts down before anyone joins.
+        var host = $"player-{Guid.NewGuid():N}";
+        BattleResponse opened;
+        await using (var first = CreateFactory())
+        {
+            using var client = first.CreateClient();
+            using var response = await client.PostAsJsonAsync(
+                TestArenas.VolcanoBattles,
+                new { playerId = host, monsterSpeciesIds = CrabTeam, opponent = "Human" },
+                Cancellation);
+            response.EnsureSuccessStatusCode();
+            opened = await ReadBattleAsync(response);
+        }
+
+        // Act
+        await using var second = CreateFactory();
+        using var restartedClient = second.CreateClient();
+        var listed = await restartedClient.GetFromJsonAsync<List<BattleSummaryResponse>>(
+            TestArenas.VolcanoBattles, Cancellation);
+        using var joined = await restartedClient.PostAsJsonAsync(
+            new Uri($"/battles/{opened.BattleId}/participants", UriKind.Relative),
+            new { playerId = "player-2", monsterSpeciesIds = FoxTeam },
+            Cancellation);
+
+        // Assert: the arena grain still lists the battle as waiting.
+        Assert.NotNull(listed);
+        var entry = Assert.Single(listed, summary => summary.BattleId == opened.BattleId);
+        Assert.Equal(BattleStatus.WaitingForPlayers, entry.Status);
+        Assert.Equal([host], entry.ParticipantIds);
+
+        // Assert: the seat is still free and the battle starts.
+        joined.EnsureSuccessStatusCode();
+        var started = await ReadBattleAsync(joined);
+        Assert.Equal(BattleStatus.InProgress, started.Status);
+        Assert.Equal(1, started.Round);
+        Assert.Equal([host, "player-2"], started.Combatants.Select(combatant => combatant.ParticipantId));
+    }
+
     private WebApplicationFactory<Program> CreateFactory() =>
         AppHostFixture.CreateFactory(sql.ConnectionStringFor("HostRestartTests"), azurite.ConnectionString, Deadline);
 
@@ -59,7 +108,7 @@ public sealed class HostRestartTests(AzuriteFixture azurite, SqlServerFixture sq
     {
         using var response = await client.PostAsJsonAsync(
             TestArenas.VolcanoBattles,
-            new { playerId = "player-1", monsterSpeciesIds = new[] { "lava-crab" } },
+            new { playerId = "player-1", monsterSpeciesIds = CrabTeam },
             Cancellation);
         response.EnsureSuccessStatusCode();
 

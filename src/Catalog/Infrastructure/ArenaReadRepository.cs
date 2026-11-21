@@ -20,9 +20,13 @@ internal sealed class ArenaReadRepository(IDbContextFactory<CatalogDbContext> co
     {
         await using var context = await contexts.CreateDbContextAsync(cancellationToken);
 
-        return await context.Arenas
+        var arena = await context.Arenas
             .AsNoTracking()
             .SingleOrDefaultAsync(arena => arena.Id == arenaId, cancellationToken);
+
+        // SQL Server ignores trailing spaces when it compares, so
+        // "volcano " would find "volcano" too; an id matches only exactly.
+        return arena?.Id == arenaId ? arena : null;
     }
 
     /// <summary>

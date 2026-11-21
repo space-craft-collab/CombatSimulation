@@ -10,4 +10,9 @@ internal static class Ability
     /// The basic attack every monster knows.
     /// </summary>
     public const string Strike = "strike";
+
+    /// <summary>
+    /// Whether the id names an ability the round loop can resolve.
+    /// </summary>
+    public static bool IsKnown(string? abilityId) => abilityId == Strike;
 }

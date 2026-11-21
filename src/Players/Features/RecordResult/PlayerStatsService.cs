@@ -49,6 +49,11 @@ internal sealed class PlayerStatsService(PlayerStatsWriteRepository stats) : IPl
                 nameof(result));
         }
 
+        if (playerIds.Any(PlayerIds.HasOuterWhitespace))
+        {
+            throw new ArgumentException("Player ids must not start or end with whitespace.", nameof(result));
+        }
+
         if (playerIds.Distinct(StringComparer.Ordinal).Count() != playerIds.Length)
         {
             throw new ArgumentException("A player appears on more than one side.", nameof(result));

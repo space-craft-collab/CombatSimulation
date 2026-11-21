@@ -58,6 +58,24 @@ public sealed class ArenaEndpointTests(AppHostFixture host)
     }
 
     [Fact]
+    public async Task PostBattle_ArenaIdInOtherCase_Returns404()
+    {
+        // Arrange: "Volcano" is not the seeded "volcano". If the
+        // Catalog let it pass, the battle would open on an arena
+        // grain of its own that the real arena never lists.
+        using var client = host.Factory.CreateClient();
+
+        // Act
+        using var response = await client.PostAsJsonAsync(
+            new Uri("/arenas/Volcano/battles", UriKind.Relative),
+            new { playerId = "player-1", monsterSpeciesIds = Team, opponent = "Human" },
+            Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task GetBattles_UnknownArena_Returns404()
     {
         // Arrange

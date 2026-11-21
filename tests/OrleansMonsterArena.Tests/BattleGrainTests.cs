@@ -38,6 +38,16 @@ public sealed class BattleGrainTests(AppHostFixture host)
         new("bot-2", true, ["ember-fox"]),
     ];
 
+    // A two-monster side: the bot's Ember Fox (14 ATK) picks the
+    // weakest opponent, the player's fox (40 HP, 4 DEF), and fells it
+    // in round 4 with 10 per hit. The Moss Golem (80 HP, 10 DEF)
+    // takes 4 per hit and deals 4, so it outlasts the bot's fox.
+    private static readonly ImmutableArray<ParticipantSetup> TwoVsOne =
+    [
+        new("player-1", false, ["ember-fox", "moss-golem"]),
+        new("bot-1", true, ["ember-fox"]),
+    ];
+
     private static readonly ParticipantSetup Host = new("player-1", false, ["lava-crab"]);
 
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
@@ -111,6 +121,56 @@ public sealed class BattleGrainTests(AppHostFixture host)
     }
 
     [Fact]
+    public async Task SubmitActionAsync_OneOfTwoMonstersFalls_BattleContinues()
+    {
+        // Arrange
+        var battleId = await NewArena().CreateBattleAsync(TwoVsOne);
+        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
+        var golemStrikes = new BattleAction("player-1", 1, 2, "strike");
+
+        // Act: the player's fox falls in round 4.
+        for (var round = 1; round <= 4; round++)
+        {
+            await battle.SubmitActionAsync(golemStrikes);
+        }
+
+        // Assert: one monster down does not end the battle.
+        var midway = await battle.GetStateAsync();
+        Assert.Equal(BattleStatus.InProgress, midway.Status);
+        Assert.Null(midway.WinnerId);
+        Assert.Equal(5, midway.Round);
+        Assert.Equal([0, 80, 24], midway.Combatants.Select(combatant => combatant.HitPoints));
+
+        // Act: the golem needs six more hits on the bot's fox.
+        for (var round = 5; round <= 10; round++)
+        {
+            await battle.SubmitActionAsync(golemStrikes);
+        }
+
+        // Assert: the side with a monster left standing wins.
+        var final = await Battles.FindAsync(battleId, TestContext.Current.CancellationToken);
+        Assert.NotNull(final);
+        Assert.Equal(BattleStatus.Completed, final.Status);
+        Assert.Equal("player-1", final.WinnerId);
+        Assert.Equal([0, 56, 0], final.Combatants.Select(combatant => combatant.HitPoints));
+    }
+
+    [Fact]
+    public async Task SubmitActionAsync_DefeatedActorSlot_ThrowsArgumentException()
+    {
+        // Arrange: play until the player's fox in slot 0 has fallen.
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().CreateBattleAsync(TwoVsOne));
+        for (var round = 1; round <= 4; round++)
+        {
+            await battle.SubmitActionAsync(new BattleAction("player-1", 1, 2, "strike"));
+        }
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => battle.SubmitActionAsync(new BattleAction("player-1", 0, 2, "strike")));
+    }
+
+    [Fact]
     public async Task SubmitActionAsync_SameParticipantTwiceInRound_Throws()
     {
         // Arrange
@@ -144,6 +204,42 @@ public sealed class BattleGrainTests(AppHostFixture host)
             () => battle.SubmitActionAsync(new BattleAction("bot-1", 1, 0, "strike")));
     }
 
+    [Theory]
+    [InlineData("stranger", 0, 1)]
+    [InlineData("player-1", 1, 0)]
+    [InlineData("player-1", 5, 1)]
+    [InlineData("player-1", -1, 1)]
+    [InlineData("player-1", 0, 7)]
+    [InlineData("player-1", 0, -1)]
+    public async Task SubmitActionAsync_InvalidParticipantOrSlots_ThrowsArgumentException(
+        string participantId,
+        int actorSlot,
+        int targetSlot)
+    {
+        // Arrange: player-1 holds slot 0, the bot slot 1.
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().CreateBattleAsync(OneVsOne));
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => battle.SubmitActionAsync(new BattleAction(participantId, actorSlot, targetSlot, "strike")));
+        Assert.Equal(1, (await battle.GetStateAsync()).Round);
+    }
+
+    [Theory]
+    [InlineData("fireball")]
+    [InlineData("Strike")]
+    [InlineData("")]
+    public async Task SubmitActionAsync_UnknownAbility_ThrowsArgumentException(string abilityId)
+    {
+        // Arrange
+        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().CreateBattleAsync(OneVsOne));
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, abilityId)));
+        Assert.Equal(1, (await battle.GetStateAsync()).Round);
+    }
+
     [Fact]
     public async Task SubmitActionAsync_BeforeStart_Throws()
     {
@@ -164,6 +260,35 @@ public sealed class BattleGrainTests(AppHostFixture host)
 
         // Act + Assert
         await Assert.ThrowsAsync<ArgumentException>(() => battle.StartAsync(setup));
+    }
+
+    [Fact]
+    public async Task StartAsync_SecondParticipantUnknownSpecies_LeavesBattleUntouched()
+    {
+        // Arrange: the first side is valid, the second is not.
+        var battleId = Guid.NewGuid();
+        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
+        ImmutableArray<ParticipantSetup> invalid =
+        [
+            new("player-1", false, ["lava-crab"]),
+            new("player-2", false, ["no-such-monster"]),
+        ];
+
+        // Act
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => battle.StartAsync(new BattleSetup("test-arena", invalid)));
+
+        // Assert: nothing of the first side was added or stored...
+        var failed = await battle.GetStateAsync();
+        Assert.Equal(BattleStatus.Created, failed.Status);
+        Assert.Empty(failed.Combatants);
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:0").GetSnapshotAsync());
+
+        // ...so a second, valid start fields exactly the two teams.
+        await battle.StartAsync(new BattleSetup("test-arena", HumanVsHuman));
+        var started = await battle.GetStateAsync();
+        Assert.Equal(["lava-crab", "ember-fox"], started.Combatants.Select(combatant => combatant.SpeciesId));
     }
 
     [Fact]
@@ -224,6 +349,28 @@ public sealed class BattleGrainTests(AppHostFixture host)
         var fox = await Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:1").GetSnapshotAsync();
         Assert.Equal(60, crab.HitPoints);
         Assert.Equal(34, fox.HitPoints);
+    }
+
+    [Fact]
+    public async Task ReceiveReminder_HumanAbsentSeveralRounds_ResolvesEachRoundOnDeadline()
+    {
+        // Arrange: player-2 never acts, so every round has to end
+        // on a deadline, and each tick has to arm the next one.
+        var battleId = await NewArena().CreateBattleAsync(HumanVsHuman);
+        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
+
+        // Act
+        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
+        var second = await WaitForAsync(battle, state => state.Round == 2);
+        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
+        var third = await WaitForAsync(battle, state => state.Round == 3);
+
+        // Assert: the crab hit twice for 6, the fox never struck back.
+        Assert.Equal(BattleStatus.InProgress, third.Status);
+        Assert.NotNull(second.TurnDeadline);
+        Assert.NotNull(third.TurnDeadline);
+        Assert.True(third.TurnDeadline > second.TurnDeadline);
+        Assert.Equal([60, 28], third.Combatants.Select(combatant => combatant.HitPoints));
     }
 
     [Fact]
@@ -375,6 +522,20 @@ public sealed class BattleGrainTests(AppHostFixture host)
         // Assert
         Assert.Equal(0, snapshot.HitPoints);
         Assert.True(snapshot.IsDefeated);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_Twice_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var monster = Grains.GetGrain<IMonsterInstanceGrain>($"{Guid.NewGuid()}:0");
+        var stats = new MonsterStats("ember-fox", 40, 14, 4, 12);
+        await monster.InitializeAsync(stats);
+        await monster.ApplyDamageAsync(10);
+
+        // Act + Assert: a second initialization must not heal it.
+        await Assert.ThrowsAsync<InvalidOperationException>(() => monster.InitializeAsync(stats));
+        Assert.Equal(30, (await monster.GetSnapshotAsync()).HitPoints);
     }
 
     // Polls the battle until the condition holds; the round loop

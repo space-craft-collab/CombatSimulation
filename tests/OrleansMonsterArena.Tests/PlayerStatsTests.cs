@@ -78,6 +78,8 @@ public sealed class PlayerStatsTests(AppHostFixture host)
     [InlineData("winner", "")]
     [InlineData("same", "same")]
     [InlineData("this-player-id-has-sixty-five-characters-one-more-than-allowed-64", "loser")]
+    [InlineData("winner ", "loser")]
+    [InlineData("winner", " loser")]
     public async Task RecordResultAsync_InvalidSides_ThrowsArgumentException(string winner, string loser)
     {
         // Arrange
@@ -129,6 +131,57 @@ public sealed class PlayerStatsTests(AppHostFixture host)
 
         // Assert
         await Assert.ThrowsAsync<ArgumentException>(record);
+    }
+
+    [Fact]
+    public async Task RecordResultAsync_IdsDifferingOnlyInCase_KeepsSeparateRecords()
+    {
+        // Arrange: two players whose ids differ only in case.
+        var suffix = Guid.NewGuid().ToString("N");
+        var winner = $"Player-{suffix}";
+        var loser = $"player-{suffix}";
+        using var client = host.Factory.CreateClient();
+
+        // Act
+        await Stats.RecordResultAsync(new BattleResultDto(winner, [loser]), Cancellation);
+
+        // Assert: each has a record of their own, and a third
+        // spelling has none.
+        Assert.Equal(new PlayerStatsResponse(winner, 1, 0), await GetStatsAsync(client, winner));
+        Assert.Equal(new PlayerStatsResponse(loser, 0, 1), await GetStatsAsync(client, loser));
+        using var other = await client.GetAsync(PlayerUri($"PLAYER-{suffix}"), Cancellation);
+        Assert.Equal(HttpStatusCode.NotFound, other.StatusCode);
+    }
+
+    [Fact]
+    public async Task RecordResultAsync_IdOfMaxLength_IsStoredAndReadBack()
+    {
+        // Arrange: exactly the 64 characters the store allows.
+        var player = $"{Guid.NewGuid():N}{Guid.NewGuid():N}";
+        using var client = host.Factory.CreateClient();
+
+        // Act
+        await Stats.RecordResultAsync(new BattleResultDto(player, []), Cancellation);
+
+        // Assert
+        Assert.Equal(PlayerIds.MaxLength, player.Length);
+        Assert.Equal(new PlayerStatsResponse(player, 1, 0), await GetStatsAsync(client, player));
+    }
+
+    [Fact]
+    public async Task GetPlayer_IdWithTrailingSpace_Returns404()
+    {
+        // Arrange: SQL Server alone would find the record, since it
+        // ignores trailing spaces when it compares.
+        var player = NewPlayerId();
+        using var client = host.Factory.CreateClient();
+        await Stats.RecordResultAsync(new BattleResultDto(player, []), Cancellation);
+
+        // Act
+        using var response = await client.GetAsync(PlayerUri($"{player}%20"), Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]

@@ -11,7 +11,7 @@ namespace OrleansMonsterArena.Tests;
 /// <summary>
 /// The hot→cold bridge on the real stores (ADR-0003): a finished
 /// battle lands in SQL Server and in the player's stats, its rows
-/// are gone from Table Storage, and <c>GET /battles/{id}</c> still
+/// and its deadline reminder are gone from Table Storage, and <c>GET /battles/{id}</c> still
 /// returns it.
 /// </summary>
 /// <param name="azurite">The Table Storage the hot state lives in.</param>
@@ -22,6 +22,9 @@ public sealed class HotColdBridgeTests(AzuriteFixture azurite, SqlServerFixture 
 {
     // Orleans' default table for Azure Table grain storage.
     private const string GrainStateTable = "OrleansGrainState";
+
+    // Orleans' default table for the Azure Table reminder service.
+    private const string ReminderTable = "OrleansReminders";
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
@@ -36,7 +39,8 @@ public sealed class HotColdBridgeTests(AzuriteFixture azurite, SqlServerFixture 
         var player = $"player-{Guid.NewGuid():N}";
         var battle = await StartAsync(client, player);
         await StrikeAsync(client, battle.BattleId, player);
-        Assert.NotEmpty(await HotRowsAsync(battle.BattleId));
+        Assert.NotEmpty(await RowsAsync(GrainStateTable, battle.BattleId));
+        Assert.NotEmpty(await RowsAsync(ReminderTable, battle.BattleId));
 
         // Act
         for (var round = 2; round <= 4; round++)
@@ -59,7 +63,11 @@ public sealed class HotColdBridgeTests(AzuriteFixture azurite, SqlServerFixture 
         Assert.Equal(battle.BattleId, Assert.Single(history!).BattleId);
 
         // Assert: no hot row of the battle or its monsters is left.
-        Assert.Empty(await HotRowsAsync(battle.BattleId));
+        Assert.Empty(await RowsAsync(GrainStateTable, battle.BattleId));
+
+        // Assert: the turn-deadline reminder went with it, so nothing
+        // wakes the cleared grain again.
+        Assert.Empty(await RowsAsync(ReminderTable, battle.BattleId));
     }
 
     private static async Task<BattleResponse> StartAsync(HttpClient client, string player)
@@ -83,13 +91,13 @@ public sealed class HotColdBridgeTests(AzuriteFixture azurite, SqlServerFixture 
         response.EnsureSuccessStatusCode();
     }
 
-    // The grain-state rows of the battle grain and its monster grains.
+    // The rows of the battle grain and its monster grains in a table.
     // Their keys embed the battle id ("livebattle/<id:N>",
     // "monsterinstance/<id:D>:<slot>"), so a scan of the small test
     // table finds them without depending on Orleans' key encoding.
-    private async Task<List<string>> HotRowsAsync(Guid battleId)
+    private async Task<List<string>> RowsAsync(string tableName, Guid battleId)
     {
-        var table = new TableServiceClient(azurite.ConnectionString).GetTableClient(GrainStateTable);
+        var table = new TableServiceClient(azurite.ConnectionString).GetTableClient(tableName);
         var rows = new List<string>();
         await foreach (var entity in table.QueryAsync<TableEntity>(cancellationToken: Cancellation))
         {

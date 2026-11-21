@@ -124,6 +124,60 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("", 1)]
+    [InlineData("bot", 1)]
+    [InlineData("player-2 ", 1)]
+    [InlineData("player-2", 0)]
+    [InlineData("player-2", 4)]
+    public async Task PostParticipant_InvalidRequest_Returns400(string playerId, int teamSize)
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
+        var team = Enumerable.Repeat("ember-fox", teamSize).ToArray();
+
+        // Act
+        using var response = await client.PostAsJsonAsync(
+            Participants(battle.BattleId), new { playerId, monsterSpeciesIds = team }, Cancellation);
+
+        // Assert: rejected, and the seat is still free.
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var unchanged = await client.GetFromJsonAsync<BattleResponse>(
+            new Uri($"/battles/{battle.BattleId}", UriKind.Relative), Cancellation);
+        Assert.NotNull(unchanged);
+        Assert.Equal(BattleStatus.WaitingForPlayers, unchanged.Status);
+    }
+
+    [Fact]
+    public async Task PostBot_BattleAlreadyRunning_Returns409()
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
+        using var first = await client.PostAsync(Bot(battle.BattleId), null, Cancellation);
+        first.EnsureSuccessStatusCode();
+
+        // Act
+        using var response = await client.PostAsync(Bot(battle.BattleId), null, Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostBot_UnknownBattle_Returns404()
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+
+        // Act
+        using var response = await client.PostAsync(Bot(Guid.NewGuid()), null, Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     [Fact]
     public async Task PostParticipant_UnknownBattle_Returns404()
     {

@@ -21,8 +21,12 @@ internal sealed class PlayerStatsReadRepository(IDbContextFactory<PlayersDbConte
     {
         await using var context = await contexts.CreateDbContextAsync(cancellationToken);
 
-        return await context.Stats
+        var stats = await context.Stats
             .AsNoTracking()
             .SingleOrDefaultAsync(stats => stats.PlayerId == playerId, cancellationToken);
+
+        // SQL Server ignores trailing spaces when it compares, so
+        // "alice " would find "alice" too; an id matches only exactly.
+        return stats?.PlayerId == playerId ? stats : null;
     }
 }

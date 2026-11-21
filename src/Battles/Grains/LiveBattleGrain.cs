@@ -82,9 +82,17 @@ internal sealed class LiveBattleGrain(
         RequireStatus(BattleStatus.Created);
         ValidateSetup(setup);
 
+        // Every side's species are looked up before the first monster
+        // is added, so an unknown one leaves the battle untouched.
+        var teams = new List<(ParticipantSetup Participant, List<MonsterSpeciesDto> Species)>();
         foreach (var participant in setup.Participants)
         {
-            await AddParticipantAsync(participant);
+            teams.Add((participant, await ResolveTeamAsync(participant)));
+        }
+
+        foreach (var (participant, species) in teams)
+        {
+            await AddParticipantAsync(participant, species);
         }
 
         Battle.ArenaId = setup.ArenaId;
@@ -104,7 +112,7 @@ internal sealed class LiveBattleGrain(
 
         ValidateTeam(host, nameof(host));
 
-        await AddParticipantAsync(host);
+        await AddParticipantAsync(host, await ResolveTeamAsync(host));
         Battle.ArenaId = arenaId;
         Battle.Status = BattleStatus.WaitingForPlayers;
         await ArmDeadlineAsync(timing.Value.JoinDeadline);
@@ -122,7 +130,7 @@ internal sealed class LiveBattleGrain(
             throw new ArgumentException($"'{participant.ParticipantId}' already takes part.", nameof(participant));
         }
 
-        await AddParticipantAsync(participant);
+        await AddParticipantAsync(participant, await ResolveTeamAsync(participant));
         await BeginAsync();
         await events.PublishStartedAsync(BattleResponse.From(Snapshot()));
     }
@@ -236,11 +244,12 @@ internal sealed class LiveBattleGrain(
     }
 
     /// <summary>
-    /// Gives the participant's monsters the next free slots. Every
-    /// species is looked up first, so an unknown one leaves the battle
-    /// untouched.
+    /// Looks up the species a participant fields, in slot order.
+    /// It changes nothing, so a caller resolves every team before it
+    /// adds the first monster.
     /// </summary>
-    private async Task AddParticipantAsync(ParticipantSetup participant)
+    /// <exception cref="ArgumentException">A species does not exist.</exception>
+    private async Task<List<MonsterSpeciesDto>> ResolveTeamAsync(ParticipantSetup participant)
     {
         var species = new List<MonsterSpeciesDto>();
         foreach (var speciesId in participant.MonsterSpeciesIds)
@@ -249,6 +258,14 @@ internal sealed class LiveBattleGrain(
                 ?? throw new ArgumentException($"Unknown species '{speciesId}'.", nameof(participant)));
         }
 
+        return species;
+    }
+
+    /// <summary>
+    /// Gives the participant's monsters the next free slots.
+    /// </summary>
+    private async Task AddParticipantAsync(ParticipantSetup participant, List<MonsterSpeciesDto> species)
+    {
         var initializations = new List<Task>();
         foreach (var monster in species)
         {
@@ -299,6 +316,11 @@ internal sealed class LiveBattleGrain(
         {
             throw new InvalidOperationException(
                 $"'{action.ParticipantId}' already acted in round {Battle.Round}.");
+        }
+
+        if (!Ability.IsKnown(action.AbilityId))
+        {
+            throw new ArgumentException($"Unknown ability '{action.AbilityId}'.", nameof(action));
         }
 
         var actor = FindStanding(action.ActorSlot);
@@ -513,9 +535,15 @@ internal sealed class LiveBattleGrain(
         }
     }
 
+    // The deadline is cut to whole milliseconds, the precision Table
+    // Storage keeps a reminder's start time in. A reminder reloaded
+    // after a restart would otherwise tick a fraction of a millisecond
+    // before the deadline, be ignored as early, and only come back
+    // one retry period later.
     private async Task ArmDeadlineAsync(TimeSpan dueIn)
     {
-        Battle.TurnDeadline = clock.GetUtcNow() + dueIn;
+        var deadline = clock.GetUtcNow() + dueIn;
+        Battle.TurnDeadline = deadline.AddTicks(-(deadline.Ticks % TimeSpan.TicksPerMillisecond));
         await this.RegisterOrUpdateReminder(DeadlineReminder, dueIn, DeadlineRetryPeriod);
     }
 

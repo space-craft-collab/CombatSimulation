@@ -59,6 +59,9 @@ public sealed class BattleEndpointTests(AppHostFixture host)
     [InlineData("", "lava-crab")]
     [InlineData("bot", "lava-crab")]
     [InlineData("this-player-id-has-sixty-five-characters-one-more-than-allowed-64", "lava-crab")]
+    [InlineData("player-1 ", "lava-crab")]
+    [InlineData(" player-1", "lava-crab")]
+    [InlineData("player-1", "Lava-Crab")]
     [InlineData("player-1", null)]
     public async Task PostBattle_InvalidRequest_Returns400(string playerId, string? speciesId)
     {
@@ -72,6 +75,49 @@ public sealed class BattleEndpointTests(AppHostFixture host)
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostBattle_FourMonsters_Returns400()
+    {
+        // Arrange: one more than a side may field.
+        using var client = host.Factory.CreateClient();
+        string[] team = ["lava-crab", "lava-crab", "lava-crab", "lava-crab"];
+
+        // Act
+        using var response = await client.PostAsJsonAsync(
+            TestArenas.VolcanoBattles, new { playerId = "player-1", monsterSpeciesIds = team }, Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostBattle_ThreeMonsters_BotSlotsFollowPlayerSlots()
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+        string[] team = ["ember-fox", "lava-crab", "moss-golem"];
+
+        // Act
+        using var response = await client.PostAsJsonAsync(
+            TestArenas.VolcanoBattles, new { playerId = "player-1", monsterSpeciesIds = team }, Cancellation);
+
+        // Assert: the player takes slots 0-2 in pick order, the
+        // mirroring bot slots 3-5.
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var battle = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
+        Assert.NotNull(battle);
+        Assert.Equal(
+            [
+                new CombatantResponse(0, "player-1", false, "ember-fox", 40, 40),
+                new CombatantResponse(1, "player-1", false, "lava-crab", 60, 60),
+                new CombatantResponse(2, "player-1", false, "moss-golem", 80, 80),
+                new CombatantResponse(3, "bot", true, "ember-fox", 40, 40),
+                new CombatantResponse(4, "bot", true, "lava-crab", 60, 60),
+                new CombatantResponse(5, "bot", true, "moss-golem", 80, 80),
+            ],
+            battle.Combatants);
     }
 
     [Fact]
@@ -129,6 +175,23 @@ public sealed class BattleEndpointTests(AppHostFixture host)
         // Act
         using var response = await client.PostAsJsonAsync(
             Actions(battle.BattleId), new { participantId = "player-1", actorSlot = 0, targetSlot = 0 }, Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostAction_UnknownAbility_Returns400()
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+        var battle = await StartAsync(client, "lava-crab");
+
+        // Act
+        using var response = await client.PostAsJsonAsync(
+            Actions(battle.BattleId),
+            new { participantId = "player-1", actorSlot = 0, targetSlot = 1, abilityId = "fireball" },
+            Cancellation);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);

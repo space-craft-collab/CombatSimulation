@@ -64,6 +64,10 @@ internal sealed record StartBattleRequest
         {
             errors[nameof(PlayerId)] = [$"A player id has at most {PlayerIds.MaxLength} characters."];
         }
+        else if (PlayerIds.HasOuterWhitespace(playerId))
+        {
+            errors[nameof(PlayerId)] = ["A player id must not start or end with whitespace."];
+        }
 
         if (monsterSpeciesIds.Count is 0 or > MaxTeamSize)
         {

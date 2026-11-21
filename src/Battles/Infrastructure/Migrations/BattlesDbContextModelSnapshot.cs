@@ -31,7 +31,8 @@ namespace Battles.Infrastructure.Migrations
                     b.Property<string>("ArenaId")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
 
                     b.Property<DateTimeOffset>("CompletedAt")
                         .HasColumnType("datetimeoffset");
@@ -41,7 +42,8 @@ namespace Battles.Infrastructure.Migrations
 
                     b.Property<string>("WinnerId")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
 
                     b.HasKey("BattleId");
 
@@ -70,12 +72,14 @@ namespace Battles.Infrastructure.Migrations
                             b1.Property<string>("ParticipantId")
                                 .IsRequired()
                                 .HasMaxLength(64)
-                                .HasColumnType("nvarchar(64)");
+                                .HasColumnType("nvarchar(64)")
+                                .UseCollation("Latin1_General_100_BIN2");
 
                             b1.Property<string>("SpeciesId")
                                 .IsRequired()
                                 .HasMaxLength(64)
-                                .HasColumnType("nvarchar(64)");
+                                .HasColumnType("nvarchar(64)")
+                                .UseCollation("Latin1_General_100_BIN2");
 
                             b1.HasKey("BattleId", "Slot");
 

@@ -1,6 +1,7 @@
 using Catalog.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Shared.Infrastructure.Persistence;
 
 namespace Catalog.Infrastructure;
 
@@ -15,7 +16,7 @@ internal sealed class MonsterSpeciesConfiguration : IEntityTypeConfiguration<Mon
     {
         builder.ToTable("Species");
         builder.HasKey(species => species.Id);
-        builder.Property(species => species.Id).HasMaxLength(64);
+        builder.Property(species => species.Id).HasMaxLength(64).UseCollation(IdCollation.Ordinal);
         builder.Property(species => species.Name).HasMaxLength(100);
         builder.HasData(SpeciesSeed.All);
     }

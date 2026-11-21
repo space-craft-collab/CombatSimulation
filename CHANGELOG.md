@@ -73,6 +73,26 @@ and this project adheres to
   `GET /battles/{id}` still returns it, and its Table Storage rows
   are gone.
 
+- Test coverage pass over the Phase 3 state: teams of two and
+  three monsters are played (slots, a side standing while one
+  monster stands, a fallen monster cannot act), the damage rule
+  and the bot's tie-breaks have unit tests, the action, join and
+  bot-seat validations have their 400/404/409 cases, a deadline
+  re-arms itself over several rounds, the last round's SignalR
+  delta carries the winner, `Unwatch` stops the deltas, and the
+  history stops at 50 entries.
+- On Table Storage: a finished battle leaves no reminder row,
+  and an open battle survives a host restart — still listed,
+  seat still free.
+- A test for the accepted gap in ADR-0003: when the stats
+  report fails after the snapshot was stored, the snapshot and
+  the hot state stay and the battle still reads as completed.
+- Architecture tests for the module boundaries: no module
+  references another module's implementation, the `.Contracts`
+  assemblies reference no Orleans, EF Core or ASP.NET Core, and
+  every module's `Domain` namespace has types, so the layering
+  rule cannot pass on an empty set.
+
 #### Changed
 - Player ids are capped at 64 characters; longer ones get a
   400 on starting or joining a battle.
@@ -88,6 +108,16 @@ and this project adheres to
   does not know now returns 404 instead of creating an arena
   grain for any id. The HTTP tests play on the seeded `volcano`
   arena.
+- Ids are taken exactly as written, in SQL as they already
+  were as grain keys: every id column uses the binary collation
+  `Latin1_General_100_BIN2` (`IdCollation.Ordinal`, migration
+  `ExactIds` in each module), and lookups by id reject a match
+  that differs in trailing spaces. `Volcano` is not the arena
+  `volcano` (404), `Lava-Crab` is not a species (400), `Alice`
+  and `alice` are two players. Player ids with whitespace at
+  either end get a 400.
+- An action with an ability other than `strike` gets a 400;
+  before, any string was accepted and sent on to the watchers.
 - SQL Server is now required to run the host
   ([ADR-0011](docs/adr/0011-sql-server-required.md)). The tests share
   one Testcontainers SQL Server, with a database per host; the
@@ -104,6 +134,21 @@ and this project adheres to
 - A bot-only battle's final round never stored its result: the
   round stopped the bot loop, which cancelled the timer token the
   state write was still using.
+- After a host restart on Table Storage, a turn deadline could
+  come a minute late: the reminder's start time is stored in
+  whole milliseconds, so its tick could arrive a fraction of a
+  millisecond before the deadline and be ignored as early. The
+  deadline is now cut to whole milliseconds as well. It showed
+  when the battle's grain was already active on the new host.
+- With SQL Server's default collation, `POST
+  /arenas/Volcano/battles` opened a battle on an arena grain of
+  its own that `/arenas/volcano/battles` never listed, and
+  players whose ids differed only in case or trailing spaces
+  shared one stats record (see "Ids are taken exactly" above).
+- A start that failed on a later participant's unknown species
+  left the earlier participants' monsters in the battle; a
+  second start then fielded them twice. Every team is now
+  looked up before the first monster is added.
 - Docs cross-check: the two diagrams showed the stats report
   before the snapshot write, hot state that "ages out", a
   periodic auto-save and Orleans in `Shared.Infrastructure`.

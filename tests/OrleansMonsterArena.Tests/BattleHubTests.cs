@@ -99,6 +99,57 @@ public sealed class BattleHubTests(AppHostFixture host)
     }
 
     [Fact]
+    public async Task RoundResolved_FinalRound_SendsCompletedDeltaWithWinner()
+    {
+        // Arrange: mirrored foxes, 40 HP each and 10 per hit; the
+        // player wins the speed tie on the lower slot, in round 4.
+        await using var connection = await ConnectAsync();
+        var deltas = Collect(connection);
+        var battle = await StartAsync("ember-fox");
+        await connection.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
+
+        // Act
+        BattleEventDto? last = null;
+        for (var round = 1; round <= 4; round++)
+        {
+            await StrikeAsync(battle.BattleId);
+            last = await deltas.ReadAsync(Cancellation).AsTask().WaitAsync(WaitLimit, Cancellation);
+        }
+
+        // Assert: the last delta still carries the result, although
+        // the grain clears its state right after the hand-over.
+        Assert.NotNull(last);
+        Assert.Equal(4, last.Round);
+        Assert.Equal(BattleStatus.Completed, last.Status);
+        Assert.Equal("player-1", last.WinnerId);
+        Assert.Null(last.TurnDeadline);
+        Assert.Equal(new StrikeDto(0, 1, "strike", 10, 0), Assert.Single(last.Strikes));
+    }
+
+    [Fact]
+    public async Task Unwatch_AfterWatch_StopsRoundResolvedDeltas()
+    {
+        // Arrange: two watchers; the first one leaves again.
+        await using var leaving = await ConnectAsync();
+        await using var staying = await ConnectAsync();
+        var missed = Collect(leaving);
+        var received = Collect(staying);
+        var battle = await StartAsync("lava-crab");
+        await leaving.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
+        await staying.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
+
+        // Act
+        await leaving.InvokeAsync("Unwatch", battle.BattleId, Cancellation);
+        await StrikeAsync(battle.BattleId);
+
+        // Assert: once the remaining watcher has the delta, the one
+        // that left would have had it too.
+        await received.ReadAsync(Cancellation).AsTask().WaitAsync(WaitLimit, Cancellation);
+        await Task.Delay(TimeSpan.FromMilliseconds(300), Cancellation);
+        Assert.False(missed.TryRead(out _));
+    }
+
+    [Fact]
     public async Task BattleStarted_OpponentJoinsOpenBattle_SendsFirstState()
     {
         // Arrange: the host opens a battle and watches it.
@@ -149,6 +200,16 @@ public sealed class BattleHubTests(AppHostFixture host)
         await connection.StartAsync(Cancellation);
 
         return connection;
+    }
+
+    private async Task StrikeAsync(Guid battleId)
+    {
+        using var client = host.Factory.CreateClient();
+        using var response = await client.PostAsJsonAsync(
+            new Uri($"/battles/{battleId}/actions", UriKind.Relative),
+            new { participantId = "player-1", actorSlot = 0, targetSlot = 1 },
+            Cancellation);
+        response.EnsureSuccessStatusCode();
     }
 
     private async Task<BattleResponse> StartAsync(string speciesId)

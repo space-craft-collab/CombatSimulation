@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Players.Contracts;
 using Players.Domain;
+using Shared.Infrastructure.Persistence;
 
 namespace Players.Infrastructure;
 
@@ -15,6 +16,6 @@ internal sealed class PlayerStatsConfiguration : IEntityTypeConfiguration<Player
     {
         builder.ToTable("PlayerStats");
         builder.HasKey(stats => stats.PlayerId);
-        builder.Property(stats => stats.PlayerId).HasMaxLength(PlayerIds.MaxLength);
+        builder.Property(stats => stats.PlayerId).HasMaxLength(PlayerIds.MaxLength).UseCollation(IdCollation.Ordinal);
     }
 }

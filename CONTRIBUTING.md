@@ -108,6 +108,13 @@ dotnet ef migrations add <Name> --project src/Catalog \
 Never edit a migration that is already on `main`;
 add a new one instead.
 
+Id columns (arena, species, player and participant
+ids) take `.UseCollation(IdCollation.Ordinal)`, so
+SQL Server compares them exactly, like the grain
+keys. Changing the collation of a key column needs
+the primary key dropped and re-added around the
+`AlterColumn`; EF does not generate that.
+
 ## Architecture changes
 
 Anything that changes structure needs an ADR in

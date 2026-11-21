@@ -1,6 +1,9 @@
 using System.Net.Http.Json;
+using Battles.Domain;
 using Battles.Features.GetBattle;
 using Battles.Features.GetBattleHistory;
+using Battles.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace OrleansMonsterArena.Tests;
@@ -46,6 +49,56 @@ public sealed class BattleHistoryEndpointTests(AppHostFixture host)
 
         // Act
         var history = await GetHistoryAsync(client, NewPlayerId());
+
+        // Assert
+        Assert.Empty(history);
+    }
+
+    [Fact]
+    public async Task GetHistory_MoreBattlesThanLimit_ReturnsNewestOnly()
+    {
+        // Arrange: one more snapshot than the endpoint returns,
+        // written straight to the cold store, a minute apart.
+        var player = NewPlayerId();
+        var writer = host.Factory.Services.GetRequiredService<BattleSnapshotWriteRepository>();
+        var oldest = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var ids = new List<Guid>();
+        for (var index = 0; index <= GetBattleHistoryEndpoint.Limit; index++)
+        {
+            var snapshot = new BattleSnapshot
+            {
+                BattleId = Guid.NewGuid(),
+                ArenaId = TestArenas.Volcano,
+                Round = 1,
+                WinnerId = player,
+                CompletedAt = oldest.AddMinutes(index),
+                Combatants = [new SnapshotCombatant(0, player, false, "ember-fox", 40, 40)],
+            };
+            ids.Add(snapshot.BattleId);
+            await writer.AddAsync(snapshot, Cancellation);
+        }
+
+        using var client = host.Factory.CreateClient();
+
+        // Act
+        var history = await GetHistoryAsync(client, player);
+
+        // Assert: the oldest battle fell off the end.
+        Assert.Equal(GetBattleHistoryEndpoint.Limit, history.Count);
+        Assert.Equal(ids[^1], history[0].BattleId);
+        Assert.DoesNotContain(ids[0], history.Select(entry => entry.BattleId));
+    }
+
+    [Fact]
+    public async Task GetHistory_PlayerIdInOtherCase_ReturnsEmptyList()
+    {
+        // Arrange: "PLAYER-…" is a different player than "player-…".
+        var player = NewPlayerId();
+        using var client = host.Factory.CreateClient();
+        await PlayWonBattleAsync(client, player);
+
+        // Act
+        var history = await GetHistoryAsync(client, player.ToUpperInvariant());
 
         // Assert
         Assert.Empty(history);
