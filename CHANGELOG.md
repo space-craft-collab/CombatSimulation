@@ -59,7 +59,7 @@ Closed 2026-11-21.
 - Tests on Testcontainers SQL Server and Azurite: the host
   restart, the bridge, the accepted gap in ADR-0003, store
   outages, and the `ExactIds` migrations on databases that
-  already hold rows.
+  already hold rows, up and back down.
 - Architecture tests for the module boundaries: no module
   references another module's implementation, and the
   `.Contracts` assemblies reference no Orleans, EF Core or
@@ -91,6 +91,9 @@ Closed 2026-11-21.
   which the xUnit v3 `dotnet run` never starts.
 - The unused `Microsoft.Orleans.TestingHost` pin; the tests
   boot the real `AppHost`.
+- Three more pins nothing references or plans to:
+  `Microsoft.Orleans.Client`,
+  `Microsoft.EntityFrameworkCore.Tools`, `NLog.Web.AspNetCore`.
 
 #### Fixed
 - Table Storage grain storage sets `DeleteStateOnClear`;
