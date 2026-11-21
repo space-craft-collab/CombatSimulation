@@ -28,4 +28,19 @@ internal sealed class SpeciesReadRepository(IDbContextFactory<CatalogDbContext> 
         // "ember-fox " would find "ember-fox" too; an id matches only exactly.
         return species?.Id == speciesId ? species : null;
     }
+
+    /// <summary>
+    /// Lists every species, ordered by display name.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the query.</param>
+    /// <returns>All species.</returns>
+    public async Task<IReadOnlyList<MonsterSpecies>> ListAsync(CancellationToken cancellationToken)
+    {
+        await using var context = await contexts.CreateDbContextAsync(cancellationToken);
+
+        return await context.Species
+            .AsNoTracking()
+            .OrderBy(species => species.Name)
+            .ToListAsync(cancellationToken);
+    }
 }

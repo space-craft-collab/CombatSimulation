@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Battles;
 using Catalog;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -25,11 +26,33 @@ builder.Services
     .AddBattlesModule()
     .AddPlayersModule();
 
+// Numbers are JSON numbers only. The web default also reads them
+// from strings, and the OpenAPI document would then type every
+// integer as "integer or string".
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict);
+
+// The document the frontend's Kiota client is generated from
+// (ADR-0004). It names no server: a client is told its base URL.
+builder.Services.AddOpenApi(options => options.AddDocumentTransformer((document, _, _) =>
+{
+    document.Info.Title = "Orleans Monster Arena API";
+    document.Servers = [];
+
+    return Task.CompletedTask;
+}));
+
+builder.Services.AddFrontendCors();
+
 // The checks themselves come with what they watch: one per module
 // database, and Table Storage when the silo persists to it.
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+app.UseCors();
+
+app.MapOpenApi();
 
 app.MapCatalogEndpoints();
 app.MapBattlesEndpoints();

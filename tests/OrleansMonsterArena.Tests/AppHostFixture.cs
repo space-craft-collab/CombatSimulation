@@ -26,6 +26,11 @@ public sealed class AppHostFixture(SqlServerFixture sql) : IAsyncDisposable
     public static readonly TimeSpan TurnDeadline = TimeSpan.FromSeconds(2);
 
     /// <summary>
+    /// The one origin the test hosts admit as the frontend's.
+    /// </summary>
+    public const string FrontendOrigin = "http://frontend.test";
+
+    /// <summary>
     /// The shared test host, with the round loop sped up: grain
     /// state and reminders in memory, the cold path on its own
     /// database. The Table Storage connection string is blanked so a
@@ -48,6 +53,7 @@ public sealed class AppHostFixture(SqlServerFixture sql) : IAsyncDisposable
             .WithWebHostBuilder(builder => builder
                 .UseSetting($"ConnectionStrings:{ModuleDatabaseExtensions.ConnectionName}", sql)
                 .UseSetting($"ConnectionStrings:{SiloStorageExtensions.TableStorageConnectionName}", tableStorage)
+                .UseSetting("Cors:AllowedOrigins:0", FrontendOrigin)
                 .UseSetting("Battles:Timing:TurnDeadline", deadline.ToString())
                 .UseSetting("Battles:Timing:JoinDeadline", deadline.ToString())
                 .UseSetting("Battles:Timing:BotRoundInterval", "00:00:00.020"));

@@ -13,6 +13,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The OpenAPI document for the frontend's Kiota client (ADR-0004). -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.Orleans.Server" />
     <!-- The turn-deadline reminder (ADR-0007); Server does not carry reminders. -->
     <PackageReference Include="Microsoft.Orleans.Reminders" />

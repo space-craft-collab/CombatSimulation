@@ -18,8 +18,10 @@ internal static class JoinBattleEndpoint
     /// </summary>
     public static IEndpointRouteBuilder MapJoinBattleEndpoint(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/battles/{battleId:guid}/participants", HandleJoinAsync);
-        endpoints.MapPost("/battles/{battleId:guid}/bot", HandleJoinBotAsync);
+        endpoints.MapPost("/battles/{battleId:guid}/participants", HandleJoinAsync)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        endpoints.MapPost("/battles/{battleId:guid}/bot", HandleJoinBotAsync)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         return endpoints;
     }

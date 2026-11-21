@@ -17,7 +17,9 @@ internal static class SubmitActionEndpoint
     /// </summary>
     public static IEndpointRouteBuilder MapSubmitActionEndpoint(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/battles/{battleId:guid}/actions", HandleAsync);
+        endpoints.MapPost("/battles/{battleId:guid}/actions", HandleAsync)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         return endpoints;
     }

@@ -7,6 +7,8 @@ using Battles.Features.SubmitAction;
 using Battles.Features.WatchBattle;
 using Battles.Grains;
 using Battles.Infrastructure;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -20,6 +22,9 @@ namespace Battles;
 /// </summary>
 public static class BattlesModule
 {
+    // Groups the module's operations in the OpenAPI document.
+    private const string ApiTag = "Battles";
+
     /// <summary>
     /// Registers the Battles module's services and its cold store of
     /// completed battles in the <c>battles</c> schema.
@@ -63,13 +68,15 @@ public static class BattlesModule
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        return endpoints
+        endpoints.MapGroup(string.Empty)
+            .WithTags(ApiTag)
             .MapStartBattleEndpoint()
             .MapSubmitActionEndpoint()
             .MapGetBattleEndpoint()
             .MapJoinBattleEndpoint()
             .MapListBattlesEndpoint()
-            .MapGetBattleHistoryEndpoint()
-            .MapWatchBattleEndpoint();
+            .MapGetBattleHistoryEndpoint();
+
+        return endpoints.MapWatchBattleEndpoint();
     }
 }

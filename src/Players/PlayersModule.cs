@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Players.Contracts;
@@ -14,6 +16,9 @@ namespace Players;
 /// </summary>
 public static class PlayersModule
 {
+    // Groups the module's operations in the OpenAPI document.
+    private const string ApiTag = "Players";
+
     /// <summary>
     /// Registers the Players module's services and its database in
     /// the <c>players</c> schema.
@@ -41,6 +46,10 @@ public static class PlayersModule
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        return endpoints.MapGetPlayerStatsEndpoint();
+        endpoints.MapGroup(string.Empty)
+            .WithTags(ApiTag)
+            .MapGetPlayerStatsEndpoint();
+
+        return endpoints;
     }
 }

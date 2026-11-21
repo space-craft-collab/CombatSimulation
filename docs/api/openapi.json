@@ -1,0 +1,803 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Orleans Monster Arena API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/arenas": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArenaResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/species": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpeciesResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/arenas/{arenaId}/battles": {
+      "post": {
+        "tags": [
+          "Battles"
+        ],
+        "parameters": [
+          {
+            "name": "arenaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartBattleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Battles"
+        ],
+        "parameters": [
+          {
+            "name": "arenaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BattleSummaryResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/battles/{battleId}/actions": {
+      "post": {
+        "tags": [
+          "Battles"
+        ],
+        "parameters": [
+          {
+            "name": "battleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battles/{battleId}": {
+      "get": {
+        "tags": [
+          "Battles"
+        ],
+        "parameters": [
+          {
+            "name": "battleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/battles/{battleId}/participants": {
+      "post": {
+        "tags": [
+          "Battles"
+        ],
+        "parameters": [
+          {
+            "name": "battleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinBattleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battles/{battleId}/bot": {
+      "post": {
+        "tags": [
+          "Battles"
+        ],
+        "parameters": [
+          {
+            "name": "battleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{playerId}/battles": {
+      "get": {
+        "tags": [
+          "Battles"
+        ],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BattleHistoryEntryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{playerId}": {
+      "get": {
+        "tags": [
+          "Players"
+        ],
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerStatsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ArenaResponse": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "BattleHistoryEntryResponse": {
+        "required": [
+          "battleId",
+          "arenaId",
+          "completedAt",
+          "round",
+          "winnerId",
+          "participantIds"
+        ],
+        "type": "object",
+        "properties": {
+          "battleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "arenaId": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "winnerId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "participantIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BattleResponse": {
+        "required": [
+          "battleId",
+          "arenaId",
+          "status",
+          "round",
+          "winnerId",
+          "turnDeadline",
+          "combatants"
+        ],
+        "type": "object",
+        "properties": {
+          "battleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "arenaId": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BattleStatus"
+          },
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "winnerId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "turnDeadline": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "combatants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CombatantResponse"
+            }
+          }
+        }
+      },
+      "BattleStatus": {
+        "enum": [
+          "Created",
+          "WaitingForPlayers",
+          "InProgress",
+          "Completed"
+        ],
+        "description": "Lifecycle of a live battle (ADR-0007). Stored as its number in\ngrain state, so the values are frozen: never renumber or reuse one,\nadd new members at the end with the next number."
+      },
+      "BattleSummaryResponse": {
+        "required": [
+          "battleId",
+          "status",
+          "participantIds"
+        ],
+        "type": "object",
+        "properties": {
+          "battleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BattleStatus"
+          },
+          "participantIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CombatantResponse": {
+        "required": [
+          "slot",
+          "participantId",
+          "isBot",
+          "speciesId",
+          "hitPoints",
+          "maxHitPoints"
+        ],
+        "type": "object",
+        "properties": {
+          "slot": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "participantId": {
+            "type": "string"
+          },
+          "isBot": {
+            "type": "boolean"
+          },
+          "speciesId": {
+            "type": "string"
+          },
+          "hitPoints": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxHitPoints": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "JoinBattleRequest": {
+        "required": [
+          "playerId",
+          "monsterSpeciesIds"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string"
+          },
+          "monsterSpeciesIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Opponent": {
+        "enum": [
+          "Bot",
+          "Human"
+        ]
+      },
+      "PlayerStatsResponse": {
+        "required": [
+          "playerId",
+          "wins",
+          "losses"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string"
+          },
+          "wins": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "losses": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SpeciesResponse": {
+        "required": [
+          "id",
+          "name",
+          "maxHitPoints",
+          "attack",
+          "defense",
+          "speed"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "maxHitPoints": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "attack": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "defense": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "speed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StartBattleRequest": {
+        "required": [
+          "playerId",
+          "monsterSpeciesIds"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string"
+          },
+          "monsterSpeciesIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "opponent": {
+            "$ref": "#/components/schemas/Opponent"
+          }
+        }
+      },
+      "SubmitActionRequest": {
+        "required": [
+          "participantId",
+          "actorSlot",
+          "targetSlot"
+        ],
+        "type": "object",
+        "properties": {
+          "participantId": {
+            "type": "string"
+          },
+          "actorSlot": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetSlot": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "abilityId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Catalog"
+    },
+    {
+      "name": "Battles"
+    },
+    {
+      "name": "Players"
+    }
+  ]
+}

@@ -1,7 +1,10 @@
 using Catalog.Contracts;
 using Catalog.Features.ListArenas;
+using Catalog.Features.ListSpecies;
 using Catalog.Features.QueryCatalog;
 using Catalog.Infrastructure;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Infrastructure.Persistence;
@@ -14,6 +17,9 @@ namespace Catalog;
 /// </summary>
 public static class CatalogModule
 {
+    // Groups the module's operations in the OpenAPI document.
+    private const string ApiTag = "Catalog";
+
     /// <summary>
     /// Registers the Catalog module's services and its database in
     /// the <c>catalog</c> schema.
@@ -41,6 +47,11 @@ public static class CatalogModule
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        return endpoints.MapListArenasEndpoint();
+        endpoints.MapGroup(string.Empty)
+            .WithTags(ApiTag)
+            .MapListArenasEndpoint()
+            .MapListSpeciesEndpoint();
+
+        return endpoints;
     }
 }
