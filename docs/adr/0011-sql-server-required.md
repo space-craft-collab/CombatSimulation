@@ -92,6 +92,10 @@ migrates it on startup, exactly as a local Development run does.
   only rules out a shared `DbContext`, and ADR-0008 does not
   mention schemas; the schema per module is stated here. The
   decision itself is unchanged.
+- **2026-11-21:** the consequences call `integration` a
+  non-required job. That was true when this ADR was accepted;
+  since this date the ruleset on `main` requires `integration`
+  as well as `build-test`. The decision itself is unchanged.
 
 [ADR-0001]: 0001-modular-monolith.md
 [ADR-0008]: 0008-shared-layer-split.md

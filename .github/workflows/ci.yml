@@ -42,7 +42,7 @@ jobs:
       # xUnit v3 test projects are executables; run them
       # directly instead of going through dotnet test/VSTest.
       # Integration scenarios run in their own job instead, so
-      # this required check stays fast. dotnet-coverage wraps
+      # this job stays fast and fails first. dotnet-coverage wraps
       # the run and passes its exit code on.
       - name: Test
         run: >-
@@ -72,7 +72,8 @@ jobs:
           path: coverage/report
 
   # Testcontainers suites (Docker is preinstalled on the runner).
-  # Runs only after build-test passes and is not a required check.
+  # Runs only after build-test passes. Both jobs are required
+  # checks on main.
   integration:
     needs: build-test
     runs-on: ubuntu-latest

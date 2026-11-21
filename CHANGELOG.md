@@ -33,8 +33,8 @@ and this project adheres to
   keeps its state, round and pending turn deadline across a
   restart, and the deadline reminder fires on the new host.
 - CI `integration` job for the `Category=Integration` tests;
-  it runs after `build-test`, which now skips them, and is
-  not a required check.
+  it runs after `build-test`, which now skips them. Both are
+  required checks on `main`.
 - EF Core base in `Shared.Infrastructure`: `ModuleDbContext`
   (one schema per module), `AddModuleDatabase<T>` over a
   context factory, per-schema migrations history, and pending

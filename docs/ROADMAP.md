@@ -163,10 +163,10 @@ battle crosses from hot to cold in one straight-line call
 - [x] CI runs the Testcontainers suites (Docker is available
       on the GitHub runners) in a separate `integration` job:
       integration tests carry a trait (`Category=Integration`)
-      that the required `build-test` job filters out, so the
-      required check stays fast; `integration` runs only after
-      `build-test` passes (`needs: build-test`) and is not a
-      required check
+      that the `build-test` job filters out, so it stays fast
+      and fails first; `integration` runs only after
+      `build-test` passes (`needs: build-test`). Both are
+      required checks on `main` (`integration` since 2026-11-21)
 - [x] README quickstart: `docker compose up`, then `dotnet run`
 - [x] **Decision:** promote [ADR-0003](adr/0003-no-outbox.md)
       to `Accepted` once the bridge runs — done. **0006** and
