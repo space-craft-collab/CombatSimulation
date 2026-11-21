@@ -68,6 +68,10 @@ and this project adheres to
 - `GET /players/{id}/battles`: a player's completed battles from
   the cold store, newest first (at most 50); an empty list before
   the first one. The slice lives in Battles, which owns the data.
+- Integration test of the bridge on Testcontainers SQL Server and
+  Azurite: the finished battle is in SQL and the player's stats,
+  `GET /battles/{id}` still returns it, and its Table Storage rows
+  are gone.
 
 #### Changed
 - Player ids are capped at 64 characters; longer ones get a
@@ -94,6 +98,9 @@ and this project adheres to
   Client and TestingHost pins were still on 10.3.1).
 
 #### Fixed
+- Table Storage grain storage sets `DeleteStateOnClear`: Orleans'
+  default only blanks a cleared row, so a completed battle's hot
+  rows would have stayed forever.
 - A bot-only battle's final round never stored its result: the
   round stopped the bot loop, which cancelled the timer token the
   state write was still using.

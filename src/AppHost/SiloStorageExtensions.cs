@@ -38,7 +38,14 @@ public static class SiloStorageExtensions
 
         return silo
             .AddAzureTableGrainStorage("Default", options =>
-                options.TableServiceClient = new TableServiceClient(connectionString))
+            {
+                options.TableServiceClient = new TableServiceClient(connectionString);
+
+                // ClearStateAsync deletes the row instead of blanking it:
+                // a completed battle's hot rows must go once it is in the
+                // cold store, since Table Storage has no TTL (ADR-0003).
+                options.DeleteStateOnClear = true;
+            })
             .UseAzureTableReminderService(options =>
                 options.TableServiceClient = new TableServiceClient(connectionString));
     }

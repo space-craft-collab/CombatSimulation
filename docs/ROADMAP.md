@@ -150,10 +150,12 @@ battle crosses from hot to cold in one straight-line call
 - [x] Battle history read slice from the cold store:
       `GET /players/{id}/battles`, newest first, at most 50;
       the slice lives in Battles, which owns the data
-- [ ] Test: a finished battle shows up in the cold store and
+- [x] Test: a finished battle shows up in the cold store and
       in the player's stats, its hot state is gone from Table
       Storage, and `GET /battles/{id}` still returns it
-      (Testcontainers SQL Server + Azurite)
+      (Testcontainers SQL Server + Azurite). Table Storage needs
+      `DeleteStateOnClear`: by default `ClearStateAsync` only
+      blanks the row
 
 **Wrap-up**
 
