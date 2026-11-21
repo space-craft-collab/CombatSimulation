@@ -107,6 +107,24 @@ since folders are not compiler-checked.
 - Arrange / Act / Assert layout
 - Test names: `Method_Scenario_ExpectedResult`
 
+## Changelog & Roadmap
+
+- **The current phase's `CHANGELOG.md` section is a working
+  log.** It may run long and may say why and how.
+- **When a phase closes, condense its section** before the
+  closing commit:
+  - First check that every decision in it is recorded in an
+    ADR (or in `CONTRIBUTING.md` or the code); add what is
+    missing.
+  - Then cut it to about 100 lines: what changed, not why or
+    how; three lines per bullet at most; tests and
+    refactorings in one summary bullet each.
+  - `Decided` keeps ADR status changes and process
+    decisions only, one line each.
+- **`docs/ROADMAP.md` holds only the current phase's
+  checklist.** When a phase closes, delete its checklist and
+  move the still-open deferred items to "Carried over".
+
 ## Output Formatting
 
 See `mobile.md` — keep responses mobile-friendly.
