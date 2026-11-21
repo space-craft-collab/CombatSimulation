@@ -1,4 +1,5 @@
 using Battles.Features.GetBattle;
+using Battles.Features.GetBattleHistory;
 using Battles.Features.JoinBattle;
 using Battles.Features.ListBattles;
 using Battles.Features.StartBattle;
@@ -68,6 +69,7 @@ public static class BattlesModule
             .MapGetBattleEndpoint()
             .MapJoinBattleEndpoint()
             .MapListBattlesEndpoint()
+            .MapGetBattleHistoryEndpoint()
             .MapWatchBattleEndpoint();
     }
 }

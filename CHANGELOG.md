@@ -65,6 +65,9 @@ and this project adheres to
 - `GET /battles/{id}` (and the hub's `Watch`) fall back to the
   cold store once a battle's hot state is gone; 404 only when
   neither store knows the id.
+- `GET /players/{id}/battles`: a player's completed battles from
+  the cold store, newest first (at most 50); an empty list before
+  the first one. The slice lives in Battles, which owns the data.
 
 #### Changed
 - Player ids are capped at 64 characters; longer ones get a

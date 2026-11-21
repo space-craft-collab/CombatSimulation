@@ -147,8 +147,9 @@ battle crosses from hot to cold in one straight-line call
 - [x] `GET /battles/{id}` falls back to the cold store for a
       completed battle whose hot state is gone; 404 only when
       neither store knows the id
-- [ ] Battle history read slice from the cold store, e.g.
-      `GET /players/{id}/battles`
+- [x] Battle history read slice from the cold store:
+      `GET /players/{id}/battles`, newest first, at most 50;
+      the slice lives in Battles, which owns the data
 - [ ] Test: a finished battle shows up in the cold store and
       in the player's stats, its hot state is gone from Table
       Storage, and `GET /battles/{id}` still returns it
