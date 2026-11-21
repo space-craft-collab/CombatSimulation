@@ -47,8 +47,17 @@ and this project adheres to
   Moss Grove), seeded through the `AddArenas` migration;
   `GET /arenas` lists them and `ICatalogQueryService` gains
   `FindArenaAsync`.
+- Player stats in SQL (`players.PlayerStats`, `InitialPlayers`
+  migration): `IPlayerStatsService.RecordResultAsync` in
+  `Players.Contracts` counts a win and the losses of a decided
+  battle through `PlayerStatsWriteRepository` (counters raised
+  in SQL, safe under concurrent battles); `GET /players/{id}`
+  reads through `PlayerStatsReadRepository` and returns 404
+  before a player's first decided battle.
 
 #### Changed
+- Player ids are capped at 64 characters; longer ones get a
+  400 on starting or joining a battle.
 - Starting, opening or listing battles on an arena the Catalog
   does not know now returns 404 instead of creating an arena
   grain for any id. The HTTP tests play on the seeded `volcano`

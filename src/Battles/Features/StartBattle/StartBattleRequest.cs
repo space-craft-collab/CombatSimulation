@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Players.Contracts;
 
 namespace Battles.Features.StartBattle;
 
@@ -58,6 +59,10 @@ internal sealed record StartBattleRequest
         else if (playerId == StartBattleService.BotId)
         {
             errors[nameof(PlayerId)] = [$"'{StartBattleService.BotId}' is reserved for the bot."];
+        }
+        else if (playerId.Length > PlayerIds.MaxLength)
+        {
+            errors[nameof(PlayerId)] = [$"A player id has at most {PlayerIds.MaxLength} characters."];
         }
 
         if (monsterSpeciesIds.Count is 0 or > MaxTeamSize)

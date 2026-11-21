@@ -104,11 +104,14 @@ battle crosses from hot to cold in one straight-line call
       through a migration; `GET /arenas`; starting, opening or
       listing battles on an unknown arena returns 404 instead
       of being accepted (arena rules are deferred, see below)
-- [ ] **Players:** `IPlayerStatsService` in
+- [x] **Players:** `IPlayerStatsService` in
       `Players.Contracts` ([ADR-0005](adr/0005-inter-module-services.md)),
       wins/losses per player id in the Players store, with
       separate read and write repositories; `GET /players/{id}`
-      shows the stats
+      shows the stats (404 until a player's first decided
+      battle). Counters rise in SQL, so concurrent battles lose
+      no count; player ids are capped at 64 characters. Nothing
+      reports results yet — the bridge below does
 
 **Hot → cold bridge**
 

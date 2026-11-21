@@ -3,7 +3,7 @@
   <!--
     Players.Contracts (ADR-0005): the Players module's
     cross-module surface. Orleans-free; Shared.Kernel only.
-    First contract (IPlayerStatsService) lands in Phase 2.
+    Battles reports decided battles through IPlayerStatsService.
   -->
 
   <ItemGroup>

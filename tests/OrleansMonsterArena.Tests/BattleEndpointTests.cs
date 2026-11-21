@@ -58,6 +58,7 @@ public sealed class BattleEndpointTests(AppHostFixture host)
     [Theory]
     [InlineData("", "lava-crab")]
     [InlineData("bot", "lava-crab")]
+    [InlineData("this-player-id-has-sixty-five-characters-one-more-than-allowed-64", "lava-crab")]
     [InlineData("player-1", null)]
     public async Task PostBattle_InvalidRequest_Returns400(string playerId, string? speciesId)
     {

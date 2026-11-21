@@ -1,5 +1,10 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Players.Contracts;
+using Players.Features.GetPlayerStats;
+using Players.Features.RecordResult;
+using Players.Infrastructure;
+using Shared.Infrastructure.Persistence;
 
 namespace Players;
 
@@ -10,13 +15,19 @@ namespace Players;
 public static class PlayersModule
 {
     /// <summary>
-    /// Registers the Players module's services.
+    /// Registers the Players module's services and its database in
+    /// the <c>players</c> schema.
     /// </summary>
     /// <param name="services">The service collection to register into.</param>
     /// <returns>The same service collection for chaining.</returns>
     public static IServiceCollection AddPlayersModule(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.AddModuleDatabase<PlayersDbContext>(PlayersDbContext.SchemaName);
+        services.AddSingleton<PlayerStatsReadRepository>();
+        services.AddSingleton<PlayerStatsWriteRepository>();
+        services.AddSingleton<IPlayerStatsService, PlayerStatsService>();
 
         return services;
     }
@@ -30,6 +41,6 @@ public static class PlayersModule
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        return endpoints;
+        return endpoints.MapGetPlayerStatsEndpoint();
     }
 }
