@@ -35,9 +35,10 @@ docker compose run --rm frontend npm ci
 docker compose up
 ```
 
-So far it is a walking skeleton: it lists the arenas
-and species and plays one round against the bot to
-prove the connection. The screens follow.
+There a visitor picks a nickname, an arena and a team
+of up to three monsters and fights the bot, round by
+round, live over SignalR. Waiting for a human
+opponent and the player dashboard follow.
 
 A battle against the bot is already playable over HTTP:
 

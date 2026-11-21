@@ -1,1 +1,24 @@
 @import 'tailwindcss';
+
+/* The damage a monster just took: rises and fades. */
+@keyframes hit-flash {
+	from {
+		opacity: 1;
+		transform: translateY(0);
+	}
+
+	to {
+		opacity: 0;
+		transform: translateY(-1rem);
+	}
+}
+
+.hit-flash {
+	animation: hit-flash 1.2s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hit-flash {
+		animation-duration: 0.01s;
+	}
+}

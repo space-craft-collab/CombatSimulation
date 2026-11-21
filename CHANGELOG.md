@@ -44,12 +44,19 @@ in [this file's history][full-changelog].
   `dotnet` tool). `frontend/src/lib/arena` wraps it: client
   factory, strict Catalog types, and the hand-written types
   of the SignalR hub.
-- A walking-skeleton page: the arenas and species rendered on
-  the server, and a connection check that plays one round
-  against the bot from the browser over HTTP and SignalR.
-- Frontend tests: Vitest (first unit tests) and Playwright in
-  a container (`docker compose run --rm e2e`), which runs the
-  connection check in Chromium.
+- The solo path in the browser: a nickname on the first visit
+  (kept in `localStorage`), the arena browser, a team picker
+  for one to three monsters, and the live battle against the
+  bot. The battle view applies each round's delta from the
+  hub, shows the turn deadline as a countdown, a battle log
+  and the result; a reload picks a battle up again, a
+  finished one from the cold store.
+- Monsters drawn as inline SVG; the layout is built for a
+  phone-width screen first.
+- Frontend tests: Vitest for the battle logic and the nickname
+  rules, and a Playwright smoke test in a container
+  (`docker compose run --rm e2e`) that plays the solo path in
+  Chromium, from the nickname to the result.
 - `frontend/scripts/check-malware.mjs`: checks every package
   of the lockfile against the malware advisories of the
   GitHub Advisory Database.

@@ -107,19 +107,21 @@ host through a Kiota-generated client
 
 **Solo path — first**
 
-- [ ] Nickname prompt on the first visit, kept in
+- [x] Nickname prompt on the first visit, kept in
       `localStorage`; it is the player id the API takes
-      (no auth before Phase 6)
-- [ ] Arena browser (`GET /arenas`)
-- [ ] Team picker: one to three species, then start a
+      (no auth before Phase 6). Checked against the API's
+      rules for a player id before it is used
+- [x] Arena browser (`GET /arenas`)
+- [x] Team picker: one to three species, then start a
       battle; **vs bot** is the default
-- [ ] Live battle view: `Watch` on `/hubs/battles`,
+- [x] Live battle view: `Watch` on `/hubs/battles`,
       `RoundResolved` deltas applied to rune state, choosing
       an actor and a target, the turn deadline as a
       countdown, the result at the end. A reload picks the
-      battle up again from `GET /battles/{id}`. The hub's
-      message types are written by hand; Kiota covers HTTP
-      only
+      battle up again from `GET /battles/{id}`, a finished
+      one from the cold store. The hub's message types are
+      written by hand; Kiota covers HTTP only. Someone who
+      is not a participant watches without controls
 
 **Then**
 
@@ -135,17 +137,20 @@ host through a Kiota-generated client
 
 **Look**
 
-- [ ] Tailwind CSS; monsters as inline SVG, no image assets
-- [ ] Usable on a phone-width screen
+- [x] Tailwind CSS; monsters as inline SVG, no image assets
+- [x] Usable on a phone-width screen: the solo path was
+      checked at 390 px; a battle of three against three
+      fits one screen with the strike button in reach
 
 **Tests and CI**
 
-- [ ] Vitest for the logic, above all applying round deltas
-      to the battle state (the setup and a first test exist)
-- [ ] One Playwright smoke test: the solo path against a
-      running host, from nickname to result. The setup exists
-      (`docker compose run --rm e2e`) with a connection check:
-      one round against the bot over HTTP and SignalR
+- [x] Vitest for the logic: applying round deltas to the
+      battle state, telling old and missing rounds apart,
+      the outcome, the countdown, the nickname rules
+- [x] One Playwright smoke test: the solo path against a
+      running host, from the nickname to the result,
+      including a reload in mid-battle and one after it
+      (`docker compose run --rm e2e`)
 - [x] CI job `frontend`: malware check, install, lint, type
       check, Vitest and build, all in the container image
 - [ ] Playwright in CI, once the smoke test exists

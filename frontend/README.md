@@ -43,7 +43,11 @@ frontend's origin under `Cors:AllowedOrigins`.
   `docs/api/openapi.json` by `scripts/generate-api-client.sh`.
   Never edited by hand.
 - `src/lib/arena/` — the hand-written layer over it: the client
-  factory, strict types, and the SignalR hub's messages.
+  factory, strict types, the SignalR hub's messages, and the
+  battle logic (`battle.ts`, pure and unit-tested).
+- `src/lib/components/` — shared components, among them the
+  monsters as inline SVG.
+- `src/routes/` — the screens: arenas, team picker, live battle.
 - `e2e/` — Playwright tests.
 
 ## Dependencies

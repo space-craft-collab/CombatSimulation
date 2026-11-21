@@ -1,82 +1,58 @@
 <script lang="ts">
-	import { runConnectionCheck } from '#lib/arena/connection-check.ts';
+	import { resolve } from '$app/paths';
+	import { player } from '#lib/arena/player.svelte.ts';
+	import NicknameForm from '#lib/components/NicknameForm.svelte';
 	import type { PageProps } from './$types';
 
-	// Walking skeleton of Phase 4: the Catalog is rendered on the
-	// server, the check below runs in the browser. The real screens
-	// replace this page.
 	let { data }: PageProps = $props();
 
-	let steps = $state<string[]>([]);
-	let failure = $state<string | null>(null);
-	let running = $state(false);
-
-	async function check() {
-		steps = [];
-		failure = null;
-		running = true;
-
-		try {
-			await runConnectionCheck(data.arenas[0].id, data.species[0].id, (step) => steps.push(step));
-		} catch (error) {
-			failure = error instanceof Error ? error.message : String(error);
-		} finally {
-			running = false;
-		}
-	}
+	let renaming = $state(false);
 </script>
 
 <svelte:head>
 	<title>Orleans Monster Arena</title>
 </svelte:head>
 
-<main class="mx-auto flex max-w-2xl flex-col gap-8 p-6">
-	<h1 class="text-3xl font-bold">Orleans Monster Arena</h1>
-
+<div class="flex flex-col gap-8">
 	<section>
-		<h2 class="mb-2 text-xl font-semibold">Arenas</h2>
-		<ul class="flex flex-wrap gap-2">
-			{#each data.arenas as arena (arena.id)}
-				<li class="rounded border border-slate-300 px-3 py-1" data-testid="arena">{arena.name}</li>
-			{/each}
-		</ul>
-	</section>
-
-	<section>
-		<h2 class="mb-2 text-xl font-semibold">Species</h2>
-		<ul class="grid gap-2 sm:grid-cols-2">
-			{#each data.species as species (species.id)}
-				<li class="rounded border border-slate-300 p-3" data-testid="species">
-					<p class="font-medium">{species.name}</p>
-					<p class="text-sm text-slate-600">
-						HP {species.maxHitPoints} · ATK {species.attack} · DEF {species.defense} · SPD {species.speed}
-					</p>
-				</li>
-			{/each}
-		</ul>
-	</section>
-
-	<section>
-		<h2 class="mb-2 text-xl font-semibold">Connection check</h2>
-		<p class="mb-3 text-sm text-slate-600">
-			Starts a battle against the bot, follows it on the SignalR hub and plays one round.
+		<h1 class="text-2xl font-bold">Pick a team, fight the bot</h1>
+		<p class="mt-2 text-slate-300">
+			A turn-based monster battle. Every battle runs as an Orleans grain on the server; each round
+			reaches this page live.
 		</p>
-		<button
-			class="rounded bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
-			disabled={running || data.arenas.length === 0 || data.species.length === 0}
-			onclick={check}
-		>
-			{running ? 'Checking…' : 'Run check'}
-		</button>
-
-		<ol class="mt-3 list-decimal pl-5 text-sm" data-testid="check-steps">
-			{#each steps as step (step)}
-				<li>{step}</li>
-			{/each}
-		</ol>
-
-		{#if failure}
-			<p class="mt-3 text-sm text-red-700" data-testid="check-failure">Failed: {failure}</p>
-		{/if}
 	</section>
-</main>
+
+	{#if player.loaded && (!player.nickname || renaming)}
+		<section class="rounded-lg border border-slate-700 bg-slate-900 p-4" data-testid="nickname">
+			<h2 class="mb-3 text-lg font-semibold">
+				{player.nickname ? 'Change your nickname' : 'First, choose a nickname'}
+			</h2>
+			<NicknameForm onsaved={() => (renaming = false)} />
+		</section>
+	{:else if player.nickname}
+		<p class="text-sm text-slate-400">
+			Playing as <span class="font-semibold text-slate-200">{player.nickname}</span>.
+			<button class="underline" type="button" onclick={() => (renaming = true)}>Change</button>
+		</p>
+	{/if}
+
+	<section>
+		<h2 class="mb-3 text-lg font-semibold">Arenas</h2>
+		<ul class="grid gap-3 sm:grid-cols-2">
+			{#each data.arenas as arena (arena.id)}
+				<li>
+					<a
+						class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900 p-4 hover:border-amber-300"
+						href={resolve('/arenas/[arenaId]', { arenaId: arena.id })}
+						data-testid="arena"
+					>
+						<span class="font-medium">{arena.name}</span>
+						<span class="text-sm text-amber-400" aria-hidden="true">Enter →</span>
+					</a>
+				</li>
+			{:else}
+				<li class="text-slate-400">No arena is open right now.</li>
+			{/each}
+		</ul>
+	</section>
+</div>
