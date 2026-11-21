@@ -1,13 +1,17 @@
 using Catalog.Contracts;
 using Catalog.Infrastructure;
 
-namespace Catalog.Features.QuerySpecies;
+namespace Catalog.Features.QueryCatalog;
 
 /// <summary>
-/// Serves <see cref="ICatalogQueryService"/> from the species table.
+/// Serves <see cref="ICatalogQueryService"/> from the species and
+/// arena tables.
 /// </summary>
 /// <param name="species">Reads the species table.</param>
-internal sealed class CatalogQueryService(SpeciesReadRepository species) : ICatalogQueryService
+/// <param name="arenas">Reads the arena table.</param>
+internal sealed class CatalogQueryService(
+    SpeciesReadRepository species,
+    ArenaReadRepository arenas) : ICatalogQueryService
 {
     /// <inheritdoc />
     public async Task<MonsterSpeciesDto?> FindSpeciesAsync(
@@ -27,5 +31,17 @@ internal sealed class CatalogQueryService(SpeciesReadRepository species) : ICata
                 found.Attack,
                 found.Defense,
                 found.Speed);
+    }
+
+    /// <inheritdoc />
+    public async Task<ArenaDto?> FindArenaAsync(
+        string arenaId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(arenaId);
+
+        var found = await arenas.FindAsync(arenaId, cancellationToken);
+
+        return found is null ? null : new ArenaDto(found.Id, found.Name);
     }
 }

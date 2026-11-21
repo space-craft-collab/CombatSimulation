@@ -7,7 +7,8 @@ namespace Battles.Features.ListBattles;
 
 /// <summary>
 /// <c>GET /arenas/{arenaId}/battles</c>: the arena's open and running
-/// battles, so a visitor can pick one that waits for players.
+/// battles, so a visitor can pick one that waits for players; 404 if
+/// the arena is not in the Catalog.
 /// </summary>
 internal static class ListBattlesEndpoint
 {
@@ -21,8 +22,10 @@ internal static class ListBattlesEndpoint
         return endpoints;
     }
 
-    private static async Task<Ok<IReadOnlyList<BattleSummaryResponse>>> HandleAsync(
+    private static async Task<Results<Ok<IReadOnlyList<BattleSummaryResponse>>, NotFound>> HandleAsync(
         string arenaId,
         ListBattlesService service) =>
-        TypedResults.Ok(await service.ListAsync(arenaId));
+        await service.ListAsync(arenaId) is { } battles
+            ? TypedResults.Ok(battles)
+            : TypedResults.NotFound();
 }

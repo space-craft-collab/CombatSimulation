@@ -12,4 +12,12 @@ public interface ICatalogQueryService
     /// <param name="cancellationToken">Cancels the lookup.</param>
     /// <returns>The species, or <see langword="null"/> if it does not exist.</returns>
     Task<MonsterSpeciesDto?> FindSpeciesAsync(string speciesId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Looks up an arena by id.
+    /// </summary>
+    /// <param name="arenaId">The arena id.</param>
+    /// <param name="cancellationToken">Cancels the lookup.</param>
+    /// <returns>The arena, or <see langword="null"/> if it does not exist.</returns>
+    Task<ArenaDto?> FindArenaAsync(string arenaId, CancellationToken cancellationToken = default);
 }

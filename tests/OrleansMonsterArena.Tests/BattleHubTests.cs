@@ -107,7 +107,7 @@ public sealed class BattleHubTests(AppHostFixture host)
         connection.On<BattleResponse>(BattleHub.BattleStartedMethod, battle => started.TrySetResult(battle));
         using var client = host.Factory.CreateClient();
         using var opened = await client.PostAsJsonAsync(
-            new Uri($"/arenas/test-{Guid.NewGuid()}/battles", UriKind.Relative),
+            TestArenas.VolcanoBattles,
             new { playerId = "player-1", monsterSpeciesIds = new[] { "lava-crab" }, opponent = "Human" },
             Cancellation);
         var battle = await opened.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
@@ -155,7 +155,7 @@ public sealed class BattleHubTests(AppHostFixture host)
     {
         using var client = host.Factory.CreateClient();
         using var response = await client.PostAsJsonAsync(
-            new Uri($"/arenas/test-{Guid.NewGuid()}/battles", UriKind.Relative),
+            TestArenas.VolcanoBattles,
             new { playerId = "player-1", monsterSpeciesIds = new[] { speciesId } },
             Cancellation);
         response.EnsureSuccessStatusCode();

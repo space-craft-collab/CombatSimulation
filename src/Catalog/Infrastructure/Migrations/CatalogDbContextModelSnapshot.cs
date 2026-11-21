@@ -22,6 +22,39 @@ namespace Catalog.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Catalog.Domain.Arena", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Arenas", "catalog");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "volcano",
+                            Name = "Volcano"
+                        },
+                        new
+                        {
+                            Id = "glacier",
+                            Name = "Glacier"
+                        },
+                        new
+                        {
+                            Id = "moss-grove",
+                            Name = "Moss Grove"
+                        });
+                });
+
             modelBuilder.Entity("Catalog.Domain.MonsterSpecies", b =>
                 {
                     b.Property<string>("Id")

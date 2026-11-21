@@ -26,7 +26,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var arena = NewArena();
+        var arena = TestArenas.VolcanoBattles;
 
         // Act
         var battle = await OpenAsync(client, arena);
@@ -41,7 +41,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var arena = NewArena();
+        var arena = TestArenas.VolcanoBattles;
         var battle = await OpenAsync(client, arena);
 
         // Act
@@ -49,8 +49,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
 
         // Assert
         Assert.NotNull(listed);
-        var entry = Assert.Single(listed);
-        Assert.Equal(battle.BattleId, entry.BattleId);
+        var entry = Assert.Single(listed, summary => summary.BattleId == battle.BattleId);
         Assert.Equal(BattleStatus.WaitingForPlayers, entry.Status);
         Assert.Equal(["player-1"], entry.ParticipantIds);
     }
@@ -60,7 +59,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, NewArena());
+        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -80,7 +79,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, NewArena());
+        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
 
         // Act
         using var response = await client.PostAsync(Bot(battle.BattleId), null, Cancellation);
@@ -98,7 +97,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, NewArena());
+        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
         using var first = await client.PostAsync(Bot(battle.BattleId), null, Cancellation);
         first.EnsureSuccessStatusCode();
 
@@ -115,7 +114,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, NewArena());
+        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -144,7 +143,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, NewArena());
+        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -155,8 +154,6 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
-
-    private static Uri NewArena() => new($"/arenas/test-{Guid.NewGuid()}/battles", UriKind.Relative);
 
     private static object TeamBody(string playerId, string speciesId) =>
         new { playerId, monsterSpeciesIds = new[] { speciesId } };

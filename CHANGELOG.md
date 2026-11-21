@@ -43,8 +43,16 @@ and this project adheres to
 - Catalog species in SQL (`catalog.Species`), seeded through
   the `InitialCatalog` migration; `ICatalogQueryService` reads
   through `SpeciesReadRepository`.
+- Catalog arenas in SQL (`catalog.Arenas`: Volcano, Glacier,
+  Moss Grove), seeded through the `AddArenas` migration;
+  `GET /arenas` lists them and `ICatalogQueryService` gains
+  `FindArenaAsync`.
 
 #### Changed
+- Starting, opening or listing battles on an arena the Catalog
+  does not know now returns 404 instead of creating an arena
+  grain for any id. The HTTP tests play on the seeded `volcano`
+  arena.
 - SQL Server is now required to run the host
   ([ADR-0011](docs/adr/0011-sql-server-required.md)). The tests share
   one Testcontainers SQL Server, with a database per host; the

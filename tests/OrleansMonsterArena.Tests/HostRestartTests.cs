@@ -58,7 +58,7 @@ public sealed class HostRestartTests(AzuriteFixture azurite, SqlServerFixture sq
     private static async Task<BattleResponse> StartAsync(HttpClient client)
     {
         using var response = await client.PostAsJsonAsync(
-            new Uri($"/arenas/test-{Guid.NewGuid()}/battles", UriKind.Relative),
+            TestArenas.VolcanoBattles,
             new { playerId = "player-1", monsterSpeciesIds = new[] { "lava-crab" } },
             Cancellation);
         response.EnsureSuccessStatusCode();

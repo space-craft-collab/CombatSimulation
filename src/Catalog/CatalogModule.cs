@@ -1,5 +1,6 @@
 using Catalog.Contracts;
-using Catalog.Features.QuerySpecies;
+using Catalog.Features.ListArenas;
+using Catalog.Features.QueryCatalog;
 using Catalog.Infrastructure;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +26,7 @@ public static class CatalogModule
 
         services.AddModuleDatabase<CatalogDbContext>(CatalogDbContext.SchemaName);
         services.AddSingleton<SpeciesReadRepository>();
+        services.AddSingleton<ArenaReadRepository>();
         services.AddSingleton<ICatalogQueryService, CatalogQueryService>();
 
         return services;
@@ -39,6 +41,6 @@ public static class CatalogModule
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        return endpoints;
+        return endpoints.MapListArenasEndpoint();
     }
 }

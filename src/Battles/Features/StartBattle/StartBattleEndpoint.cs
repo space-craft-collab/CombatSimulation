@@ -8,7 +8,8 @@ namespace Battles.Features.StartBattle;
 
 /// <summary>
 /// <c>POST /arenas/{arenaId}/battles</c>: starts a battle against
-/// the bot, or opens one for a human, and answers with its first state.
+/// the bot, or opens one for a human, and answers with its first state;
+/// 404 if the arena is not in the Catalog.
 /// </summary>
 internal static class StartBattleEndpoint
 {
@@ -22,7 +23,7 @@ internal static class StartBattleEndpoint
         return endpoints;
     }
 
-    private static async Task<Results<Created<BattleResponse>, ValidationProblem, ProblemHttpResult>> HandleAsync(
+    private static async Task<Results<Created<BattleResponse>, NotFound, ValidationProblem, ProblemHttpResult>> HandleAsync(
         string arenaId,
         StartBattleRequest request,
         StartBattleService service)
@@ -34,8 +35,9 @@ internal static class StartBattleEndpoint
 
         try
         {
-            var battle = await service.StartAsync(arenaId, request);
-            return TypedResults.Created($"/battles/{battle.BattleId}", battle);
+            return await service.StartAsync(arenaId, request) is { } battle
+                ? TypedResults.Created($"/battles/{battle.BattleId}", battle)
+                : TypedResults.NotFound();
         }
         catch (ArgumentException exception)
         {

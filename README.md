@@ -29,6 +29,9 @@ dotnet run --project src/AppHost
 A battle against the bot is already playable over HTTP:
 
 ```bash
+# Pick an arena
+curl localhost:5000/arenas
+
 # Start a battle; the bot mirrors your team
 curl -X POST localhost:5000/arenas/volcano/battles \
   -H 'Content-Type: application/json' \

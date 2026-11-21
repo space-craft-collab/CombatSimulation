@@ -17,6 +17,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Lets the endpoint tests read the internal response types. -->
+    <InternalsVisibleTo Include="OrleansMonsterArena.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Design-time only: lets `dotnet ef` build migrations here. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
   </ItemGroup>

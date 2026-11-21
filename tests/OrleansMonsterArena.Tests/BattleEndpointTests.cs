@@ -16,8 +16,6 @@ public sealed class BattleEndpointTests(AppHostFixture host)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    private static Uri NewArenaBattles() => new($"/arenas/test-{Guid.NewGuid()}/battles", UriKind.Relative);
-
     private static Uri Actions(Guid battleId) => new($"/battles/{battleId}/actions", UriKind.Relative);
 
     [Fact]
@@ -28,7 +26,7 @@ public sealed class BattleEndpointTests(AppHostFixture host)
 
         // Act
         using var response = await client.PostAsJsonAsync(
-            NewArenaBattles(), StartBody("lava-crab"), Cancellation);
+            TestArenas.VolcanoBattles, StartBody("lava-crab"), Cancellation);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -51,7 +49,7 @@ public sealed class BattleEndpointTests(AppHostFixture host)
 
         // Act
         using var response = await client.PostAsJsonAsync(
-            NewArenaBattles(), StartBody("no-such-monster"), Cancellation);
+            TestArenas.VolcanoBattles, StartBody("no-such-monster"), Cancellation);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -69,7 +67,7 @@ public sealed class BattleEndpointTests(AppHostFixture host)
 
         // Act
         using var response = await client.PostAsJsonAsync(
-            NewArenaBattles(), new { playerId, monsterSpeciesIds = team }, Cancellation);
+            TestArenas.VolcanoBattles, new { playerId, monsterSpeciesIds = team }, Cancellation);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -168,7 +166,7 @@ public sealed class BattleEndpointTests(AppHostFixture host)
     private static async Task<BattleResponse> StartAsync(HttpClient client, string speciesId)
     {
         using var response = await client.PostAsJsonAsync(
-            NewArenaBattles(), StartBody(speciesId), Cancellation);
+            TestArenas.VolcanoBattles, StartBody(speciesId), Cancellation);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation)

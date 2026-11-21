@@ -99,10 +99,11 @@ battle crosses from hot to cold in one straight-line call
 - [x] **Catalog:** species move from the hard-coded
       `SpeciesSeed` into SQL (seeded through a migration);
       `ICatalogQueryService` reads through a read repository
-- [ ] **Catalog arenas:** arena entity (name, optional rules)
-      as [ADR-0007](adr/0007-turn-based.md) describes;
-      `GET /arenas`; starting or opening a battle on an
-      unknown arena returns 404 instead of being accepted
+- [x] **Catalog arenas:** arena entity (id, name) as
+      [ADR-0007](adr/0007-turn-based.md) describes, seeded
+      through a migration; `GET /arenas`; starting, opening or
+      listing battles on an unknown arena returns 404 instead
+      of being accepted (arena rules are deferred, see below)
 - [ ] **Players:** `IPlayerStatsService` in
       `Players.Contracts` ([ADR-0005](adr/0005-inter-module-services.md)),
       wins/losses per player id in the Players store, with
@@ -169,6 +170,10 @@ battle crosses from hot to cold in one straight-line call
   Table Storage as the recovery source ADR-0003 relies on.
 - Player accounts and auth → Phase 6; player ids stay
   client-chosen strings.
+- Arena rules such as "fire monsters only"
+  ([ADR-0007](adr/0007-turn-based.md)): species carry no
+  element or type yet, so a rule would have nothing to check.
+  They arrive together with the species attribute they need.
 
 ### Definition of done
 

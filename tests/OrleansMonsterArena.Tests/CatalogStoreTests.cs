@@ -8,8 +8,8 @@ using Xunit;
 namespace OrleansMonsterArena.Tests;
 
 /// <summary>
-/// Proves the Catalog reads from SQL Server: the startup migration
-/// created its schema and seeded the species.
+/// Proves the Catalog reads from SQL Server: the startup migrations
+/// created its schema and seeded the species and arenas.
 /// </summary>
 /// <param name="host">The shared booted host.</param>
 [Collection(AppHostFixture.CollectionName)]
@@ -44,6 +44,32 @@ public sealed class CatalogStoreTests(AppHostFixture host)
     }
 
     [Fact]
+    public async Task FindArenaAsync_SeededArena_ReturnsItFromSql()
+    {
+        // Arrange
+        var catalog = host.Factory.Services.GetRequiredService<ICatalogQueryService>();
+
+        // Act
+        var arena = await catalog.FindArenaAsync(TestArenas.Volcano, Cancellation);
+
+        // Assert
+        Assert.Equal(new ArenaDto("volcano", "Volcano"), arena);
+    }
+
+    [Fact]
+    public async Task FindArenaAsync_UnknownArena_ReturnsNull()
+    {
+        // Arrange
+        var catalog = host.Factory.Services.GetRequiredService<ICatalogQueryService>();
+
+        // Act
+        var arena = await catalog.FindArenaAsync("no-such-arena", Cancellation);
+
+        // Assert
+        Assert.Null(arena);
+    }
+
+    [Fact]
     public async Task Migrate_CatalogModule_KeepsTablesAndHistoryInOwnSchema()
     {
         // Arrange
@@ -65,6 +91,6 @@ public sealed class CatalogStoreTests(AppHostFixture host)
         }
 
         // Assert
-        Assert.Equal(["Species", "__EFMigrationsHistory"], tables.Order(StringComparer.Ordinal));
+        Assert.Equal(["Arenas", "Species", "__EFMigrationsHistory"], tables.Order(StringComparer.Ordinal));
     }
 }

@@ -1,5 +1,6 @@
 using Battles.Features.GetBattle;
 using Battles.Grains.Abstractions;
+using Catalog.Contracts;
 
 namespace Battles.Features.StartBattle;
 
@@ -8,7 +9,8 @@ namespace Battles.Features.StartBattle;
 /// or opened for a human opponent to join.
 /// </summary>
 /// <param name="grains">Reaches the arena and battle grains.</param>
-internal sealed class StartBattleService(IGrainFactory grains)
+/// <param name="catalog">Knows which arenas exist.</param>
+internal sealed class StartBattleService(IGrainFactory grains, ICatalogQueryService catalog)
 {
     /// <summary>
     /// The participant id of the bot opponent.
@@ -21,10 +23,18 @@ internal sealed class StartBattleService(IGrainFactory grains)
     /// visitor's team, so every pick is a fair fight. Against a human
     /// it waits for players until someone joins.
     /// </summary>
+    /// <returns>The battle's first state, or <see langword="null"/> if
+    /// the arena does not exist in the Catalog.</returns>
     /// <exception cref="ArgumentException">A species does not exist.</exception>
-    public async Task<BattleResponse> StartAsync(string arenaId, StartBattleRequest request)
+    public async Task<BattleResponse?> StartAsync(string arenaId, StartBattleRequest request)
     {
+        ArgumentNullException.ThrowIfNull(arenaId);
         ArgumentNullException.ThrowIfNull(request);
+
+        if (await catalog.FindArenaAsync(arenaId) is null)
+        {
+            return null;
+        }
 
         var arena = grains.GetGrain<IArenaGrain>(arenaId);
         var visitor = new ParticipantSetup(request.PlayerId, false, [.. request.MonsterSpeciesIds]);
