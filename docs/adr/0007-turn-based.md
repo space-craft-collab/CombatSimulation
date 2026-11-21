@@ -149,8 +149,16 @@ template, and many matches run on it at once.
 
 - [ADR-0001]: Modular monolith
 - [ADR-0002]: Orleans co-hosted
-- [ADR-0003]: No outbox — references per-round consistency
+- [ADR-0003]: No outbox — the hot→cold handoff that builds on
+  a consistent state at the round boundary
 - Orleans docs: Reminders vs Timers
+
+## Corrections
+
+- **2026-11-21:** the reference to [ADR-0003] said that ADR
+  "references per-round consistency". It does not mention
+  rounds; the claim is this ADR's own (see Consequences). The
+  decision itself is unchanged.
 
 [ADR-0001]: 0001-modular-monolith.md
 [ADR-0002]: 0002-orleans-cohosted.md

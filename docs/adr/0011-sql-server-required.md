@@ -7,8 +7,9 @@
 ## Context
 
 Phase 3 moves the cold path (the Catalog, player stats, battle
-snapshots) into SQL Server through EF Core, one `DbContext` and
-schema per module ([ADR-0001], [ADR-0008]). The Catalog is on
+snapshots) into SQL Server through EF Core: one `DbContext` per
+module ([ADR-0001]), each with its own schema, on the EF Core
+base in `Shared.Infrastructure` ([ADR-0008]). The Catalog is on
 the critical path of every battle: starting one looks up the
 species of each monster. Almost every host test starts a battle,
 so a decision is needed on what the host does when no `Sql`
@@ -77,12 +78,20 @@ migrates it on startup, exactly as a local Development run does.
 
 ## References
 
-- [ADR-0001]: Modular monolith — one schema per module.
+- [ADR-0001]: Modular monolith — no shared `DbContext`.
 - [ADR-0008]: Shared layer split — the EF Core base lives in
   `Shared.Infrastructure`.
 - [ADR-0010]: Delegate test seams — no test-only abstractions.
 - Microsoft Learn, "Choosing a testing strategy" (EF Core) —
   testing against the production database system.
+
+## Corrections
+
+- **2026-11-21:** the context and the reference list credited
+  "one schema per module" to [ADR-0001] and [ADR-0008]. ADR-0001
+  only rules out a shared `DbContext`, and ADR-0008 does not
+  mention schemas; the schema per module is stated here. The
+  decision itself is unchanged.
 
 [ADR-0001]: 0001-modular-monolith.md
 [ADR-0008]: 0008-shared-layer-split.md

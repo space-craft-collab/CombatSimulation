@@ -193,9 +193,9 @@ battle crosses from hot to cold in one straight-line call
 
 `dotnet build` and the test run are green locally and in CI,
 including the Testcontainers suites; a battle survives a host
-restart; a completed battle lands in SQL and updates both
-players' stats; `docker compose up` + `dotnet run` gives a
-working local setup; README and CHANGELOG are updated.
+restart; a completed battle lands in SQL and counts in the
+stats of its human players; `docker compose up` + `dotnet run`
+gives a working local setup; README and CHANGELOG are updated.
 
 ## Phase 2 — Orleans embedded
 

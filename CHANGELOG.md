@@ -154,6 +154,12 @@ and this project adheres to
   future tense and notes that retiring NLog in Phase 7 needs
   a superseding ADR, and 0010's example now stays inside one
   module. **0004** stays `Proposed` until the frontend exists.
+- Cross-references corrected where they credited an ADR with
+  more than it says: ADR **0004** → 0002, ADR **0007** → 0003
+  and ADR **0011** → 0001/0008 (the latter two recorded under
+  `## Corrections`). The Phase 3 definition of done no longer
+  promises stats for "both players": bots and abandoned
+  battles count for nobody.
 
 ### Phase 2 — Orleans embedded ✅
 

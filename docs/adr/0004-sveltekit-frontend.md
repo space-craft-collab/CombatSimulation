@@ -62,8 +62,8 @@ the start of Phase 4 after a 1-day spike.
 
 ## References
 
-- [ADR-0002]: Orleans co-hosted — explains why we keep the
-  frontend out of the backend process.
+- [ADR-0002]: Orleans co-hosted — the single backend process
+  (web host + silo) this frontend talks to.
 - SvelteKit adapter docs (to be linked once the adapter is
   locked in Phase 4).
 
