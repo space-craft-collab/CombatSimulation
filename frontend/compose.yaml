@@ -1,0 +1,49 @@
+# Frontend toolchain (ADR-0004). Node and npm are not installed on
+# the host; every npm command runs in this container:
+#
+#   docker compose run --rm frontend npm ci     # install from the lockfile
+#   docker compose up                           # dev server on localhost:5173
+#   docker compose run --rm frontend npm test   # Vitest
+#
+# The container shares the host's network, so the dev server and
+# its server-side rendering reach the AppHost on localhost:5000 the
+# same way the browser does, and that host need not listen beyond
+# loopback. It runs as uid 1000, so node_modules and .svelte-kit in
+# the bind mount belong to the developer, not to root; CI sets
+# FRONTEND_UID and FRONTEND_GID to its own user.
+
+name: orleans-monster-arena-frontend
+
+services:
+  frontend:
+    build:
+      context: .
+      target: dev
+    user: '${FRONTEND_UID:-1000}:${FRONTEND_GID:-1000}'
+    network_mode: host
+    volumes:
+      - .:/app
+    environment:
+      # Where the browser and the server-side rendering find the API.
+      PUBLIC_API_URL: http://localhost:5000
+      # A cache directory any uid can write to.
+      npm_config_cache: /tmp/.npm
+      # Optional; only raises the rate limit of scripts/check-malware.mjs.
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+
+  # End-to-end tests (Playwright) against a running frontend and
+  # AppHost: `docker compose run --rm e2e`. The browsers come with
+  # this image, so its version must equal the @playwright/test
+  # version in package.json.
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.65.1-noble
+    profiles: [e2e]
+    user: '${FRONTEND_UID:-1000}:${FRONTEND_GID:-1000}'
+    network_mode: host
+    ipc: host
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      E2E_BASE_URL: http://localhost:5173
+    command: npx playwright test

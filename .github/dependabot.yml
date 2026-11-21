@@ -56,3 +56,55 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+
+  # The frontend's npm packages, all pinned to exact versions. A
+  # release has to be a week old, like frontend/.npmrc demands;
+  # each PR still gets the malware check (CONTRIBUTING.md).
+  - package-ecosystem: npm
+    directory: "/frontend"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    ignore:
+      # Follows the Node major of frontend/Dockerfile.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # Follows the server's .NET major.
+      - dependency-name: "@microsoft/signalr"
+        update-types: ["version-update:semver-major"]
+    groups:
+      # The Kiota runtime packages are released together.
+      kiota:
+        patterns: ["@microsoft/kiota-*"]
+      svelte:
+        patterns:
+          - "svelte"
+          - "svelte-check"
+          - "@sveltejs/*"
+          - "vite"
+          - "vitest"
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      lint:
+        patterns:
+          - "eslint*"
+          - "@eslint/*"
+          - "typescript-eslint"
+          - "prettier*"
+          - "globals"
+
+  # The Node image of frontend/Dockerfile. The Playwright image in
+  # frontend/compose.yaml is bumped by hand, together with
+  # @playwright/test.
+  - package-ecosystem: docker
+    directory: "/frontend"
+    schedule:
+      interval: weekly
+    ignore:
+      # Node majors are a deliberate step (LTS to LTS).
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]

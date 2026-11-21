@@ -71,6 +71,18 @@ jobs:
           name: coverage-report
           path: coverage/report
 
+      # The frontend's Kiota client is generated from
+      # docs/api/openapi.json and checked in (ADR-0004); the tests
+      # above keep that document equal to what the host serves.
+      - name: API client is up to date
+        run: |
+          scripts/generate-api-client.sh
+          if [ -n "$(git status --porcelain -- frontend/src/lib/api)" ]; then
+            git status --short -- frontend/src/lib/api
+            echo "::error::frontend/src/lib/api is stale: run scripts/generate-api-client.sh and commit the result."
+            exit 1
+          fi
+
   # Testcontainers suites (Docker is preinstalled on the runner).
   # Runs only after build-test passes. Both jobs are required
   # checks on main.
@@ -96,3 +108,47 @@ jobs:
           dotnet run --no-build --configuration Release
           --project tests/OrleansMonsterArena.Tests
           -- -trait "Category=Integration"
+
+  # The SvelteKit frontend. Node and npm exist only in the image
+  # frontend/Dockerfile pins, so every step runs in that container,
+  # with the commands a developer uses (frontend/compose.yaml).
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # The container writes into the checkout, so it runs as the
+      # runner's user.
+      - name: Container user
+        run: |
+          echo "FRONTEND_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "FRONTEND_GID=$(id -g)" >> "$GITHUB_ENV"
+
+      - name: Build the toolchain image
+        run: docker compose build frontend
+
+      # Before anything is installed: no package in the lockfile
+      # is listed as malware (CONTRIBUTING.md).
+      - name: Malware check
+        run: docker compose run --rm frontend node scripts/check-malware.mjs
+
+      - name: Install
+        run: docker compose run --rm frontend npm ci
+
+      - name: Lint
+        run: docker compose run --rm frontend npm run lint
+
+      - name: Type check
+        run: docker compose run --rm frontend npm run check
+
+      - name: Test
+        run: docker compose run --rm frontend npm test
+
+      - name: Build
+        run: docker compose run --rm frontend npm run build

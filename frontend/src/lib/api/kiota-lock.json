@@ -1,0 +1,29 @@
+{
+  "descriptionHash": "D7EC10004AF011F39CCE6E7720A92DB4E383ACB66BFC0E91C057147C1A881CA7E4E866211D4A2F57B1BFD312E87A8E9B9EE8FBC60C50ADCAD80623D5A340DCDD",
+  "descriptionLocation": "../../../../docs/api/openapi.json",
+  "lockFileVersion": "1.0.0",
+  "kiotaVersion": "1.38.0",
+  "clientClassName": "ArenaApiClient",
+  "typeAccessModifier": "Public",
+  "clientNamespaceName": "ApiSdk",
+  "language": "TypeScript",
+  "usesBackingStore": false,
+  "excludeBackwardCompatible": true,
+  "includeAdditionalData": true,
+  "disableSSLValidation": false,
+  "serializers": [
+    "@microsoft/kiota-serialization-json.JsonSerializationWriterFactory"
+  ],
+  "deserializers": [
+    "@microsoft/kiota-serialization-json.JsonParseNodeFactory"
+  ],
+  "structuredMimeTypes": [
+    "application/json"
+  ],
+  "includePatterns": [],
+  "excludePatterns": [],
+  "disabledValidationRules": [
+    "NoServerEntry"
+  ],
+  "allowedExternalOrigins": []
+}
