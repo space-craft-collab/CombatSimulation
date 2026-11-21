@@ -104,6 +104,14 @@ and this project adheres to
 - A bot-only battle's final round never stored its result: the
   round stopped the bot loop, which cancelled the timer token the
   state write was still using.
+- Docs cross-check: the two diagrams showed the stats report
+  before the snapshot write, hot state that "ages out", a
+  periodic auto-save and Orleans in `Shared.Infrastructure`.
+  They now follow the code: snapshot first, an explicit clear,
+  a state write every round, Orleans wiring in the `AppHost`.
+  `CLAUDE.md` states the layering rule in words instead of an
+  arrow chain, and the README architecture section marks only
+  the frontend as planned.
 
 #### Decided (process)
 - ADR **0003** (still `Proposed`): the snapshot writer is the
@@ -125,6 +133,18 @@ and this project adheres to
   `Proposed` → **`Accepted`**: the round loop, bot
   opponent, deadlines, both game modes and the SignalR
   deltas are built as it describes.
+- ADR **0003** (still `Proposed`) names one crash window
+  instead of three: the snapshot is lost when the silo dies
+  after the battle completes but before the write, or when
+  the write fails.
+- ADR conventions: a factual correction that leaves the
+  decision unchanged may be made in place on an `Accepted`
+  ADR, recorded with its date in a `## Corrections` section.
+  A changed decision still needs a new ADR. First uses:
+  ADR **0005** (grain interfaces inherit a Guid or a string
+  key marker) and ADR **0008** (`Shared.Infrastructure`
+  holds no Orleans or Table Storage wiring; that lives in
+  the `AppHost`).
 
 ### Phase 2 — Orleans embedded ✅
 
