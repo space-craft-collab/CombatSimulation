@@ -53,8 +53,9 @@ own `<Module>.Contracts` project.
   `Catalog`'s or `Players`' internals.
 - **Grain interfaces** (`IArenaGrain`, `ILiveBattleGrain`,
   `IMonsterInstanceGrain`) do **not** live in `Battles.Contracts`.
-  A grain interface must inherit an Orleans marker
-  (`IGrainWithGuidKey`) and its DTOs need `[GenerateSerializer]`,
+  A grain interface must inherit an Orleans key marker
+  (`IGrainWithGuidKey` or `IGrainWithStringKey`) and its DTOs
+  need `[GenerateSerializer]`,
   both of which pull in `Microsoft.Orleans.Sdk`. They live in a
   separate `Battles.Grains.Abstractions` project that carries that
   Orleans reference, consumed only by `Battles.*` and the host.
@@ -144,9 +145,18 @@ module references it. See the diagram in
 - [`docs/diagrams/project-dependencies.html`]: interactive project
   graph + battle data flow.
 
+## Corrections
+
+- **2026-11-21:** the grain-interface bullet named
+  `IGrainWithGuidKey` as the one marker to inherit. Only
+  `ILiveBattleGrain` is Guid-keyed; `IArenaGrain` and
+  `IMonsterInstanceGrain` use string keys ([ADR-0007]). The
+  decision itself is unchanged.
+
 [ADR-0001]: 0001-modular-monolith.md
 [ADR-0002]: 0002-orleans-cohosted.md
 [ADR-0003]: 0003-no-outbox.md
+[ADR-0007]: 0007-turn-based.md
 [ADR-0008]: 0008-shared-layer-split.md
 [ADR-0010]: 0010-delegate-test-seams.md
 [Ardalis RiverBooks]: https://github.com/ardalis/RiverBooks

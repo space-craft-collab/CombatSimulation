@@ -36,9 +36,10 @@ history, not a money problem.
 **Skip the outbox.** The grain writes the snapshot
 synchronously on completion, reports the result to
 `IPlayerStatsService`, then clears its hot state and
-deactivates (see below). If the silo crashes between the
-cold-path write and grain deactivation, the snapshot is
-at-most-once.
+deactivates (see below). The hand-over runs at most once: if
+the silo crashes after the battle completes but before the
+snapshot is written, or the write fails, nothing retries it
+and the snapshot is missing from the cold store.
 
 This trade-off is documented in this ADR so reviewers see it
 was a conscious choice, not an oversight.
@@ -87,10 +88,11 @@ as an id that never existed, so:
   - Hot→cold path is a single straight-line call — easy to
     read in a code review.
 - **Negative:**
-  - A silo crash between the snapshot write and
-    `DeactivateOnIdle()` can lose the cold-path write. The
-    grain state still has the final result, so a manual replay
-    job could recover it — not built.
+  - A silo crash between the round that completes the battle
+    and the snapshot write — or a failed write — loses the
+    cold-path write. The grain state still has the final
+    result, so a manual replay job could recover it — not
+    built.
   - Not suitable as-is for a workload where missing the cold
     write has business consequences.
   - A crash between the snapshot write and the clear leaves the
@@ -109,9 +111,10 @@ as an id that never existed, so:
 - **Transactional outbox** — rejected: full implementation
   (outbox table, dispatcher, dedup, retry policy, idempotency
   keys) costs days for a benefit the showcase doesn't need.
-- **Write snapshot first, then grain state** — rejected: shifts
-  the failure window but doesn't remove it; harder to reason
-  about than the straight-line version.
+- **Write the snapshot first, then store the completing round
+  in grain state** — rejected: shifts the failure window but
+  doesn't remove it; harder to reason about than the
+  straight-line version.
 - **Keep the hot state forever** — rejected: Table Storage has
   no TTL, so the battle and monster rows would grow without
   bound and duplicate what the cold store already holds.

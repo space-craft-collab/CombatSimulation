@@ -16,7 +16,7 @@
 
 Target the **most modern** .NET standards available.
 
-- **TFM:** latest stable `.NET` (e.g. `net9.0`)
+- **TFM:** latest stable `.NET` (e.g. `net10.0`)
 - **C# language version:** `latest`
 - **Nullable reference types:** `enable`
 - **Implicit usings:** `enable`
@@ -96,9 +96,10 @@ Internal folders:
   entry the host calls.
 
 ASP.NET Core comes via `<FrameworkReference Include="Microsoft.AspNetCore.App" />`,
-not a NuGet package. The `Domain` → `Features` → `Infrastructure`
-direction is a convention enforced by an architecture test
-(NetArchTest), since folders are not compiler-checked.
+not a NuGet package. The layering — `Domain` depends on neither
+`Features` nor `Infrastructure`; both may depend on `Domain` — is
+a convention enforced by an architecture test (NetArchTest),
+since folders are not compiler-checked.
 
 ## Tests
 

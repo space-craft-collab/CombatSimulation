@@ -68,13 +68,14 @@ Live clients watch the SignalR hub at `/hubs/battles`
 instead of polling: invoke `Watch(battleId)`, then
 receive a `RoundResolved` delta after every round.
 
-## Architecture (planned)
+## Architecture
 
 - One binary: ASP.NET Core host + Orleans silo co-hosted
 - Modular monolith: `Catalog`, `Battles`, `Players`
 - Hot path: Orleans + Azure Table Storage
 - Cold path: EF Core + Azure SQL
-- Frontend: SvelteKit + Svelte 5 runes (separate deploy)
+- Frontend (planned, Phase 4): SvelteKit + Svelte 5 runes
+  (separate deploy)
 
 See [`docs/adr/`](docs/adr/) for architecture decisions.
 

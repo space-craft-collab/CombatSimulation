@@ -184,8 +184,8 @@
       <div class="tier-row">
         <div class="node n-catalog">
           <h3>Catalog</h3>
-          <div class="purpose">Knows every monster species with its base stats and abilities.</div>
-          <div class="role"><code>Domain/</code> · <code>Features/</code> · <code>Infrastructure/</code> — monster definitions, implements <code>ICatalogQueryService</code></div>
+          <div class="purpose">Knows every monster species, with its base stats and abilities, and every arena.</div>
+          <div class="role"><code>Domain/</code> · <code>Features/</code> · <code>Infrastructure/</code> — species and arenas, implements <code>ICatalogQueryService</code></div>
           <div class="refs">refs <b>Catalog.Contracts</b>, Shared.Kernel, Shared.Infrastructure</div>
         </div>
         <div class="node n-battles touches-orleans">
@@ -197,7 +197,7 @@
         <div class="node n-players">
           <h3>Players</h3>
           <div class="purpose">Manages players and their win/loss record.</div>
-          <div class="role"><code>Domain/</code> · <code>Features/</code> · <code>Infrastructure/</code> — accounts · W/L, implements <code>IPlayerStatsService</code></div>
+          <div class="role"><code>Domain/</code> · <code>Features/</code> · <code>Infrastructure/</code> — W/L records, implements <code>IPlayerStatsService</code></div>
           <div class="refs">refs <b>Players.Contracts</b>, Shared.Kernel, Shared.Infrastructure</div>
         </div>
       </div>
@@ -238,10 +238,10 @@
           <div class="purpose">Common building blocks with no infrastructure attached.</div>
           <div class="role">Dependency-light primitives, e.g. <code>Result&lt;T&gt;</code>, guards</div>
         </div>
-        <div class="node n-shared touches-orleans">
-          <h3>Shared.Infrastructure <span class="pill orleans">Orleans</span></h3>
-          <div class="purpose">Shared wiring for logging, tracing, EF Core and Orleans.</div>
-          <div class="role">EF/NLog/OTEL/Orleans wiring helpers</div>
+        <div class="node n-shared">
+          <h3>Shared.Infrastructure <span class="pill clean">no Orleans</span></h3>
+          <div class="purpose">Shared wiring for logging, tracing and EF Core.</div>
+          <div class="role">EF/NLog/OTEL wiring helpers</div>
         </div>
       </div>
     </div>
@@ -258,7 +258,8 @@
 
   <div class="note">
     💡 <b>Why extract the grain interfaces?</b> A grain interface must inherit
-    <code>IGrainWithGuidKey</code> and its DTOs need <code>[GenerateSerializer]</code> —
+    an Orleans key marker (<code>IGrainWithGuidKey</code> or
+    <code>IGrainWithStringKey</code>) and its DTOs need <code>[GenerateSerializer]</code> —
     both pull in <code>Microsoft.Orleans.Sdk</code>. Press the highlight button: the Orleans
     dependency only reaches <b>Battles.* + the host</b>. Catalog and Players never see an
     Orleans type, which keeps ADR-0002's promise intact.
@@ -288,7 +289,7 @@
       <div>
         <div class="where" style="color:var(--battles)">Battles · Grains/ folder</div>
         <h3>Grain wakes (state in RAM)</h3>
-        <p>Single-threaded, FIFO — one action = one message. State lives in memory in Phase 2 and auto-persists to Azure Table Storage from Phase 3.</p>
+        <p>Single-threaded, FIFO — one action = one message. The grain stores its state after every round — in Azure Table Storage when a connection string is set, in memory otherwise.</p>
       </div>
     </div>
     <div class="flowstep" data-i="2">
@@ -318,17 +319,17 @@
     <div class="flowstep" data-i="5">
       <div class="num">6</div>
       <div>
-        <div class="where" style="color:var(--players)">Players (via Players.Contracts)</div>
-        <h3>On completion: updates W/L</h3>
-        <p>Grain calls <code>IPlayerStatsService</code> — again a plain interface, no Orleans leak.</p>
+        <div class="where" style="color:var(--battles)">Battles · Infrastructure/ folder</div>
+        <h3>On completion: writes the snapshot</h3>
+        <p><code>BattleSnapshotWriteRepository</code> (intra-Battles) persists the final result to Azure SQL via EF Core.</p>
       </div>
     </div>
     <div class="flowstep" data-i="6">
       <div class="num">7</div>
       <div>
-        <div class="where" style="color:var(--battles)">Battles · Infrastructure/ folder</div>
-        <h3>Writes snapshot, deactivates</h3>
-        <p><code>BattleSnapshotWriteRepository</code> (intra-Battles) persists the final result to Azure SQL via EF Core, then the grain clears its hot state and unloads.</p>
+        <div class="where" style="color:var(--players)">Players (via Players.Contracts)</div>
+        <h3>Updates W/L, clears, deactivates</h3>
+        <p>Grain calls <code>IPlayerStatsService</code> — again a plain interface, no Orleans leak — then clears its hot state and unloads.</p>
       </div>
     </div>
   </div>

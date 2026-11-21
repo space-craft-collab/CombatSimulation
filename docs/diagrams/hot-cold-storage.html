@@ -211,14 +211,14 @@
       </div>
 
       <div class="loop">
-        <span class="arrow">⟳</span> auto-save / reload on reactivation
+        <span class="arrow">⟳</span> saved every round / reload on reactivation
       </div>
 
       <div class="node h" id="n-table">
         <h3><span class="dot hot"></span> Azure Table Storage</h3>
         <ul>
           <li>Persisted grain state (crash safety net)</li>
-          <li>Cluster membership (which silos live)</li>
+          <li>Cluster membership (from Phase 5)</li>
           <li>Reminders (durable turn timers)</li>
           <li>NoSQL key-value · cheap · no schema</li>
         </ul>
@@ -244,6 +244,7 @@
         <h3><span class="dot cold"></span> Catalog masters</h3>
         <ul>
           <li>Monster definitions, stats, move sets</li>
+          <li>Arenas</li>
           <li>Read often, change rarely</li>
         </ul>
       </div>
@@ -251,7 +252,7 @@
       <div class="node c" id="n-players">
         <h3><span class="dot cold"></span> Players</h3>
         <ul>
-          <li>Accounts &amp; identity</li>
+          <li>Accounts &amp; identity (from Phase 6)</li>
           <li>Win / loss records</li>
         </ul>
       </div>
@@ -293,7 +294,7 @@
       on: ["n-ram"]
     },
     {
-      label: "<b>3. Auto-save.</b> Orleans periodically persists grain state to Table Storage. Survives a silo restart.",
+      label: "<b>3. Saved every round.</b> The grain writes its state to Table Storage after each round. Survives a silo restart.",
       on: ["n-ram", "n-table"]
     },
     {
@@ -309,8 +310,8 @@
       on: ["n-snapshot"]
     },
     {
-      label: "<b>7. Deactivate.</b> The grain unloads; its hot state can age out. Record lives on in SQL.",
-      on: ["n-snapshot"]
+      label: "<b>7. Clear &amp; deactivate.</b> The grain counts the result for the players, deletes its hot state and unloads. Record lives on in SQL.",
+      on: ["n-snapshot", "n-players"]
     }
   ];
 

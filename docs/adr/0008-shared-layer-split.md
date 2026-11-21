@@ -29,10 +29,9 @@ dependency direction:
   `Features` folders) and the `AppHost`.
 - **`Shared.Infrastructure`** — concrete cross-cutting infra:
   base `DbContext` conventions, common EF mappings, NLog +
-  OpenTelemetry registration extensions, Azure Table Storage /
-  Orleans wiring helpers. References EF Core, Orleans, and Azure
-  SDKs. Referenced by the module project (its `Infrastructure`
-  folder) and the `AppHost`.
+  OpenTelemetry registration extensions. References EF Core,
+  NLog, and OpenTelemetry. Referenced by the module project
+  (its `Infrastructure` folder) and the `AppHost`.
 
 Inter-module service interfaces and DTOs live in per-module
 `<Module>.Contracts` projects — see [ADR-0005], not here.
@@ -99,6 +98,15 @@ they require. That Orleans reference deliberately stays out of
   `Shared.Infrastructure`.
 - [ADR-0009]: Per-module internal structure — the layers above are
   folders in one module project, enforced by an architecture test.
+
+## Corrections
+
+- **2026-11-21:** the description of `Shared.Infrastructure`
+  no longer lists Azure Table Storage / Orleans wiring or an
+  Orleans reference. That wiring was never built there: it
+  lives in the `AppHost`, the composition root, so no module
+  picks up Orleans through the shared layer ([ADR-0005]). The
+  decision itself is unchanged.
 
 [ADR-0001]: 0001-modular-monolith.md
 [ADR-0005]: 0005-inter-module-services.md

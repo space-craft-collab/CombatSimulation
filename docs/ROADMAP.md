@@ -166,7 +166,7 @@ battle crosses from hot to cold in one straight-line call
       required check stays fast; `integration` runs only after
       `build-test` passes (`needs: build-test`) and is not a
       required check
-- [ ] README quickstart: `docker compose up`, then `dotnet run`
+- [x] README quickstart: `docker compose up`, then `dotnet run`
 - [ ] **Decision:** promote [ADR-0003](adr/0003-no-outbox.md)
       to `Accepted` once the bridge runs
 - [ ] CHANGELOG Phase 3 completion entry

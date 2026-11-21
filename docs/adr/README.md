@@ -45,4 +45,8 @@ Interactive HTML diagrams live in [`../diagrams/`](../diagrams/):
 - Never edit an `Accepted` ADR's decision text after the fact.
   If a decision changes, write a new ADR and mark the old one
   `Superseded`.
+- A factual correction that leaves the decision unchanged
+  (the text never matched what was built) is allowed in
+  place. Record it with its date in a `## Corrections`
+  section at the end of the ADR.
 - Cross-link related ADRs by relative path.

@@ -32,7 +32,7 @@ and this project adheres to
 - Host restart test on Testcontainers Azurite: a live battle
   keeps its state, round and pending turn deadline across a
   restart, and the deadline reminder fires on the new host.
-- CI `integration` job for the `Category=Containers` tests;
+- CI `integration` job for the `Category=Integration` tests;
   it runs after `build-test`, which now skips them, and is
   not a required check.
 - EF Core base in `Shared.Infrastructure`: `ModuleDbContext`
