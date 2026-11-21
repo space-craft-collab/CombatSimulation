@@ -74,6 +74,10 @@ updates:
       # Follows the server's .NET major.
       - dependency-name: "@microsoft/signalr"
         update-types: ["version-update:semver-major"]
+      # A TypeScript major has to be supported by svelte-check and
+      # typescript-eslint first; it is raised by hand then.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       # The Kiota runtime packages are released together.
       kiota:
