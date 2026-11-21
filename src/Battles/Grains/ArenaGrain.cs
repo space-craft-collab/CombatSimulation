@@ -48,20 +48,25 @@ internal sealed class ArenaGrain(
         var states = await Task.WhenAll(state.State.Battles
             .Select(battleId => GrainFactory.GetGrain<ILiveBattleGrain>(battleId).GetStateAsync()));
 
-        var completed = states.Where(battle => battle.Status == BattleStatus.Completed).ToList();
-        if (completed.Count > 0)
+        // A completed battle is over; a Created one was handed over to
+        // the cold store and cleared (ADR-0003). Neither is open any more.
+        var finished = states.Where(IsFinished).ToList();
+        if (finished.Count > 0)
         {
-            completed.ForEach(battle => state.State.Battles.Remove(battle.BattleId));
+            finished.ForEach(battle => state.State.Battles.Remove(battle.BattleId));
             await state.WriteStateAsync();
         }
 
         return [.. states
-            .Where(battle => battle.Status != BattleStatus.Completed)
+            .Where(battle => !IsFinished(battle))
             .Select(battle => new BattleSummary(
                 battle.BattleId,
                 battle.Status,
                 [.. battle.Combatants.Select(combatant => combatant.ParticipantId).Distinct()]))];
     }
+
+    private static bool IsFinished(BattleState battle) =>
+        battle.Status is BattleStatus.Completed or BattleStatus.Created;
 
     private async Task RememberAsync(Guid battleId)
     {

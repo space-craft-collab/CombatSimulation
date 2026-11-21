@@ -52,6 +52,13 @@ internal sealed class MonsterInstanceGrain(
         return Task.FromResult(new MonsterSnapshot(stats.SpeciesId, state.State.HitPoints, stats.MaxHitPoints));
     }
 
+    /// <inheritdoc />
+    public async Task ClearAsync()
+    {
+        await state.ClearStateAsync();
+        DeactivateOnIdle();
+    }
+
     private MonsterStats RequireStats() =>
         state.State.Stats
             ?? throw new InvalidOperationException($"Monster '{this.GetPrimaryKeyString()}' is not initialized.");

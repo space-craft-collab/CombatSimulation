@@ -21,8 +21,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Lets the tests unit-test pure Domain rules such as BotStrategy. -->
+    <!-- Lets the tests unit-test pure Domain rules such as BotStrategy
+         and read the internal response and snapshot types. -->
     <InternalsVisibleTo Include="OrleansMonsterArena.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Design-time only: lets `dotnet ef` build migrations here. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

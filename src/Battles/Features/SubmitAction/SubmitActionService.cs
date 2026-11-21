@@ -7,11 +7,14 @@ namespace Battles.Features.SubmitAction;
 /// Hands a participant's action to the battle grain.
 /// </summary>
 /// <param name="grains">Reaches the battle grains.</param>
-internal sealed class SubmitActionService(IGrainFactory grains)
+/// <param name="battles">Reads the battle from either store.</param>
+internal sealed class SubmitActionService(IGrainFactory grains, GetBattleService battles)
 {
     /// <summary>
     /// Submits the action and returns the battle's state afterwards —
-    /// a later round once it completed the round.
+    /// a later round once it completed the round, or the cold store's
+    /// record once it ended the battle. A battle that is in the cold
+    /// store already is over, which the grain answers as a conflict.
     /// </summary>
     /// <returns>The battle, or <see langword="null"/> if it was never started.</returns>
     /// <exception cref="ArgumentException">The action is not legal for this participant.</exception>
@@ -20,15 +23,14 @@ internal sealed class SubmitActionService(IGrainFactory grains)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var battle = grains.GetGrain<ILiveBattleGrain>(battleId);
-        if ((await battle.GetStateAsync()).Status == BattleStatus.Created)
+        if (await battles.FindAsync(battleId) is null)
         {
             return null;
         }
 
-        await battle.SubmitActionAsync(new BattleAction(
+        await grains.GetGrain<ILiveBattleGrain>(battleId).SubmitActionAsync(new BattleAction(
             request.ParticipantId, request.ActorSlot, request.TargetSlot, request.AbilityId));
 
-        return BattleResponse.From(await battle.GetStateAsync());
+        return await battles.FindAsync(battleId);
     }
 }

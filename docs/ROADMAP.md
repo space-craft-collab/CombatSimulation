@@ -122,7 +122,7 @@ battle crosses from hot to cold in one straight-line call
       write is tested against SQL Server by a primary-key
       collision instead of a stub, so the write is not
       idempotent
-- [ ] On completion the battle grain writes a snapshot
+- [x] On completion the battle grain writes a snapshot
       (participants, teams, rounds played, winner or
       abandoned) to the `battles` schema, reports the result
       to `IPlayerStatsService`, then deactivates — no outbox,
@@ -131,20 +131,20 @@ battle crosses from hot to cold in one straight-line call
       bot count for the human side, so `BattleResultDto` takes
       a missing winner (the bot won) or no loser (the bot
       lost); bots themselves are never counted
-- [ ] Test: a failed snapshot write keeps the hot state and
+- [x] Test: a failed snapshot write keeps the hot state and
       reports no result (SQL Server only, in the fast suite)
-- [ ] Hot state lifetime: Table Storage holds live battles
+- [x] Hot state lifetime: Table Storage holds live battles
       only (it has no TTL). Once the snapshot is written, the
       battle grain clears its own state and its monster
       grains' state (`ClearStateAsync`) before deactivating;
       if the write fails, the hot state stays and the failure
       is logged, so the final result survives for a replay
       ([ADR-0003](adr/0003-no-outbox.md))
-- [ ] A cleared battle reads as `Created` ("never existed"):
+- [x] A cleared battle reads as `Created` ("never existed"):
       `ArenaGrain.GetBattlesAsync` drops `Created` entries as
       well as `Completed` ones, so a cleared battle never
       shows up as an open one
-- [ ] `GET /battles/{id}` falls back to the cold store for a
+- [x] `GET /battles/{id}` falls back to the cold store for a
       completed battle whose hot state is gone; 404 only when
       neither store knows the id
 - [ ] Battle history read slice from the cold store, e.g.

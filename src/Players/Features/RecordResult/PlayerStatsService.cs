@@ -4,8 +4,8 @@ using Players.Infrastructure;
 namespace Players.Features.RecordResult;
 
 /// <summary>
-/// Serves <see cref="IPlayerStatsService"/>: counts each side of a
-/// decided battle in the player stats table. Each side is its own
+/// Serves <see cref="IPlayerStatsService"/>: counts each human side
+/// of a decided battle in the player stats table. Each side is its own
 /// write; like the hot→cold bridge that calls it, this is
 /// at-most-once, not transactional (ADR-0003).
 /// </summary>
@@ -18,7 +18,10 @@ internal sealed class PlayerStatsService(PlayerStatsWriteRepository stats) : IPl
         ArgumentNullException.ThrowIfNull(result);
         Validate(result);
 
-        await stats.IncrementAsync(result.WinnerId, wins: 1, losses: 0, cancellationToken);
+        if (result.WinnerId is { } winnerId)
+        {
+            await stats.IncrementAsync(winnerId, wins: 1, losses: 0, cancellationToken);
+        }
 
         foreach (var loserId in result.LoserIds)
         {
@@ -30,12 +33,14 @@ internal sealed class PlayerStatsService(PlayerStatsWriteRepository stats) : IPl
     {
         ArgumentNullException.ThrowIfNull(result.LoserIds, nameof(result));
 
-        if (result.LoserIds.Count == 0)
-        {
-            throw new ArgumentException("A decided battle has at least one loser.", nameof(result));
-        }
+        string[] playerIds = result.WinnerId is { } winnerId
+            ? [winnerId, .. result.LoserIds]
+            : [.. result.LoserIds];
 
-        string[] playerIds = [result.WinnerId, .. result.LoserIds];
+        if (playerIds.Length == 0)
+        {
+            throw new ArgumentException("A decided battle has at least one player side.", nameof(result));
+        }
 
         if (playerIds.Any(id => string.IsNullOrWhiteSpace(id) || id.Length > PlayerIds.MaxLength))
         {

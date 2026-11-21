@@ -5,9 +5,11 @@ using Battles.Features.StartBattle;
 using Battles.Features.SubmitAction;
 using Battles.Features.WatchBattle;
 using Battles.Grains;
+using Battles.Infrastructure;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Shared.Infrastructure.Persistence;
 
 namespace Battles;
 
@@ -18,7 +20,8 @@ namespace Battles;
 public static class BattlesModule
 {
     /// <summary>
-    /// Registers the Battles module's services.
+    /// Registers the Battles module's services and its cold store of
+    /// completed battles in the <c>battles</c> schema.
     /// </summary>
     /// <param name="services">The service collection to register into.</param>
     /// <returns>The same service collection for chaining.</returns>
@@ -28,6 +31,11 @@ public static class BattlesModule
 
         services.AddOptions<BattleTimingOptions>().BindConfiguration(BattleTimingOptions.SectionName);
         services.TryAddSingleton(TimeProvider.System);
+
+        // Completed battles leave the grains for SQL (ADR-0003).
+        services.AddModuleDatabase<BattlesDbContext>(BattlesDbContext.SchemaName);
+        services.AddSingleton<BattleSnapshotReadRepository>();
+        services.AddSingleton<BattleSnapshotWriteRepository>();
 
         // The slices reach grains through the co-hosted silo's
         // IGrainFactory; no Orleans type leaves this module (ADR-0005).

@@ -91,10 +91,38 @@ public sealed class PlayerStatsTests(AppHostFixture host)
     }
 
     [Fact]
-    public async Task RecordResultAsync_NoLoser_ThrowsArgumentException()
+    public async Task RecordResultAsync_PlayerBeatsBot_CountsWinOnly()
     {
         // Arrange
-        var result = new BattleResultDto(NewPlayerId(), []);
+        var player = NewPlayerId();
+        using var client = host.Factory.CreateClient();
+
+        // Act
+        await Stats.RecordResultAsync(new BattleResultDto(player, []), Cancellation);
+
+        // Assert
+        Assert.Equal(new PlayerStatsResponse(player, 1, 0), await GetStatsAsync(client, player));
+    }
+
+    [Fact]
+    public async Task RecordResultAsync_BotBeatsPlayer_CountsLossOnly()
+    {
+        // Arrange
+        var player = NewPlayerId();
+        using var client = host.Factory.CreateClient();
+
+        // Act
+        await Stats.RecordResultAsync(new BattleResultDto(null, [player]), Cancellation);
+
+        // Assert
+        Assert.Equal(new PlayerStatsResponse(player, 0, 1), await GetStatsAsync(client, player));
+    }
+
+    [Fact]
+    public async Task RecordResultAsync_NoPlayer_ThrowsArgumentException()
+    {
+        // Arrange
+        var result = new BattleResultDto(null, []);
 
         // Act
         var record = () => Stats.RecordResultAsync(result, Cancellation);

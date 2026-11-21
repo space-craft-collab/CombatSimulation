@@ -25,4 +25,12 @@ public interface IMonsterInstanceGrain : IGrainWithStringKey
     /// </summary>
     /// <returns>The current state.</returns>
     Task<MonsterSnapshot> GetSnapshotAsync();
+
+    /// <summary>
+    /// Deletes the monster's stored state once its battle is in the
+    /// cold store (ADR-0003), and lets the grain deactivate. The
+    /// monster reads as never initialized afterwards.
+    /// </summary>
+    /// <returns>A task that completes once the state is deleted.</returns>
+    Task ClearAsync();
 }

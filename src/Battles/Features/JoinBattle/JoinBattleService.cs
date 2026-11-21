@@ -7,9 +7,12 @@ namespace Battles.Features.JoinBattle;
 /// <summary>
 /// Fills the open seat of a battle that waits for players: with a
 /// second human, or with the bot ("play vs bot instead").
+/// A battle that is in the cold store already is over, which the
+/// grain answers as a conflict.
 /// </summary>
 /// <param name="grains">Reaches the battle grains.</param>
-internal sealed class JoinBattleService(IGrainFactory grains)
+/// <param name="battles">Reads the battle from either store.</param>
+internal sealed class JoinBattleService(IGrainFactory grains, GetBattleService battles)
 {
     /// <summary>
     /// Adds a human opponent and returns the battle's first state.
@@ -21,15 +24,15 @@ internal sealed class JoinBattleService(IGrainFactory grains)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var battle = grains.GetGrain<ILiveBattleGrain>(battleId);
-        if ((await battle.GetStateAsync()).Status == BattleStatus.Created)
+        if (await battles.FindAsync(battleId) is null)
         {
             return null;
         }
 
-        await battle.JoinAsync(new ParticipantSetup(request.PlayerId, false, [.. request.MonsterSpeciesIds]));
+        await grains.GetGrain<ILiveBattleGrain>(battleId)
+            .JoinAsync(new ParticipantSetup(request.PlayerId, false, [.. request.MonsterSpeciesIds]));
 
-        return BattleResponse.From(await battle.GetStateAsync());
+        return await battles.FindAsync(battleId);
     }
 
     /// <summary>
@@ -40,22 +43,20 @@ internal sealed class JoinBattleService(IGrainFactory grains)
     /// <exception cref="InvalidOperationException">The battle no longer waits for players.</exception>
     public async Task<BattleResponse?> JoinBotAsync(Guid battleId)
     {
-        var battle = grains.GetGrain<ILiveBattleGrain>(battleId);
-        var state = await battle.GetStateAsync();
-        if (state.Status == BattleStatus.Created)
+        if (await battles.FindAsync(battleId) is not { } current)
         {
             return null;
         }
 
-        var hostId = state.Combatants.FirstOrDefault()?.ParticipantId;
+        var hostId = current.Combatants.Count > 0 ? current.Combatants[0].ParticipantId : null;
         var host = new ParticipantSetup(
             hostId ?? "",
             false,
-            [.. state.Combatants
+            [.. current.Combatants
                 .Where(combatant => combatant.ParticipantId == hostId)
                 .Select(combatant => combatant.SpeciesId)]);
-        await battle.JoinAsync(StartBattleService.MirrorBot(host));
+        await grains.GetGrain<ILiveBattleGrain>(battleId).JoinAsync(StartBattleService.MirrorBot(host));
 
-        return BattleResponse.From(await battle.GetStateAsync());
+        return await battles.FindAsync(battleId);
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Battles.Features.GetBattle;
 using Battles.Grains.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -42,6 +43,10 @@ public sealed class BattleGrainTests(AppHostFixture host)
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
 
     private IGrainFactory Grains => host.Factory.Services.GetRequiredService<IClusterClient>();
+
+    // Reads a battle from either store: a completed battle is handed
+    // over to the cold store and its grain cleared (ADR-0003).
+    private GetBattleService Battles => host.Factory.Services.GetRequiredService<GetBattleService>();
 
     // A fresh arena per test keeps the battle lists independent.
     private IArenaGrain NewArena() => Grains.GetGrain<IArenaGrain>($"test-{Guid.NewGuid()}");
@@ -96,12 +101,12 @@ public sealed class BattleGrainTests(AppHostFixture host)
         }
 
         // Assert
-        var state = await battle.GetStateAsync();
+        var state = await Battles.FindAsync(battleId, TestContext.Current.CancellationToken);
+        Assert.NotNull(state);
         Assert.Equal(BattleStatus.Completed, state.Status);
         Assert.Equal("player-1", state.WinnerId);
         Assert.Equal(7, state.Round);
-        var fox = await Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:1").GetSnapshotAsync();
-        Assert.True(fox.IsDefeated);
+        Assert.Equal(0, state.Combatants[1].HitPoints);
         Assert.Empty(await arena.GetBattlesAsync());
     }
 
@@ -374,12 +379,13 @@ public sealed class BattleGrainTests(AppHostFixture host)
 
     // Polls the battle until the condition holds; the round loop
     // runs on reminders and timers, outside the test's own calls.
-    private static async Task<BattleState> WaitForAsync(ILiveBattleGrain battle, Func<BattleState, bool> condition)
+    private async Task<BattleResponse> WaitForAsync(ILiveBattleGrain battle, Func<BattleResponse, bool> condition)
     {
         var giveUp = DateTimeOffset.UtcNow + WaitLimit;
         while (true)
         {
-            var state = await battle.GetStateAsync();
+            var state = await Battles.FindAsync(battle.GetPrimaryKey(), TestContext.Current.CancellationToken)
+                ?? throw new InvalidOperationException("Neither store knows the battle.");
             if (condition(state))
             {
                 return state;

@@ -1,10 +1,14 @@
+using System.Diagnostics.CodeAnalysis;
 using Battles.Domain;
 using Battles.Features.GetBattle;
 using Battles.Features.WatchBattle;
 using Battles.Grains.Abstractions;
+using Battles.Infrastructure;
 using Catalog.Contracts;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans.Runtime;
+using Players.Contracts;
 
 namespace Battles.Grains;
 
@@ -18,12 +22,18 @@ namespace Battles.Grains;
 /// enforces the human turn deadline; a grain timer plays the rounds
 /// of a battle that has only bots left. Every resolved round leaves
 /// as a <see cref="BattleEventDto"/> over SignalR once it is stored.
+/// A completed battle crosses to the cold store (ADR-0003): its
+/// snapshot goes to SQL, a decided result to the player stats, and
+/// the hot state is cleared before the grain deactivates.
 /// </summary>
 /// <param name="state">The battle's persistent state.</param>
 /// <param name="catalog">Source of the species base stats.</param>
 /// <param name="timing">The round loop's pacing.</param>
 /// <param name="clock">Source of the current time for the turn deadline.</param>
 /// <param name="events">Sends the round deltas to the battle's watchers.</param>
+/// <param name="snapshots">Stores the completed battle in the cold store.</param>
+/// <param name="playerStats">Counts a decided battle for its players.</param>
+/// <param name="logger">Logs a failed hand-over to the cold store.</param>
 // Pinned to the name Orleans would derive anyway: the grain type is part
 // of every stored state and reminder key, so a class rename must not
 // change it.
@@ -33,7 +43,10 @@ internal sealed class LiveBattleGrain(
     ICatalogQueryService catalog,
     IOptions<BattleTimingOptions> timing,
     TimeProvider clock,
-    BattleEventPublisher events)
+    BattleEventPublisher events,
+    BattleSnapshotWriteRepository snapshots,
+    IPlayerStatsService playerStats,
+    ILogger<LiveBattleGrain> logger)
     : Grain, ILiveBattleGrain, IRemindable
 {
     // One reminder drives both deadlines: the join deadline while the
@@ -172,6 +185,7 @@ internal sealed class LiveBattleGrain(
             await ScheduleNextRoundAsync();
             await state.WriteStateAsync();
             await PublishAsync(Battle.Round, []);
+            await HandOverAsync();
             return;
         }
 
@@ -317,15 +331,111 @@ internal sealed class LiveBattleGrain(
     /// <summary>
     /// Resolves the pending actions, arms the next round, stores the
     /// result and only then tells the watchers, so no client sees a
-    /// round that is not stored yet.
+    /// round that is not stored yet. A round that ends the battle
+    /// hands it over to the cold store in the same grain turn.
     /// </summary>
-    private async Task PlayRoundAsync(CancellationToken cancellationToken = default)
+    private async Task PlayRoundAsync()
     {
         var round = Battle.Round;
         var strikes = await ResolveRoundAsync();
         await ScheduleNextRoundAsync();
-        await state.WriteStateAsync(cancellationToken);
+        await state.WriteStateAsync();
         await PublishAsync(round, strikes);
+
+        if (Battle.Status == BattleStatus.Completed)
+        {
+            await HandOverAsync();
+        }
+    }
+
+    /// <summary>
+    /// The hot→cold bridge (ADR-0003), straight-line and without an
+    /// outbox: store the snapshot, count a decided battle, then clear
+    /// the hot state and deactivate. It runs in the turn that
+    /// completed the battle, so no caller ever reads the battle in
+    /// between. If the snapshot or the count fails, the hot state is
+    /// kept as the source for a replay; if only the clear fails, the
+    /// cold store is complete and the hot rows merely stay behind.
+    /// It takes no cancellation token on purpose: a half-done
+    /// hand-over helps nobody.
+    /// </summary>
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Any failure of the cold store must keep the hot state and is logged, not rethrown: "
+            + "the battle is already completed and published.")]
+    private async Task HandOverAsync()
+    {
+        var battleId = this.GetPrimaryKey();
+        try
+        {
+            await snapshots.AddAsync(ToSnapshot(), CancellationToken.None);
+            if (DecidedResult() is { } result)
+            {
+                await playerStats.RecordResultAsync(result, CancellationToken.None);
+            }
+        }
+        catch (Exception exception)
+        {
+            Log.HandOverFailed(logger, exception, battleId);
+            return;
+        }
+
+        try
+        {
+            await Task.WhenAll(Battle.Combatants.Select(combatant => Monster(combatant.Slot).ClearAsync()));
+            await state.ClearStateAsync();
+        }
+        catch (Exception exception)
+        {
+            Log.ClearFailed(logger, exception, battleId);
+        }
+
+        DeactivateOnIdle();
+    }
+
+    private BattleSnapshot ToSnapshot() =>
+        new()
+        {
+            BattleId = this.GetPrimaryKey(),
+            ArenaId = Battle.ArenaId,
+            Round = Battle.Round,
+            WinnerId = Battle.WinnerId,
+            CompletedAt = clock.GetUtcNow(),
+            Combatants = [.. Battle.Combatants.Select(combatant => new SnapshotCombatant(
+                combatant.Slot,
+                combatant.ParticipantId,
+                combatant.IsBot,
+                combatant.SpeciesId,
+                combatant.HitPoints,
+                combatant.MaxHitPoints))],
+        };
+
+    /// <summary>
+    /// The human sides of a decided battle for the player stats.
+    /// Bots are left out, so against a bot only the human side
+    /// counts; an abandoned or bot-only battle counts for nobody.
+    /// </summary>
+    /// <returns>The result, or <see langword="null"/> if there is
+    /// nothing to count.</returns>
+    private BattleResultDto? DecidedResult()
+    {
+        if (Battle.WinnerId is not { } winnerId)
+        {
+            return null;
+        }
+
+        var humans = Battle.Combatants
+            .Where(combatant => !combatant.IsBot)
+            .Select(combatant => combatant.ParticipantId)
+            .Distinct()
+            .ToList();
+
+        return humans.Count == 0
+            ? null
+            : new BattleResultDto(
+                humans.Contains(winnerId) ? winnerId : null,
+                [.. humans.Where(id => id != winnerId)]);
     }
 
     private Task PublishAsync(int round, IReadOnlyList<StrikeDto> strikes) =>
@@ -442,6 +552,9 @@ internal sealed class LiveBattleGrain(
         _botLoop = null;
     }
 
+    // The timer's token is not passed on: the round that ends the
+    // battle stops the loop, which cancels that token while the round
+    // still has to store its result and hand the battle over.
     private async Task PlayBotRoundAsync(CancellationToken cancellationToken)
     {
         if (Battle.Status != BattleStatus.InProgress)
@@ -451,7 +564,7 @@ internal sealed class LiveBattleGrain(
         }
 
         AddBotActions();
-        await PlayRoundAsync(cancellationToken);
+        await PlayRoundAsync();
     }
 
     private IEnumerable<Combatant> Standing() => Battle.Combatants.Where(combatant => !combatant.IsDefeated);

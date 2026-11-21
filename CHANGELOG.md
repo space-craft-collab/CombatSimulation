@@ -54,10 +54,29 @@ and this project adheres to
   in SQL, safe under concurrent battles); `GET /players/{id}`
   reads through `PlayerStatsReadRepository` and returns 404
   before a player's first decided battle.
+- Hot→cold bridge ([ADR-0003](docs/adr/0003-no-outbox.md)): a
+  completed battle is stored in `battles.Battles` and
+  `battles.BattleCombatants` (`InitialBattles` migration)
+  through `BattleSnapshotWriteRepository`, a decided one is
+  reported to `IPlayerStatsService`, then the battle and
+  monster grains clear their hot state and deactivate — all in
+  the turn that ended the battle. A failed write is logged and
+  keeps the hot state; nothing is counted.
+- `GET /battles/{id}` (and the hub's `Watch`) fall back to the
+  cold store once a battle's hot state is gone; 404 only when
+  neither store knows the id.
 
 #### Changed
 - Player ids are capped at 64 characters; longer ones get a
   400 on starting or joining a battle.
+- Battles against the bot count for the human side:
+  `BattleResultDto.WinnerId` is null when the bot won, and
+  `LoserIds` may be empty when the player beat it. Bots
+  themselves are never counted.
+- The arena's battle list drops `Created` entries (battles
+  handed over and cleared) as well as `Completed` ones.
+  Submitting an action to, or joining, a handed-over battle
+  answers 409, as for any completed battle.
 - Starting, opening or listing battles on an arena the Catalog
   does not know now returns 404 instead of creating an arena
   grain for any id. The HTTP tests play on the seeded `volcano`
@@ -71,7 +90,18 @@ and this project adheres to
 - All Orleans packages aligned on 10.4.2 (the Azure Storage,
   Client and TestingHost pins were still on 10.3.1).
 
+#### Fixed
+- A bot-only battle's final round never stored its result: the
+  round stopped the bot loop, which cancelled the timer token the
+  state write was still using.
+
 #### Decided (process)
+- ADR **0003** (still `Proposed`): the snapshot writer is the
+  concrete `BattleSnapshotWriteRepository`, not an
+  `IBattleSnapshotWriter` interface
+  ([ADR-0010](docs/adr/0010-delegate-test-seams.md)). The failed
+  write is tested against SQL Server through a primary-key
+  collision, so the write is deliberately not idempotent.
 - ADR **0011** — SQL Server required for the cold path, in
   tests too: no seed, SQLite or InMemory fallback, so the code
   path that ships is the one the tests run. **`Accepted`**
