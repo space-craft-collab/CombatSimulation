@@ -33,8 +33,9 @@ history, not a money problem.
 
 ## Decision
 
-**Skip the outbox.** The grain calls `IBattleSnapshotWriter`
-synchronously on completion, then clears its hot state and
+**Skip the outbox.** The grain writes the snapshot
+synchronously on completion, reports the result to
+`IPlayerStatsService`, then clears its hot state and
 deactivates (see below). If the silo crashes between the
 cold-path write and grain deactivation, the snapshot is
 at-most-once.
@@ -42,16 +43,33 @@ at-most-once.
 This trade-off is documented in this ADR so reviewers see it
 was a conscious choice, not an oversight.
 
+**The writer is a concrete class, not an interface.** The grain
+injects `BattleSnapshotWriteRepository` from the module's
+`Infrastructure/` folder directly. There is one implementation
+and no second one in sight, and the grain tests run against a
+real SQL Server anyway ([ADR-0011]), so an
+`IBattleSnapshotWriter` would be the test-only interface
+[ADR-0010] rules out. The one path a stub would serve, a failed
+write, is tested against SQL Server too: the test stores a
+snapshot under the battle's id first, so the grain's insert
+fails on the primary key. That is why the write is
+deliberately **not idempotent** — a duplicate id is an error,
+not a no-op; with no replay job there is no second legitimate
+write to absorb.
+
 **Hot state lives only as long as the battle.** Table Storage
 is the store for *live* battles; the cold store owns finished
 ones. The completion sequence is:
 
-1. Write the snapshot to the cold store.
-2. On success, clear the hot state — the battle grain's own
-   and its monster-instance grains' (`ClearStateAsync`).
+1. Write the snapshot to the cold store, then report a decided
+   battle to `IPlayerStatsService` (bots are not counted; a
+   human's win or loss against a bot is).
+2. On success of both, clear the hot state — the battle
+   grain's own and its monster-instance grains'
+   (`ClearStateAsync`).
 3. Deactivate.
 
-If step 1 throws, step 2 is skipped and the failure is logged:
+If step 1 throws, the rest is skipped and the failure is logged:
 the final result then stays in the hot state, which is what a
 replay would read. A cleared grain reads as `Created`, the same
 as an id that never existed, so:
@@ -69,7 +87,7 @@ as an id that never existed, so:
   - Hot→cold path is a single straight-line call — easy to
     read in a code review.
 - **Negative:**
-  - A silo crash between `WriteSnapshotAsync` and
+  - A silo crash between the snapshot write and
     `DeactivateOnIdle()` can lose the cold-path write. The
     grain state still has the final result, so a manual replay
     job could recover it — not built.
@@ -105,8 +123,15 @@ as an id that never existed, so:
 ## References
 
 - Chris Richardson, "Pattern: Transactional outbox"
-- [ADR-0005]: Service interfaces — `IBattleSnapshotWriter` is a
-  Battles-internal abstraction (the grain calls it within the
-  module), not a cross-module contract.
+- [ADR-0005]: Service interfaces — the snapshot writer is
+  Battles-internal (the grain calls it within the module); the
+  cross-module call is `IPlayerStatsService`.
+- [ADR-0010]: Delegate test seams — why the writer has no
+  interface.
+- [ADR-0011]: SQL Server required — the tests write to a real
+  cold store, which makes the failure path testable without a
+  stub.
 
 [ADR-0005]: 0005-inter-module-services.md
+[ADR-0010]: 0010-delegate-test-seams.md
+[ADR-0011]: 0011-sql-server-required.md

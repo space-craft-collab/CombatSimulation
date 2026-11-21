@@ -328,7 +328,7 @@
       <div>
         <div class="where" style="color:var(--battles)">Battles · Infrastructure/ folder</div>
         <h3>Writes snapshot, deactivates</h3>
-        <p><code>IBattleSnapshotWriter</code> (intra-Battles) persists the final result to Azure SQL via EF Core, then the grain unloads.</p>
+        <p><code>BattleSnapshotWriteRepository</code> (intra-Battles) persists the final result to Azure SQL via EF Core, then the grain clears its hot state and unloads.</p>
       </div>
     </div>
   </div>

@@ -115,18 +115,24 @@ battle crosses from hot to cold in one straight-line call
 
 **Hot → cold bridge**
 
-- [ ] **Decision:** the snapshot writer's shape. ADR-0003 names
-      an `IBattleSnapshotWriter` interface; under
-      [ADR-0010](adr/0010-delegate-test-seams.md) a concrete
-      write repository is enough unless a second implementation
-      appears. Settle it and edit ADR-0003 in place (still
-      `Proposed`)
+- [x] **Decision:** the snapshot writer's shape. Settled in
+      [ADR-0003](adr/0003-no-outbox.md): a concrete
+      `BattleSnapshotWriteRepository`, no `IBattleSnapshotWriter`
+      ([ADR-0010](adr/0010-delegate-test-seams.md)). The failed
+      write is tested against SQL Server by a primary-key
+      collision instead of a stub, so the write is not
+      idempotent
 - [ ] On completion the battle grain writes a snapshot
       (participants, teams, rounds played, winner or
       abandoned) to the `battles` schema, reports the result
       to `IPlayerStatsService`, then deactivates — no outbox,
       at-most-once ([ADR-0003](adr/0003-no-outbox.md));
-      abandoned battles count for nobody
+      abandoned battles count for nobody. Battles against the
+      bot count for the human side, so `BattleResultDto` takes
+      a missing winner (the bot won) or no loser (the bot
+      lost); bots themselves are never counted
+- [ ] Test: a failed snapshot write keeps the hot state and
+      reports no result (SQL Server only, in the fast suite)
 - [ ] Hot state lifetime: Table Storage holds live battles
       only (it has no TTL). Once the snapshot is written, the
       battle grain clears its own state and its monster
@@ -169,8 +175,8 @@ battle crosses from hot to cold in one straight-line call
 - SignalR backplane → Phase 5.
 - Azure resources (Storage account, Azure SQL) and deployment →
   Phase 5. Phase 3 runs against the local emulators only.
-- Cleaning up the hot state of completed battles — they stay in
-  Table Storage as the recovery source ADR-0003 relies on.
+- A sweep for hot rows a crash left behind between the snapshot
+  write and the clear ([ADR-0003](adr/0003-no-outbox.md)).
 - Player accounts and auth → Phase 6; player ids stay
   client-chosen strings.
 - Arena rules such as "fire monsters only"

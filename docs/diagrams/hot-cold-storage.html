@@ -229,7 +229,7 @@
     <div class="bridge-col">
       <div class="bridge-tag">on Completed</div>
       <div class="bridge-arrow" id="bridge">➜</div>
-      <div class="bridge-tag">IBattleSnapshotWriter</div>
+      <div class="bridge-tag">snapshot to SQL</div>
     </div>
 
     <!-- COLD -->
@@ -301,7 +301,7 @@
       on: ["n-ram"]
     },
     {
-      label: "<b>5. Bridge.</b> Grain calls IBattleSnapshotWriter — hot ➜ cold.",
+      label: "<b>5. Bridge.</b> Grain writes the snapshot — hot ➜ cold.",
       on: ["n-ram"], bridge: true
     },
     {

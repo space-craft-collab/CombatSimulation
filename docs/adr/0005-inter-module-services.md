@@ -43,8 +43,8 @@ own `<Module>.Contracts` project.
   exposes its cross-module surface through interfaces — e.g.
   `ICatalogQueryService` (read by `Battles`) and
   `IPlayerStatsService` (written by `Battles`).
-  `IBattleSnapshotWriter` is *not* cross-module: the grain calls it
-  inside `Battles` (see [ADR-0003]).
+  The snapshot writer (`BattleSnapshotWriteRepository`) is *not*
+  cross-module: the grain calls it inside `Battles` (see [ADR-0003]).
 - **Contracts live in per-module `<Module>.Contracts` projects**,
   not a global `Shared.Contracts` assembly. A consuming module
   references only the producer's `.Contracts` project — never the
@@ -135,8 +135,8 @@ module references it. See the diagram in
 - [ADR-0001]: Modular monolith
 - [ADR-0002]: Orleans co-hosted — why grain interfaces stay out of
   the plain `*.Contracts` projects.
-- [ADR-0003]: No outbox — `IBattleSnapshotWriter` is a
-  Battles-internal abstraction (the grain calls it within the
+- [ADR-0003]: No outbox — the snapshot writer is a
+  Battles-internal class (the grain calls it within the
   module); the canonical *cross-module* calls are
   `ICatalogQueryService` and `IPlayerStatsService`.
 - [ADR-0008]: Shared layer split (Kernel + Infrastructure)
