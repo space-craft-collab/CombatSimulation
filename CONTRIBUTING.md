@@ -65,6 +65,9 @@ dotnet reportgenerator -reports:coverage/fast.cobertura.xml \
 
 The SDK version is pinned in `global.json`.
 
+The frontend has its own checks, all run in a
+container; see [Frontend](#frontend).
+
 ## Ground rules for code
 
 Everything is written down in
@@ -134,30 +137,81 @@ keys. Changing the collation of a key column needs
 the primary key dropped and re-added around the
 `AlterColumn`; EF does not generate that.
 
-## Frontend dependencies (npm)
+## API contract and client
+
+The host serves its OpenAPI document at
+`/openapi/v1.json`. A copy is committed as
+`docs/api/openapi.json`, and the frontend's Kiota
+client under `frontend/src/lib/api` is generated from
+that copy
+([ADR-0004](docs/adr/0004-sveltekit-frontend.md)).
+`OpenApiDocumentTests` fails when an endpoint change
+makes the two differ. To refresh both:
+
+```bash
+UPDATE_OPENAPI=1 dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests \
+  -- -class "OrleansMonsterArena.Tests.OpenApiDocumentTests"
+scripts/generate-api-client.sh
+```
+
+Commit the document and the client together; CI
+regenerates the client and fails when it differs.
+The generated files are never edited by hand. The
+SignalR hub is not part of the document: its
+messages are typed by hand in
+`frontend/src/lib/arena/battle-hub.ts`.
+
+## Frontend
 
 Node and npm run in containers only; nothing is
 installed on the host
 ([ADR-0004](docs/adr/0004-sveltekit-frontend.md)).
-
-Every npm package is pinned to an exact version (no
-`^` or `~` ranges) and `package-lock.json` is
-committed; images and CI install with `npm ci`.
-
-Before a package is added or bumped, check it for
-known malware. The query returns the number of
-malware advisories for the package and must print
-`0`:
+The commands are in
+[`frontend/README.md`](frontend/README.md); all of
+them go through `frontend/compose.yaml`:
 
 ```bash
-gh api "/advisories?type=malware&ecosystem=npm&affects=<package>" --jq length
+cd frontend
+docker compose run --rm frontend npm ci
+docker compose up
 ```
 
-Then look at its npm page: the exact name (typos are
-a common trap), who publishes it, how old the
-version is, and whether it runs install scripts. A
-Dependabot PR for npm gets the same check before it
-is merged.
+## Frontend dependencies (npm)
+
+`frontend/.npmrc` enforces three rules:
+
+- Every package is pinned to an exact version (no
+  `^` or `~` ranges), and `package-lock.json` is
+  committed. Images and CI install with `npm ci`.
+- A version must be a week old before npm resolves
+  it (`min-release-age`). Malware in a fresh release
+  is usually found within days.
+- No package runs a script while it is installed
+  (`ignore-scripts`).
+
+Before a package is added or bumped, the lockfile is
+checked for known malware, and only then installed:
+
+```bash
+cd frontend
+docker compose run --rm frontend npm install --package-lock-only <package>
+docker compose run --rm frontend node scripts/check-malware.mjs
+docker compose run --rm frontend npm ci
+```
+
+`check-malware.mjs` asks the GitHub Advisory Database
+about every package in the lockfile, the transitive
+ones included, and exits with 1 on a hit. CI runs it
+before it installs anything.
+
+For a new direct dependency, also look at its npm
+page: the exact name (typos are a common trap) and
+who publishes it. A Dependabot PR for npm gets the
+same check before it is merged.
+
+The Playwright image in `frontend/compose.yaml` must
+have the version of `@playwright/test`; bump the two
+together.
 
 ## Architecture changes
 

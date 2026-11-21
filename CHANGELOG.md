@@ -24,23 +24,74 @@ in [this file's history][full-changelog].
   needs (OpenAPI document, `GET /species`, Kiota client),
   the solo path against the bot first, then waiting for a
   human and the player dashboard, frontend tests and CI.
-- `CONTRIBUTING.md`: rules for npm dependencies.
+- `GET /species`: every species with its base stats, for the
+  team picker.
+- OpenAPI document at `/openapi/v1.json`, committed as
+  `docs/api/openapi.json`; `OpenApiDocumentTests` fails when
+  the two differ. Operations carry a tag per module and
+  their 400/409 problem responses.
+- CORS for the frontend: the origins under
+  `Cors:AllowedOrigins` may call the API and the hub, without
+  credentials.
+- `frontend/`: SvelteKit 3 with Svelte 5 runes, TypeScript,
+  Tailwind CSS and `adapter-node`, scaffolded and run in
+  containers only (Node 24 LTS image, `frontend/compose.yaml`
+  for development, a multi-stage `Dockerfile` for
+  production).
+- Kiota TypeScript client under `frontend/src/lib/api`,
+  generated from the committed document by
+  `scripts/generate-api-client.sh` (Kiota is a pinned
+  `dotnet` tool). `frontend/src/lib/arena` wraps it: client
+  factory, strict Catalog types, and the hand-written types
+  of the SignalR hub.
+- A walking-skeleton page: the arenas and species rendered on
+  the server, and a connection check that plays one round
+  against the bot from the browser over HTTP and SignalR.
+- Frontend tests: Vitest (first unit tests) and Playwright in
+  a container (`docker compose run --rm e2e`), which runs the
+  connection check in Chromium.
+- `frontend/scripts/check-malware.mjs`: checks every package
+  of the lockfile against the malware advisories of the
+  GitHub Advisory Database.
+- CI: a `frontend` job (malware check, install, lint, type
+  check, Vitest, build, all in the container image), and a
+  step in `build-test` that fails when the checked-in Kiota
+  client is stale. Dependabot watches the frontend's npm
+  packages and its `Dockerfile`.
+- `CONTRIBUTING.md`: the API contract and client, the
+  frontend, and the rules for npm dependencies.
 
 #### Changed
 - [ADR-0004](docs/adr/0004-sveltekit-frontend.md) records
   what was settled at the phase start: toolchain in
   containers only, Tailwind CSS with inline-SVG monsters, a
   nickname in `localStorage` as the player id until Phase 6,
-  Vitest plus one Playwright smoke test. The adapter stays
-  open until the spike.
+  Vitest plus one Playwright smoke test.
+- ADR-0004 locks the adapter after the spike:
+  **`adapter-node`**. The browser calls the API and the hub
+  directly; the SvelteKit server reaches the API under an
+  internal URL while it renders. The frontend becomes a
+  second Container App instead of a static site. The spike's
+  findings on Kiota with SvelteKit are in the ADR.
 - Kiota is the only client generator: the
   `@hey-api/openapi-ts` fallback is dropped, since it is a
   community project and the generator should come from
-  Microsoft.
+  Microsoft. Kiota's TypeScript support is still in preview.
+- The HTTP API reads numbers from JSON numbers only, no
+  longer from strings as well; the OpenAPI document typed
+  every integer as "integer or string" otherwise.
+
+#### Fixed
+- `dotnet run --project src/AppHost` started the host as
+  Production, so `appsettings.Development.json` and the
+  startup migrations did not apply. A `launchSettings.json`
+  now selects Development and `http://localhost:5000`.
 
 #### Decided (process)
 - Every npm package is pinned to an exact version and
-  checked for known malware before it is installed.
+  checked for known malware before it is installed. A
+  release must be a week old, and no package runs an
+  install script.
 
 ### Phase 3 — Persistence (hot/cold) ✅
 

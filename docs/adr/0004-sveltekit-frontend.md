@@ -22,21 +22,39 @@ on the live demo before reading the README.
 
 ## Decision
 
-Use **SvelteKit with Svelte 5 runes** as a separate deployable.
-The exact adapter is **not locked yet** — `adapter-auto` /
-`-node` is the leading candidate because the app needs JWT auth,
-SignalR, and SSR for protected routes. The lock-in happens at
-the start of Phase 4 after a 1-day spike.
+Use **SvelteKit with Svelte 5 runes** as a separate deployable,
+built with **`adapter-node`**: the frontend is a Node server in
+its own container. The adapter was locked by the spike at the
+start of Phase 4 (2026-11-21, see "Spike result"); the reasons
+are server-side rendering now and, in Phase 6, a server that can
+keep a session away from the browser.
+
+How the three parts talk:
+
+- The **browser** calls the AppHost directly, the HTTP API and
+  the SignalR hub alike. The AppHost admits the frontend's
+  origin through CORS (`Cors:AllowedOrigins`), without
+  credentials.
+- The **SvelteKit server** calls the same API while it renders
+  a page. `load` functions use the public API URL everywhere;
+  on the server a `handleFetch` hook redirects those calls to
+  an internal URL where the two differ.
+- Both URLs are read when the server starts (`PUBLIC_API_URL`,
+  `API_URL_INTERNAL`), so one image serves every environment.
 
 Settled at the start of Phase 4 (2026-11-21):
 
 - **Toolchain in containers only.** Node and npm are not
   installed on the host; scaffolding, the dev server, builds
   and tests all run in Docker, which also pins the Node
-  version for this project.
-- **npm dependencies are pinned to exact versions**, and each
-  package is checked for known malware before it is
-  installed. The steps are in `CONTRIBUTING.md`.
+  version for this project (24 LTS). The dev container shares
+  the host's network, so it reaches the AppHost on
+  `localhost` without that host listening beyond loopback.
+- **npm dependencies are pinned to exact versions**, a
+  release must be a week old, no package runs an install
+  script, and the lockfile is checked for known malware
+  before anything is installed. The steps are in
+  `CONTRIBUTING.md`.
 - **API client: Kiota, with no fallback generator.**
 - **Styling: Tailwind CSS.** Monsters are drawn as inline
   SVG; the repository carries no image assets.
@@ -50,8 +68,7 @@ Settled at the start of Phase 4 (2026-11-21):
 ## Consequences
 
 - **Positive:**
-  - Smallest bundle of the three options → cold-start on Azure
-    Static Web Apps stays low.
+  - Smallest bundle of the three options.
   - Runes give a clean reactive model for the SignalR stream
     that powers `LiveBattleView`.
   - Demonstrates polyglot stack experience on the CV — useful
@@ -63,8 +80,15 @@ Settled at the start of Phase 4 (2026-11-21):
     lag behind. Mitigated by writing the few components we need
     by hand.
 - **Neutral / follow-ups:**
-  - **Open:** SvelteKit adapter (`auto` vs `node` vs `static`)
-    — decided in Phase 4 after the spike.
+  - `adapter-node` means a second container to host (Azure
+    Container Apps, Phase 5) instead of a static site. A
+    static build would be cheaper to host, but leaves no
+    server to render pages or, later, to hold a session.
+  - Kiota's TypeScript support is in **preview**: the
+    generator says so, and its runtime packages
+    (`@microsoft/kiota-*`) have only `1.0.0-preview` releases.
+    They are pinned exactly, and a breaking change stays
+    inside `frontend/src/lib/arena`.
   - OpenAPI → TS client: **Kiota**, maintained by Microsoft
     like the rest of the backend stack. Two generators were
     rejected. NSwag rests largely on a single maintainer and
@@ -79,7 +103,39 @@ Settled at the start of Phase 4 (2026-11-21):
     messages (`BattleEventDto`, `StrikeDto`) are typed by
     hand in the frontend.
 
+## Spike result
+
+Run on 2026-11-21 with SvelteKit 3, in a real browser
+(Playwright, Chromium) against the dev server and against the
+production image.
+
+- `adapter-node` builds in the container and runs as a 357 MB
+  image; the page arrives rendered with the Catalog's arenas
+  and species.
+- The browser starts a battle over HTTP, follows it on the hub
+  and receives a round delta, all cross-origin.
+- With a public API URL the server cannot reach, the page
+  renders only when `API_URL_INTERNAL` is set: the redirect in
+  `handleFetch` works.
+- Kiota's client needed three things to live with SvelteKit,
+  all in `frontend/src/lib/arena`:
+  - SvelteKit hides the headers of responses fetched in
+    `load`; `content-type` has to be let through.
+  - Kiota's adapter looks at a response's `body` before it
+    reads it, which the response SvelteKit observes during
+    rendering allows only once; the client is handed a plain
+    copy.
+  - Kiota types every property as optional, whatever the
+    OpenAPI document requires; the generated models are
+    mapped onto strict types in one place.
+- The client registers the JSON serializer only, instead of
+  Kiota's default four.
+
 ## Alternatives considered
+
+- **`adapter-static`** — rejected: the cheapest to host, but
+  every page would be assembled in the browser, and Phase 6
+  would have to keep its token there.
 
 - **React + Vite** — rejected: more boilerplate for the few
   screens we need, no advantage in this scope.
@@ -93,7 +149,7 @@ Settled at the start of Phase 4 (2026-11-21):
 
 - [ADR-0002]: Orleans co-hosted — the single backend process
   (web host + silo) this frontend talks to.
-- SvelteKit adapter docs (to be linked once the adapter is
-  locked in Phase 4).
+- [SvelteKit `adapter-node`](https://svelte.dev/docs/kit/adapter-node).
+- [Kiota](https://learn.microsoft.com/openapi/kiota/overview).
 
 [ADR-0002]: 0002-orleans-cohosted.md

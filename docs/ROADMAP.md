@@ -63,38 +63,47 @@ host through a Kiota-generated client
 
 **Toolchain and spike**
 
-- [ ] `frontend/` scaffolded inside a container (SvelteKit,
-      Svelte 5 runes, TypeScript): a multi-stage `Dockerfile`
-      and a dev compose service on a pinned Node LTS image.
-      The container runs as uid 1000 and reaches the host
-      through `host.docker.internal`; no Node or npm on the
-      host
-- [ ] npm rules in place from the first install: exact
-      versions (`save-exact`), a committed lockfile, `npm ci`
-      in images and CI, and the malware check before every
-      new package (`CONTRIBUTING.md`)
-- [ ] **Decision:** the one-day adapter spike —
-      `adapter-node` (the favourite, since the app runs in a
-      container anyway) against `static` and `auto`. It also
-      settles how the browser reaches the API and the hub
-      (directly, with CORS, or through the SvelteKit server)
-      and where the frontend will be hosted. The result goes
-      into ADR-0004
+- [x] `frontend/` scaffolded inside a container (SvelteKit 3,
+      Svelte 5 runes, TypeScript, Tailwind CSS): a multi-stage
+      `Dockerfile` on a pinned Node 24 LTS image and a dev
+      service in `frontend/compose.yaml`. The container runs as
+      uid 1000 and shares the host's network, so it reaches the
+      AppHost on `localhost` and that host need not listen
+      beyond loopback; no Node or npm on the host
+- [x] npm rules in place from the first install
+      (`CONTRIBUTING.md`): exact versions, a committed
+      lockfile, `npm ci`, no install scripts, a week's
+      cooldown for new releases, and
+      `scripts/check-malware.mjs`, which checks the lockfile
+      against the GitHub Advisory Database before an install
+- [x] **Decision:** the adapter spike — **`adapter-node`**
+      ([ADR-0004](adr/0004-sveltekit-frontend.md)). The
+      browser calls the API and the hub directly (CORS); the
+      SvelteKit server reaches the same API under an internal
+      URL while it renders. Proven in a real browser against
+      the dev server and the production image. The frontend
+      will be a second Container App, not a static site
 
 **Backend for the frontend**
 
-- [ ] OpenAPI document served by the host
-      (`Microsoft.AspNetCore.OpenApi`, pinned but not
-      referenced yet); the endpoints declare their response
-      and error types, which they do not today
-- [ ] `GET /species` in Catalog: the team picker needs the
-      list, and no endpoint returns it yet
-- [ ] CORS for the frontend's origin, if the spike has the
-      browser call the API directly
-- [ ] Kiota as a pinned `dotnet` tool; the generated
-      TypeScript client is checked in under `frontend/`,
-      because the Node image has no .NET SDK to generate it.
-      CI regenerates it and fails when it differs
+- [x] OpenAPI document served at `/openapi/v1.json`
+      (`Microsoft.AspNetCore.OpenApi`) and committed as
+      `docs/api/openapi.json`; a test fails when the two
+      differ. The typed results already described the success
+      responses; added were the 400/409 problem responses, a
+      tag per module, and strict JSON numbers (the web default
+      typed every integer as "integer or string")
+- [x] `GET /species` in Catalog, for the team picker
+- [x] CORS for the frontend's origins (`Cors:AllowedOrigins`),
+      without credentials
+- [x] Kiota as a pinned `dotnet` tool; the TypeScript client
+      is generated from `docs/api/openapi.json` by
+      `scripts/generate-api-client.sh` and checked in under
+      `frontend/src/lib/api`, because the Node image has no
+      .NET SDK. CI regenerates it and fails when it differs
+- [x] `launchSettings.json` for the AppHost: a plain
+      `dotnet run` started it as Production, where neither
+      `appsettings.Development.json` nor the migrations apply
 
 **Solo path — first**
 
@@ -132,15 +141,18 @@ host through a Kiota-generated client
 **Tests and CI**
 
 - [ ] Vitest for the logic, above all applying round deltas
-      to the battle state
+      to the battle state (the setup and a first test exist)
 - [ ] One Playwright smoke test: the solo path against a
-      running host, from nickname to result
-- [ ] CI job for the frontend (type check, lint, Vitest,
-      build), all in the container image
+      running host, from nickname to result. The setup exists
+      (`docker compose run --rm e2e`) with a connection check:
+      one round against the bot over HTTP and SignalR
+- [x] CI job `frontend`: malware check, install, lint, type
+      check, Vitest and build, all in the container image
+- [ ] Playwright in CI, once the smoke test exists
 - [ ] **Decision:** whether the frontend job and the
       Playwright test become required checks on `main`
-- [ ] Dependabot watches `frontend/` (npm) and its
-      `Dockerfile`
+- [x] Dependabot watches `frontend/` (npm, with the same
+      week's cooldown) and its `Dockerfile`
 
 **Wrap-up**
 

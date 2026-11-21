@@ -26,6 +26,19 @@ docker compose up -d
 dotnet run --project src/AppHost
 ```
 
+The frontend runs in a container of its own (no Node
+on the host), on <http://localhost:5173>:
+
+```bash
+cd frontend
+docker compose run --rm frontend npm ci
+docker compose up
+```
+
+So far it is a walking skeleton: it lists the arenas
+and species and plays one round against the bot to
+prove the connection. The screens follow.
+
 A battle against the bot is already playable over HTTP:
 
 ```bash
@@ -74,8 +87,9 @@ receive a `RoundResolved` delta after every round.
 - Modular monolith: `Catalog`, `Battles`, `Players`
 - Hot path: Orleans + Azure Table Storage
 - Cold path: EF Core + Azure SQL
-- Frontend (Phase 4, in progress): SvelteKit + Svelte 5 runes
-  (separate deploy)
+- Frontend (Phase 4, in progress): SvelteKit + Svelte 5 runes,
+  a Node server of its own (`adapter-node`); the browser
+  calls the API and the SignalR hub directly
 
 See [`docs/adr/`](docs/adr/) for architecture decisions.
 
@@ -91,7 +105,7 @@ See [`docs/adr/`](docs/adr/) for architecture decisions.
 | Frontend | SvelteKit + TypeScript |
 | OpenAPI client | Kiota |
 | Tests | xUnit v3 + Testcontainers |
-| Hosting | Azure Container Apps + Static Web Apps |
+| Hosting | Azure Container Apps |
 | CI/CD | GitHub Actions |
 
 ## Coding Standards
