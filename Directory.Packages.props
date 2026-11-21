@@ -23,7 +23,6 @@
     <PackageVersion Include="Microsoft.Orleans.Clustering.AzureStorage" Version="10.4.2" />
     <PackageVersion Include="Microsoft.Orleans.Persistence.AzureStorage" Version="10.4.2" />
     <PackageVersion Include="Microsoft.Orleans.Reminders.AzureStorage" Version="10.4.2" />
-    <PackageVersion Include="Microsoft.Orleans.TestingHost" Version="10.4.2" />
   </ItemGroup>
 
   <ItemGroup Label="ASP.NET Core + Hosting">
@@ -67,7 +66,6 @@
     <PackageVersion Include="Testcontainers" Version="4.17.0" />
     <PackageVersion Include="Testcontainers.MsSql" Version="4.17.0" />
     <PackageVersion Include="Testcontainers.Azurite" Version="4.17.0" />
-    <PackageVersion Include="coverlet.collector" Version="10.1.1" />
   </ItemGroup>
 
 </Project>

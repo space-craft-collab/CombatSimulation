@@ -10,13 +10,16 @@
 # stores live there. Without Azurite, grain state and reminders
 # fall back to memory.
 # Ports bind to localhost only.
+#
+# Both images are pinned to a version; the tests start the same
+# images (they read them from this file).
 
 name: orleans-monster-arena
 
 services:
   # Hot path: Orleans grain state and reminders (Table Storage).
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:latest
+    image: mcr.microsoft.com/azure-storage/azurite:3.38.0
     command: azurite-table --tableHost 0.0.0.0 --location /data
     ports:
       - "127.0.0.1:10002:10002"
@@ -25,7 +28,7 @@ services:
 
   # Cold path: EF Core, one schema per module.
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/mssql/server:2022-CU28-ubuntu-22.04
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer

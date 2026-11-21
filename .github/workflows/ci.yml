@@ -18,6 +18,9 @@ concurrency:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    # A run takes about two minutes; a hung container or test
+    # must not hold the runner for GitHub's six-hour default.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
@@ -28,24 +31,52 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      # dotnet-coverage and reportgenerator, pinned in
+      # .config/dotnet-tools.json.
+      - name: Restore tools
+        run: dotnet tool restore
+
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
       # xUnit v3 test projects are executables; run them
       # directly instead of going through dotnet test/VSTest.
       # Integration scenarios run in their own job instead, so
-      # this required check stays fast.
+      # this required check stays fast. dotnet-coverage wraps
+      # the run and passes its exit code on.
       - name: Test
         run: >-
+          dotnet dotnet-coverage collect
+          --settings tests/coverage.settings.xml
+          --output coverage/fast.cobertura.xml
+          --output-format cobertura
+          --
           dotnet run --no-build --configuration Release
           --project tests/OrleansMonsterArena.Tests
           -- -trait- "Category=Integration"
+
+      # Coverage of the fast suite only: what just the
+      # integration job reaches (the Table Storage wiring)
+      # shows as uncovered here.
+      - name: Coverage report
+        run: |
+          dotnet reportgenerator \
+            -reports:coverage/fast.cobertura.xml \
+            -targetdir:coverage/report \
+            "-reporttypes:Html;MarkdownSummaryGithub"
+          cat coverage/report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: coverage/report
 
   # Testcontainers suites (Docker is preinstalled on the runner).
   # Runs only after build-test passes and is not a required check.
   integration:
     needs: build-test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 

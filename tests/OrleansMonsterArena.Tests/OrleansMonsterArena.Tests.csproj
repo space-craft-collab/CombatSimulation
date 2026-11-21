@@ -20,7 +20,11 @@
     <PackageReference Include="NetArchTest.Rules" />
     <PackageReference Include="Testcontainers.Azurite" />
     <PackageReference Include="Testcontainers.MsSql" />
-    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The tests start the images pinned in compose.yaml (ComposeImages). -->
+    <None Include="..\..\compose.yaml" Link="compose.yaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

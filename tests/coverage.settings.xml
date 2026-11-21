@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Settings for dotnet-coverage (see CONTRIBUTING.md): measure the
+  project's own assemblies only — not the test project, Orleans
+  or Testcontainers — and leave out generated code.
+-->
+<Configuration>
+  <CodeCoverage>
+    <ModulePaths>
+      <Include>
+        <ModulePath>.*[\\/]AppHost\.dll$</ModulePath>
+        <ModulePath>.*[\\/](Catalog|Battles|Players)(\.Contracts)?\.dll$</ModulePath>
+        <ModulePath>.*[\\/]Battles\.Grains\.Abstractions\.dll$</ModulePath>
+        <ModulePath>.*[\\/]Shared\.(Kernel|Infrastructure)\.dll$</ModulePath>
+      </Include>
+    </ModulePaths>
+    <Sources>
+      <Exclude>
+        <!-- EF Core migrations and source-generator output. -->
+        <Source>.*[\\/]Migrations[\\/].*</Source>
+        <Source>.*\.g\.cs$</Source>
+      </Exclude>
+    </Sources>
+    <Attributes>
+      <Exclude>
+        <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+      </Exclude>
+    </Attributes>
+  </CodeCoverage>
+</Configuration>

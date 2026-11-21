@@ -9,9 +9,7 @@ namespace OrleansMonsterArena.Tests;
 /// </summary>
 public sealed class AzuriteFixture : IAsyncLifetime
 {
-    // Same image as compose.yaml, so tests and local runs agree.
-    private readonly AzuriteContainer _container =
-        new AzuriteBuilder("mcr.microsoft.com/azure-storage/azurite:latest").Build();
+    private readonly AzuriteContainer _container = new AzuriteBuilder(ComposeImages.Azurite).Build();
 
     /// <summary>
     /// The connection string of the running container.
@@ -23,6 +21,13 @@ public sealed class AzuriteFixture : IAsyncLifetime
     /// </summary>
     /// <returns>A task that completes once Azurite accepts requests.</returns>
     public async ValueTask InitializeAsync() => await _container.StartAsync();
+
+    /// <summary>
+    /// Stops the container before the test ends, as an outage of
+    /// Table Storage.
+    /// </summary>
+    /// <returns>A task that completes once Azurite is down.</returns>
+    public Task StopAsync() => _container.StopAsync(TestContext.Current.CancellationToken);
 
     /// <summary>
     /// Stops and removes the container.

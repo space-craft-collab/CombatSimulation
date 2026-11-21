@@ -41,9 +41,18 @@ updates:
           - "Testcontainers*"
           - "NetArchTest.*"
           - "NSubstitute"
-          - "coverlet.*"
+          # Coverage tools (.config/dotnet-tools.json).
+          - "dotnet-coverage"
+          - "dotnet-reportgenerator-globaltool"
 
   - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+
+  # The Azurite and SQL Server images pinned in compose.yaml; the
+  # tests read their images from that file, so CI checks a bump.
+  - package-ecosystem: docker-compose
     directory: "/"
     schedule:
       interval: weekly

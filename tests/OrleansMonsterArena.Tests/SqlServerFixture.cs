@@ -14,9 +14,7 @@ namespace OrleansMonsterArena.Tests;
 /// </summary>
 public sealed class SqlServerFixture : IAsyncLifetime
 {
-    // Same image as compose.yaml, so tests and local runs agree.
-    private readonly MsSqlContainer _container =
-        new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest").Build();
+    private readonly MsSqlContainer _container = new MsSqlBuilder(ComposeImages.SqlServer).Build();
 
     /// <summary>
     /// The connection string of a database on the container. The
