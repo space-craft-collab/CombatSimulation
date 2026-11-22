@@ -25,7 +25,7 @@ public sealed class OpenApiDocumentTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var path = Path.Combine(RepositoryRoot(), "docs", "api", "openapi.json");
+        var path = RepositoryFiles.PathTo("docs", "api", "openapi.json");
 
         // Act
         var served = Normalize(await client.GetStringAsync(
@@ -68,20 +68,5 @@ public sealed class OpenApiDocumentTests(AppHostFixture host)
         }
 
         return shared + 1;
-    }
-
-    // The tests run from bin/, so the repository root is the
-    // nearest parent that holds the solution file.
-    private static string RepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "OrleansMonsterArena.slnx")))
-            {
-                return directory.FullName;
-            }
-        }
-
-        throw new InvalidOperationException("No OrleansMonsterArena.slnx above the test output directory.");
     }
 }

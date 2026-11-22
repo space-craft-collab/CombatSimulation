@@ -110,10 +110,10 @@ mirrored the visitor's team.
 
 **Balance**
 
-- [ ] A simulator plays bot against bot on the pure rules,
+- [x] A simulator plays bot against bot on the pure rules,
       without Orleans: every one-on-one and every team of
       three against every other
-- [ ] Its first report records the starting point above
+- [x] Its first report records the starting point above
 - [ ] Guard rails as tests: every species wins between 40 %
       and 60 % of its battles; no one-on-one is worse than
       30/70 unless the element decides it; a battle lasts 5

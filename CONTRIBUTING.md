@@ -161,6 +161,25 @@ SignalR hub is not part of the document: its
 messages are typed by hand in
 `frontend/src/lib/arena/battle-hub.ts`.
 
+## Balance report
+
+`docs/balance.md` is written by a simulation that plays
+the bot against itself on the pure combat rules
+(`Battles/Domain`), with the species the Catalog seeds:
+every one-on-one and every team of three against every
+other. `BalanceReportTests` fails when a change to the
+rules or to the seed gives other numbers than the
+committed report. To refresh it:
+
+```bash
+UPDATE_BALANCE=1 dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests \
+  -- -class "OrleansMonsterArena.Tests.Balance.BalanceReportTests"
+```
+
+Commit the report with the change that caused it, and
+read the diff: it shows what the change did to every
+matchup.
+
 ## Frontend
 
 Node and npm run in containers only; nothing is

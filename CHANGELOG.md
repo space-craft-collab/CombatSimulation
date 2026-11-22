@@ -24,6 +24,23 @@ in [this file's history][full-changelog].
   of its own and a balance simulator, before the rest of
   Phase 4.
 
+- Balance simulator in the test project (`Balance/`): plays
+  the bot against itself on `RoundResolver`, without a silo,
+  every one-on-one and every team of three against every
+  other, 20 times per seat order. Both sides mix 20 % random
+  legal moves into the bot rule; the random source is seeded
+  per battle, so a rerun gives the same numbers.
+- `docs/balance.md`, the simulator's report: win rates per
+  species and per pair, battle lengths, ability use.
+  `BalanceReportTests` fails when the rules or the Catalog
+  seed no longer give the committed report
+  (`UPDATE_BALANCE=1` refreshes it).
+- The first report records the starting point: a strict
+  ladder one on one (Moss Golem 100 %, Frost Owl 0 %), Lava
+  Crab against Moss Golem at 60 rounds, and teams of three
+  at 79 rounds on average, with 40 of 240 battles still
+  undecided after 100 rounds.
+
 #### Changed
 - The rules of a round left `LiveBattleGrain` for
   `RoundResolver` in `Battles/Domain`: fighters and actions
