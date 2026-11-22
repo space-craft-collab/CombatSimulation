@@ -39,4 +39,12 @@ internal sealed class LiveBattleState
     /// </summary>
     [Id(6)]
     public DateTimeOffset? TurnDeadline { get; set; }
+
+    /// <summary>
+    /// The battle's difficulty (ADR-0013): Easy once a bot joined on
+    /// Easy. A battle stored before difficulties existed reads as
+    /// Normal.
+    /// </summary>
+    [Id(7)]
+    public Difficulty Difficulty { get; set; } = Difficulty.Normal;
 }

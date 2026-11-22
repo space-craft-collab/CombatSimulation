@@ -9,6 +9,12 @@ UPDATE_BALANCE=1 dotnet run --project tests/OrleansMonsterArena.Tests \
   -- -class "OrleansMonsterArena.Tests.Balance.BalanceReportTests"
 ```
 
+**Not measured:** the Easy difficulty
+([ADR-0013](adr/0013-bot-difficulty.md)) weakens the
+bot's monsters as they enter a battle. It is a
+deliberate advantage for the human and lies outside
+these numbers and their guard rails.
+
 **How it is measured:** every pair of different species
 fights one on one, and every team of 3 different
 species fights every other such team. Each matchup is

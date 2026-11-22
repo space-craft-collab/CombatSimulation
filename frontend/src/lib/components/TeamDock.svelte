@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { DIFFICULTIES, type Difficulty } from '#lib/arena/battle.ts';
 	import type { Species } from '#lib/arena/catalog.ts';
 	import { MAX_TEAM_SIZE } from '#lib/arena/team.ts';
 	import { ELEMENT_STYLES } from './element-styles.ts';
@@ -12,11 +13,21 @@
 		starting: boolean;
 		/** Why the last start failed, if it did. */
 		failure: string | null;
+		/** How hard the bot is; bound, so the picker sets it. */
+		difficulty: Difficulty;
 		onremove: (slot: number) => void;
 		onstart: () => void;
 	}
 
-	let { team, ready, starting, failure, onremove, onstart }: Props = $props();
+	let {
+		team,
+		ready,
+		starting,
+		failure,
+		difficulty = $bindable(),
+		onremove,
+		onstart
+	}: Props = $props();
 
 	const slots = $derived(Array.from({ length: MAX_TEAM_SIZE }, (_, slot) => team[slot]));
 </script>
@@ -33,6 +44,30 @@
 	{:else if team.length === MAX_TEAM_SIZE}
 		<p class="text-sm text-slate-400">Your team is full. Tap a slot to take a monster out.</p>
 	{/if}
+
+	<!-- Two options, tapped like buttons; radios underneath, so the
+	     arrow keys and screen readers treat them as one choice. -->
+	<fieldset class="flex items-center gap-3">
+		<legend class="sr-only">Difficulty</legend>
+		<div class="flex shrink-0 rounded-lg border border-slate-700 p-0.5">
+			{#each DIFFICULTIES as option (option)}
+				<label
+					class="grid min-h-10 min-w-16 cursor-pointer place-items-center rounded-md px-3 text-sm font-medium text-slate-400 has-checked:bg-slate-700 has-checked:text-slate-100 has-focus-visible:outline-2 has-focus-visible:outline-amber-400"
+				>
+					<input
+						class="sr-only"
+						type="radio"
+						name="difficulty"
+						value={option}
+						bind:group={difficulty}
+						disabled={starting}
+					/>
+					{option}
+				</label>
+			{/each}
+		</div>
+		<p class="text-xs text-slate-400">Easy weakens the bot's monsters.</p>
+	</fieldset>
 
 	<div class="flex items-center gap-3">
 		<ol class="flex gap-2">

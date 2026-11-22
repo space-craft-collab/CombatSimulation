@@ -110,9 +110,9 @@ readable, so these values are **frozen**:
   takes the next free number; a removed member's
   number stays retired (leave a comment).
 - **Enum values** stored in state (`BattleStatus`,
-  and the Catalog's `Element` and `AbilityEffect`, which
-  a battle copies into its own state) carry explicit
-  numbers. Never renumber; add new
+  `Difficulty`, and the Catalog's `Element` and
+  `AbilityEffect`, which a battle copies into its own
+  state) carry explicit numbers. Never renumber; add new
   members at the end with the next number.
 - **`[Alias("...")]`** on every serializable type
   keeps its identity independent of the CLR name, so

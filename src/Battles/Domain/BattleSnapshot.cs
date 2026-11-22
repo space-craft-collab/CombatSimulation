@@ -35,6 +35,13 @@ internal sealed class BattleSnapshot
     public required DateTimeOffset CompletedAt { get; init; }
 
     /// <summary>
+    /// The difficulty the battle was played on; a battle stored
+    /// before difficulties existed reads as
+    /// <see cref="BattleDifficulty.Normal"/>.
+    /// </summary>
+    public BattleDifficulty Difficulty { get; init; }
+
+    /// <summary>
     /// Every monster slot with its final hit points, in slot order.
     /// </summary>
     public required List<SnapshotCombatant> Combatants { get; init; }

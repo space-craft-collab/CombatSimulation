@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { STRIKE, summaryOf } from '#lib/arena/abilities.ts';
+	import type { Difficulty } from '#lib/arena/battle.ts';
 	import { ArenaApiError, startBattleAgainstBot } from '#lib/arena/battles.ts';
 	import type { Species } from '#lib/arena/catalog.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
@@ -24,6 +25,7 @@
 
 	// Species ids in slot order; the same species may be fielded twice.
 	let team = $state<string[]>([]);
+	let difficulty = $state<Difficulty>('Normal');
 	let starting = $state(false);
 	let failure = $state<string | null>(null);
 
@@ -66,7 +68,7 @@
 		failure = null;
 
 		try {
-			const battle = await startBattleAgainstBot(data.arena.id, player.nickname, team);
+			const battle = await startBattleAgainstBot(data.arena.id, player.nickname, team, difficulty);
 			await goto(resolve('/battles/[battleId]', { battleId: battle.battleId }));
 		} catch (error) {
 			failure = error instanceof ArenaApiError ? error.message : 'The battle could not be started.';
@@ -128,6 +130,7 @@
 		ready={player.nickname !== null && team.length > 0}
 		{starting}
 		{failure}
+		bind:difficulty
 		onremove={remove}
 		onstart={start}
 	/>

@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
+using Battles.Domain;
 using Battles.Features.GetBattle;
 using Battles.Features.ListBattles;
 using Battles.Grains.Abstractions;
+using Catalog.Domain;
 using Catalog.Infrastructure;
 using Xunit;
 
@@ -24,6 +26,9 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
 
     private static Uri Bot(Guid battleId) => new($"/battles/{battleId}/bot", UriKind.Relative);
 
+    private static Uri Bot(Guid battleId, string difficulty) =>
+        new($"/battles/{battleId}/bot?difficulty={difficulty}", UriKind.Relative);
+
     [Fact]
     public async Task PostBattle_OpponentHuman_Returns201WaitingForPlayers()
     {
@@ -36,6 +41,26 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
         // Assert
         Assert.Equal(BattleStatus.WaitingForPlayers, battle.Status);
         AssertFresh(Assert.Single(battle.Combatants), 0, "player-1", false, "lava-crab");
+    }
+
+    [Fact]
+    public async Task PostBattle_OpponentHumanOnEasy_IgnoresTheDifficulty()
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+
+        // Act
+        using var response = await client.PostAsJsonAsync(
+            TestArenas.VolcanoBattles,
+            new { playerId = "player-1", monsterSpeciesIds = CrabTeam, opponent = "Human", difficulty = "Easy" },
+            Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var battle = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
+        Assert.NotNull(battle);
+        Assert.Equal(Difficulty.Normal, battle.Difficulty);
+        Assert.Equal(Seeded("lava-crab").MaxHitPoints, Assert.Single(battle.Combatants).MaxHitPoints);
     }
 
     [Fact]
@@ -92,7 +117,49 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
         Assert.NotNull(started);
         Assert.Equal(BattleStatus.InProgress, started.Status);
         Assert.Equal(2, started.Combatants.Count);
+        Assert.Equal(Difficulty.Normal, started.Difficulty);
         AssertFresh(started.Combatants[1], 1, "bot", true, BotPick(0));
+        Assert.Equal(Seeded(BotPick(0)).MaxHitPoints, started.Combatants[1].MaxHitPoints);
+    }
+
+    [Fact]
+    public async Task PostBot_DifficultyEasy_Returns200EasyAndWeakensOnlyTheBotsMonster()
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+        var battle = await OpenAsync(client);
+
+        // Act
+        using var response = await client.PostAsync(Bot(battle.BattleId, "Easy"), null, Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var started = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
+        Assert.NotNull(started);
+        Assert.Equal(Difficulty.Easy, started.Difficulty);
+        Assert.Equal(Seeded("lava-crab").MaxHitPoints, started.Combatants[0].MaxHitPoints);
+        AssertFresh(started.Combatants[1], 1, "bot", true, BotPick(0));
+        Assert.Equal(
+            EasyHandicap.Scale(Seeded(BotPick(0)).MaxHitPoints, EasyHandicap.MaxHitPointsPercent),
+            started.Combatants[1].MaxHitPoints);
+    }
+
+    [Theory]
+    [InlineData("Hard")]
+    [InlineData("7")]
+    public async Task PostBot_UnknownDifficulty_Returns400AndKeepsTheSeatOpen(string difficulty)
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+        var battle = await OpenAsync(client);
+
+        // Act
+        using var response = await client.PostAsync(Bot(battle.BattleId, difficulty), null, Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var unchanged = await new HttpBattleDriver(client).GetAsync(battle.BattleId);
+        Assert.Equal(BattleStatus.WaitingForPlayers, unchanged.Status);
     }
 
     [Fact]
@@ -225,6 +292,9 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     // the species in the order of their names.
     private static string BotPick(int position) =>
         SpeciesSeed.All.OrderBy(seeded => seeded.Name, StringComparer.Ordinal).ElementAt(position).Id;
+
+    private static MonsterSpecies Seeded(string speciesId) =>
+        SpeciesSeed.All.Single(seeded => seeded.Id == speciesId);
 
     private static void AssertFresh(
         CombatantResponse combatant,

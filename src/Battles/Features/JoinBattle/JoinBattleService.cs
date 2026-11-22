@@ -38,11 +38,12 @@ internal sealed class JoinBattleService(IGrainFactory grains, GetBattleService b
 
     /// <summary>
     /// Lets the bot take the open seat with a team of its own, as
-    /// large as the host's, and returns the battle's first state.
+    /// large as the host's, on the given difficulty (ADR-0013), and
+    /// returns the battle's first state.
     /// </summary>
     /// <returns>The battle, or <see langword="null"/> if it was never started.</returns>
     /// <exception cref="InvalidOperationException">The battle no longer waits for players.</exception>
-    public async Task<BattleResponse?> JoinBotAsync(Guid battleId)
+    public async Task<BattleResponse?> JoinBotAsync(Guid battleId, Difficulty difficulty = Difficulty.Normal)
     {
         if (await battles.FindAsync(battleId) is not { } current)
         {
@@ -53,7 +54,7 @@ internal sealed class JoinBattleService(IGrainFactory grains, GetBattleService b
         // only. One that does not is refused by the grain below,
         // whatever team the bot brings.
         var teamSize = Math.Max(1, current.Combatants.Count(combatant => !combatant.IsBot));
-        await grains.GetGrain<ILiveBattleGrain>(battleId).JoinAsync(await bot.FieldAsync(teamSize));
+        await grains.GetGrain<ILiveBattleGrain>(battleId).JoinAsync(await bot.FieldAsync(teamSize, difficulty));
 
         return await battles.FindAsync(battleId);
     }

@@ -1,3 +1,4 @@
+using Battles.Domain;
 using Battles.Grains.Abstractions;
 using Catalog.Contracts;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +39,40 @@ public sealed class StoredFormatTests(AppHostFixture host)
 
         // Assert: a new member needs its own InlineData row above.
         Assert.Equal(4, count);
+    }
+
+    [Theory]
+    [InlineData(Difficulty.Normal, 0)]
+    [InlineData(Difficulty.Easy, 1)]
+    public void Difficulty_StoredValue_StaysFrozen(Difficulty difficulty, int expected)
+    {
+        // Arrange / Act
+        var actual = (int)difficulty;
+
+        // Assert
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void Difficulty_Members_HaveNoUnpinnedAdditions()
+    {
+        // Arrange / Act
+        var count = Enum.GetValues<Difficulty>().Length;
+
+        // Assert: a new member needs its own InlineData row above.
+        Assert.Equal(2, count);
+    }
+
+    [Fact]
+    public void BattleDifficulty_StoredNames_StayFrozenAndMirrorTheGrainContract()
+    {
+        // Arrange / Act: the cold store keeps the Domain's copy by
+        // name (ADR-0013).
+        var names = Enum.GetNames<BattleDifficulty>();
+
+        // Assert
+        Assert.Equal(["Normal", "Easy"], names);
+        Assert.Equal(Enum.GetNames<Difficulty>(), names);
     }
 
     [Theory]

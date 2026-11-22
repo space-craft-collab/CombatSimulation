@@ -228,6 +228,9 @@ diff of the report.
 - [ADR-0007]: the turn-based round loop these rules run in
 - `docs/balance.md`: the current balance report
 - `CONTRIBUTING.md`: how to refresh the report
+- [ADR-0013]: the Easy difficulty, which weakens the bot's
+  monsters on entry and lies outside these guard rails
 
 [ADR-0003]: 0003-no-outbox.md
 [ADR-0007]: 0007-turn-based.md
+[ADR-0013]: 0013-bot-difficulty.md

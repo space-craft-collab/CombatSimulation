@@ -307,6 +307,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "difficulty",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Difficulty"
+            }
           }
         ],
         "responses": {
@@ -549,7 +556,8 @@
           "round",
           "winnerId",
           "turnDeadline",
-          "combatants"
+          "combatants",
+          "difficulty"
         ],
         "type": "object",
         "properties": {
@@ -585,6 +593,9 @@
             "items": {
               "$ref": "#/components/schemas/CombatantResponse"
             }
+          },
+          "difficulty": {
+            "$ref": "#/components/schemas/Difficulty"
           }
         }
       },
@@ -667,6 +678,13 @@
             }
           }
         }
+      },
+      "Difficulty": {
+        "enum": [
+          "Normal",
+          "Easy"
+        ],
+        "description": "How hard a battle against the bot is (ADR-0013). Only a bot side\nhas one; a human side is never weakened, whatever it says. Stored\nas its number in grain state, so the values are frozen: never\nrenumber or reuse one, add new members at the end with the next\nnumber."
       },
       "EffectResponse": {
         "required": [
@@ -888,6 +906,9 @@
           },
           "opponent": {
             "$ref": "#/components/schemas/Opponent"
+          },
+          "difficulty": {
+            "$ref": "#/components/schemas/Difficulty"
           }
         }
       },

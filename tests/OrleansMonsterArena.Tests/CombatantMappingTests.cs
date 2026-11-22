@@ -51,6 +51,23 @@ public sealed class CombatantMappingTests
     }
 
     [Fact]
+    public void From_WeakenedFighter_StoresItsWeakenedFullHealthAndAttack()
+    {
+        // Arrange
+        var weakened = EasyHandicap.Weaken(Fighter.Enter(3, "bot", Species));
+
+        // Act
+        var combatant = Combatant.From(weakened, isBot: true, Species);
+
+        // Assert: full health is the fighter's, not the species', so
+        // the monster enters at full health and heals against it.
+        Assert.Equal(weakened.MaxHitPoints, combatant.MaxHitPoints);
+        Assert.Equal(combatant.MaxHitPoints, combatant.HitPoints);
+        Assert.Equal(weakened.Attack, combatant.Attack);
+        Assert.Equivalent(weakened, combatant.ToFighter(), strict: true);
+    }
+
+    [Fact]
     public void Take_FighterAfterARound_TakesOverHitPointsCooldownsAndEffects()
     {
         // Arrange

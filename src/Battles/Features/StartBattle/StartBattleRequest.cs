@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Battles.Grains.Abstractions;
 using Players.Contracts;
 
 namespace Battles.Features.StartBattle;
@@ -33,11 +34,43 @@ internal sealed record StartBattleRequest
     public Opponent Opponent { get; init; } = Opponent.Bot;
 
     /// <summary>
+    /// How hard the bot is (ADR-0013); <see cref="Difficulty.Normal"/>
+    /// unless the visitor asks for <see cref="Difficulty.Easy"/>, which
+    /// weakens the bot's monsters. Ignored when <see cref="Opponent"/>
+    /// is <see cref="Opponent.Human"/>: a battle between humans has no
+    /// difficulty, and a bot that later takes the open seat brings its
+    /// own (<c>POST /battles/{battleId}/bot</c>).
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<Difficulty>))]
+    public Difficulty Difficulty { get; init; } = Difficulty.Normal;
+
+    /// <summary>
     /// Checks the request's shape; whether the species exist is the
     /// grain's call.
     /// </summary>
     /// <returns>Errors per field; empty when the request is valid.</returns>
-    public Dictionary<string, string[]> Validate() => ValidateTeam(PlayerId, MonsterSpeciesIds);
+    public Dictionary<string, string[]> Validate()
+    {
+        var errors = ValidateTeam(PlayerId, MonsterSpeciesIds);
+        if (ValidateDifficulty(Difficulty) is { } difficultyError)
+        {
+            errors[nameof(Difficulty)] = [difficultyError];
+        }
+
+        return errors;
+    }
+
+    /// <summary>
+    /// Checks a difficulty; shared with seating the bot in an open
+    /// battle. The JSON converter also takes numbers, so an undefined
+    /// one is caught here.
+    /// </summary>
+    /// <param name="difficulty">The requested difficulty.</param>
+    /// <returns>The error, or <see langword="null"/> when the difficulty is known.</returns>
+    public static string? ValidateDifficulty(Difficulty difficulty) =>
+        Enum.IsDefined(difficulty)
+            ? null
+            : $"Choose one of: {string.Join(", ", Enum.GetNames<Difficulty>())}.";
 
     /// <summary>
     /// Checks a human side's player id and team; shared with joining

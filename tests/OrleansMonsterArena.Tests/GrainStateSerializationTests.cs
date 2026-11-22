@@ -65,6 +65,7 @@ public sealed class GrainStateSerializationTests
             ],
             PendingActions = { ["player-1"] = new BattleAction("player-1", 0, 1, "strike") },
             TurnDeadline = DateTimeOffset.UnixEpoch,
+            Difficulty = Difficulty.Easy,
         };
 
         // Act
@@ -73,6 +74,7 @@ public sealed class GrainStateSerializationTests
         // Assert
         Assert.NotNull(copy);
         Assert.Equal(3, copy.Round);
+        Assert.Equal(Difficulty.Easy, copy.Difficulty);
         Assert.Equal(state.PendingActions["player-1"], copy.PendingActions["player-1"]);
         var combatant = Assert.Single(copy.Combatants);
         Assert.Equal(Element.Fire, combatant.Element);
@@ -126,4 +128,54 @@ public sealed class GrainStateSerializationTests
         Assert.Equal(AbilitySpec.StrikeId, Assert.Single(fighter.Abilities).Spec.Id);
         Assert.Empty(fighter.Effects);
     }
+
+    [Fact]
+    public void Deserialize_BattleStoredBeforeDifficulties_ReadsAsNormal()
+    {
+        // Arrange
+        using var services = CreateServicesWithOldShapes();
+        var serializer = services.GetRequiredService<Serializer>();
+        var stored = serializer.SerializeToArray(new LiveBattleStateBeforeDifficulty
+        {
+            ArenaId = "volcano",
+            Status = BattleStatus.InProgress,
+            Round = 4,
+        });
+
+        // Act
+        var state = serializer.Deserialize<LiveBattleState>(stored);
+
+        // Assert
+        Assert.NotNull(state);
+        Assert.Equal(("volcano", BattleStatus.InProgress, 4), (state.ArenaId, state.Status, state.Round));
+        Assert.Equal(Difficulty.Normal, state.Difficulty);
+    }
+
+    [Fact]
+    public void Deserialize_ParticipantSentBeforeDifficulties_ReadsAsNormal()
+    {
+        // Arrange
+        using var services = CreateServicesWithOldShapes();
+        var serializer = services.GetRequiredService<Serializer>();
+        var sent = serializer.SerializeToArray(new ParticipantSetupBeforeDifficulty("bot", true, ["frost-owl"]));
+
+        // Act
+        var participant = serializer.Deserialize<ParticipantSetup>(sent);
+
+        // Assert
+        Assert.NotNull(participant);
+        Assert.Equal(("bot", true), (participant.ParticipantId, participant.IsBot));
+        Assert.Equal(["frost-owl"], participant.MonsterSpeciesIds);
+        Assert.Equal(Difficulty.Normal, participant.Difficulty);
+    }
+
+    // The serializer knows members by their [Id] only, so an old
+    // shape's bytes are what an old battle or silo left behind.
+    private static ServiceProvider CreateServicesWithOldShapes() =>
+        new ServiceCollection()
+            .AddSerializer(serializer => serializer
+                .AddAssembly(typeof(BattlesModule).Assembly)
+                .AddAssembly(typeof(BattleState).Assembly)
+                .AddAssembly(typeof(LiveBattleStateBeforeDifficulty).Assembly))
+            .BuildServiceProvider();
 }

@@ -161,7 +161,16 @@
 
 <div class="flex flex-col gap-4">
 	<section class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-		<h1 class="text-2xl font-bold">{arenaName}</h1>
+		<h1 class="flex items-baseline gap-2 text-2xl font-bold">
+			{arenaName}
+			{#if battle.difficulty === 'Easy'}
+				<span
+					class="rounded-full border border-emerald-500/60 px-2 py-0.5 text-xs font-semibold text-emerald-300"
+					title="The bot's monsters entered weakened"
+					data-testid="difficulty">Easy</span
+				>
+			{/if}
+		</h1>
 		<p class="text-slate-300">
 			<span data-testid="round">Round {battle.round}</span>
 			{#if canAct && secondsLeft !== null}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	DIFFICULTIES,
 	applyRound,
 	changeOf,
 	newerOf,
@@ -56,6 +57,7 @@ function battle(overrides: Partial<Battle> = {}): Battle {
 		winnerId: null,
 		turnDeadline: '2026-11-21T20:00:00.000Z',
 		combatants: [monster(0, PLAYER, 30), monster(1, BOT, 30)],
+		difficulty: 'Normal',
 		...overrides
 	};
 }
@@ -155,6 +157,21 @@ describe('applyRound', () => {
 		expect(after.combatants).toEqual(before.combatants);
 	});
 
+	it('keeps the difficulty, which the delta does not carry', () => {
+		const after = applyRound(battle({ difficulty: 'Easy' }), roundEvent());
+
+		expect(after.difficulty).toBe('Easy');
+	});
+
+	it('keeps the difficulty once the round decides the battle', () => {
+		const after = applyRound(
+			battle({ difficulty: 'Easy' }),
+			roundEvent({ status: 'Completed', winnerId: PLAYER })
+		);
+
+		expect(after.difficulty).toBe('Easy');
+	});
+
 	it('leaves the given state unchanged', () => {
 		const before = battle();
 
@@ -247,5 +264,11 @@ describe('secondsUntil', () => {
 
 	it('is null without a deadline', () => {
 		expect(secondsUntil(null, 0)).toBeNull();
+	});
+});
+
+describe('DIFFICULTIES', () => {
+	it('offers Normal first, as the default, and Easy', () => {
+		expect(DIFFICULTIES).toEqual(['Normal', 'Easy']);
 	});
 });

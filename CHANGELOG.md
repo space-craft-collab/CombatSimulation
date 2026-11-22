@@ -166,6 +166,37 @@ Inserted while Phase 4 was under way; condensed on
   infrastructure, the host and the frontend for a round in
   the browser, as a compose project of its own (`oma-play`)
   that needs no `.env`; `--wipe` also deletes its data.
+- An "Easy" difficulty for battles against the bot
+  ([ADR-0013](docs/adr/0013-bot-difficulty.md)): the bot's
+  monsters enter with 75 % of their species' full hit points
+  and attack (`EasyHandicap`, rounded half up, never below
+  1). Applied once, when the grain adds a bot side on Easy;
+  the combat rules, the bot rule and the Catalog numbers are
+  untouched, and a human side is never weakened. Normal is
+  the default and plays as before.
+- API: `StartBattleRequest.difficulty` (`Normal` or `Easy`,
+  ignored when waiting for a human),
+  `POST /battles/{battleId}/bot?difficulty=Easy`, and
+  `difficulty` on every battle response, live and from the
+  cold store. An unknown difficulty is a 400.
+- `Difficulty` on the grain contracts: a trailing
+  `ParticipantSetup` member (`[Id(3)]`), on `BattleState`
+  (`[Id(7)]`) and in the battle's stored state
+  (`LiveBattleState`, `[Id(7)]`); data written before reads
+  as Normal. The cold store keeps it as `BattleDifficulty`
+  in a `Difficulty` column (Battles migration
+  `BattleDifficulty`, existing rows `Normal`).
+- Frontend: a "Normal / Easy" choice in the team bar above
+  "Fight the bot", Normal preselected, and an "Easy" badge
+  next to the arena name in the battle view, also after the
+  battle. A win on Easy counts like any other.
+- Tests for the difficulty: the handicap's arithmetic, the
+  grain (only an Easy bot is weakened, its monster grains
+  get the same stats, both stores keep the difficulty, the
+  win is counted), the endpoints, the old stored shapes, the
+  frozen enum values, and Vitest for the battle state. The
+  `ExactIds` migration tests read the older schema in plain
+  SQL, since today's repository asks for the new column.
 
 #### Changed
 - [ADR-0004](docs/adr/0004-sveltekit-frontend.md) records
@@ -206,6 +237,11 @@ Inserted while Phase 4 was under way; condensed on
   instead of tracked capitals, and a monster stands on a
   tile in its element's colour in the picker, the team bar
   and the battle.
+- A battle stores a monster's full hit points from the
+  monster as it enters, no longer from its species; the two
+  differ only for a bot weakened on Easy.
+- `docs/balance.md` (through `BalanceReportWriter`) says
+  that Easy lies outside the balance guard rails.
 
 #### Fixed
 - `dotnet run --project src/AppHost` started the host as
@@ -213,7 +249,8 @@ Inserted while Phase 4 was under way; condensed on
   startup migrations did not apply. A `launchSettings.json`
   now selects Development and `http://localhost:5000`.
 
-#### Decided (process)
+#### Decided
+- [ADR-0013](docs/adr/0013-bot-difficulty.md) `Accepted`.
 - Every npm package is pinned to an exact version and
   checked for known malware before it is installed. A
   release must be a week old, and no package runs an

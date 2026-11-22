@@ -122,6 +122,10 @@ host through a Kiota-generated client
 - [x] Arena browser (`GET /arenas`)
 - [x] Team picker: one to three species, then start a
       battle; **vs bot** is the default
+- [x] Difficulty against the bot: **Normal** (the default)
+      or **Easy**, which weakens the bot's monsters as they
+      enter ([ADR-0013](adr/0013-bot-difficulty.md)); chosen
+      in the team bar, shown as a badge in the battle view
 - [x] Live battle view: `Watch` on `/hubs/battles`,
       `RoundResolved` deltas applied to rune state, choosing
       an actor and a target, the turn deadline as a

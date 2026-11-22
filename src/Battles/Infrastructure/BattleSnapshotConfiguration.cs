@@ -28,6 +28,11 @@ internal sealed class BattleSnapshotConfiguration : IEntityTypeConfiguration<Bat
         builder.Property(battle => battle.ArenaId).HasMaxLength(CatalogIdMaxLength).UseCollation(IdCollation.Ordinal);
         builder.Property(battle => battle.WinnerId).HasMaxLength(PlayerIds.MaxLength).UseCollation(IdCollation.Ordinal);
 
+        // By name, like the Catalog's enums. Rows written before the
+        // column existed get Normal from its default (migration
+        // BattleDifficulty).
+        builder.Property(battle => battle.Difficulty).HasConversion<string>().HasMaxLength(16);
+
         builder.OwnsMany(battle => battle.Combatants, combatant =>
         {
             combatant.ToTable("BattleCombatants");

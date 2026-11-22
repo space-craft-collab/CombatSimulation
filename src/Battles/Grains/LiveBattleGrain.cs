@@ -221,7 +221,8 @@ internal sealed class LiveBattleGrain(
                 combatant.MaxHitPoints,
                 [.. combatant.ToFighter().Abilities.Select(ability =>
                     new AbilityCooldown(ability.Spec.Id, ability.CooldownLeft))],
-                [.. combatant.Effects.Select(ToSnapshot)]))]);
+                [.. combatant.Effects.Select(ToSnapshot)]))],
+            Battle.Difficulty);
 
     // Only effects that last are stored on a combatant; a heal is
     // over the moment it is used.
@@ -282,18 +283,32 @@ internal sealed class LiveBattleGrain(
     }
 
     /// <summary>
-    /// Gives the participant's monsters the next free slots.
+    /// Gives the participant's monsters the next free slots. A bot on
+    /// Easy fields them weakened (ADR-0013), which makes the battle an
+    /// Easy one; a human side is never weakened. The monster grains
+    /// get the stats the battle plays with.
     /// </summary>
     private async Task AddParticipantAsync(ParticipantSetup participant, List<MonsterSpeciesDto> species)
     {
+        var weakened = participant is { IsBot: true, Difficulty: Difficulty.Easy };
         var initializations = new List<Task>();
         foreach (var monster in species)
         {
             var slot = Battle.Combatants.Count;
-            Battle.Combatants.Add(Combatant.From(
-                Fighter.Enter(slot, participant.ParticipantId, monster), participant.IsBot, monster));
+            var fighter = Fighter.Enter(slot, participant.ParticipantId, monster);
+            if (weakened)
+            {
+                fighter = EasyHandicap.Weaken(fighter);
+            }
+
+            Battle.Combatants.Add(Combatant.From(fighter, participant.IsBot, monster));
             initializations.Add(Monster(slot).InitializeAsync(new MonsterStats(
-                monster.Id, monster.MaxHitPoints, monster.Attack, monster.Defense, monster.Speed)));
+                monster.Id, fighter.MaxHitPoints, fighter.Attack, fighter.Defense, fighter.Speed)));
+        }
+
+        if (weakened)
+        {
+            Battle.Difficulty = Difficulty.Easy;
         }
 
         await Task.WhenAll(initializations);
@@ -446,6 +461,11 @@ internal sealed class LiveBattleGrain(
             Round = Battle.Round,
             WinnerId = Battle.WinnerId,
             CompletedAt = clock.GetUtcNow(),
+            Difficulty = Battle.Difficulty switch
+            {
+                Difficulty.Easy => BattleDifficulty.Easy,
+                _ => BattleDifficulty.Normal,
+            },
             Combatants = [.. Battle.Combatants.Select(combatant => new SnapshotCombatant(
                 combatant.Slot,
                 combatant.ParticipantId,

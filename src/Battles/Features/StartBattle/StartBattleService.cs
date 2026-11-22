@@ -16,8 +16,9 @@ internal sealed class StartBattleService(IGrainFactory grains, ICatalogQueryServ
     /// <summary>
     /// Creates the battle on the arena and returns its first state.
     /// Against the bot it starts at once; the bot fields a team of
-    /// its own, as large as the visitor's. Against a human it waits
-    /// for players until someone joins.
+    /// its own, as large as the visitor's, on the requested
+    /// difficulty. Against a human it waits for players until someone
+    /// joins, and the difficulty is ignored.
     /// </summary>
     /// <returns>The battle's first state, or <see langword="null"/> if
     /// the arena does not exist in the Catalog.</returns>
@@ -37,7 +38,7 @@ internal sealed class StartBattleService(IGrainFactory grains, ICatalogQueryServ
         var battleId = request.Opponent switch
         {
             Opponent.Human => await arena.OpenBattleAsync(visitor),
-            _ => await arena.CreateBattleAsync([visitor, await bot.FieldAsync(visitor.MonsterSpeciesIds.Length)]),
+            _ => await arena.CreateBattleAsync([visitor, await bot.FieldAsync(visitor.MonsterSpeciesIds.Length, request.Difficulty)]),
         };
 
         return BattleResponse.From(await grains.GetGrain<ILiveBattleGrain>(battleId).GetStateAsync());

@@ -17,6 +17,8 @@ namespace Battles.Grains.Abstractions;
 /// <see langword="null"/> when no deadline runs.</param>
 /// <param name="Combatants">Every monster slot in slot order, defeated ones included. While waiting
 /// for players, only the sides that have joined.</param>
+/// <param name="Difficulty">The battle's difficulty (ADR-0013): <see cref="Difficulty.Easy"/> once a bot
+/// joined on Easy, otherwise <see cref="Difficulty.Normal"/>.</param>
 [GenerateSerializer]
 [Alias("battles.BattleState")]
 public sealed record BattleState(
@@ -26,4 +28,5 @@ public sealed record BattleState(
     [property: Id(3)] int Round,
     [property: Id(4)] string? WinnerId,
     [property: Id(5)] DateTimeOffset? TurnDeadline,
-    [property: Id(6)] ImmutableArray<CombatantSnapshot> Combatants);
+    [property: Id(6)] ImmutableArray<CombatantSnapshot> Combatants,
+    [property: Id(7)] Difficulty Difficulty = Difficulty.Normal);

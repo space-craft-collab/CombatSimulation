@@ -36,6 +36,12 @@ internal static class BalanceReportWriter
               -- -class "OrleansMonsterArena.Tests.Balance.BalanceReportTests"
             ```
 
+            **Not measured:** the Easy difficulty
+            ([ADR-0013](adr/0013-bot-difficulty.md)) weakens the
+            bot's monsters as they enter a battle. It is a
+            deliberate advantage for the human and lies outside
+            these numbers and their guard rails.
+
 
             """);
         text.Append(Invariant, $"""

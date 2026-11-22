@@ -17,6 +17,8 @@ namespace Battles.Features.GetBattle;
 /// <param name="WinnerId">The winner once completed; <see langword="null"/> while running or when abandoned.</param>
 /// <param name="TurnDeadline">When the round resolves without humans that have not acted.</param>
 /// <param name="Combatants">Every monster slot in slot order.</param>
+/// <param name="Difficulty">The battle's difficulty (ADR-0013): <c>Easy</c> when the bot's monsters entered
+/// weakened, also once the battle is over; otherwise <c>Normal</c>.</param>
 internal sealed record BattleResponse(
     Guid BattleId,
     string ArenaId,
@@ -24,7 +26,8 @@ internal sealed record BattleResponse(
     int Round,
     string? WinnerId,
     DateTimeOffset? TurnDeadline,
-    IReadOnlyList<CombatantResponse> Combatants)
+    IReadOnlyList<CombatantResponse> Combatants,
+    [property: JsonConverter(typeof(JsonStringEnumConverter<Difficulty>))] Difficulty Difficulty)
 {
     /// <summary>
     /// Maps the grain's view of a battle.
@@ -47,7 +50,8 @@ internal sealed record BattleResponse(
                 [.. combatant.Abilities.Select(ability =>
                     new AbilityCooldownResponse(ability.AbilityId, ability.RoundsLeft))],
                 [.. combatant.Effects.Select(effect =>
-                    new EffectResponse(effect.Kind, effect.Value, effect.RoundsLeft))]))]);
+                    new EffectResponse(effect.Kind, effect.Value, effect.RoundsLeft))]))],
+            state.Difficulty);
 
     /// <summary>
     /// Maps a completed battle from the cold store.
@@ -70,5 +74,10 @@ internal sealed record BattleResponse(
                     combatant.HitPoints,
                     combatant.MaxHitPoints,
                     [],
-                    []))]);
+                    []))],
+            snapshot.Difficulty switch
+            {
+                BattleDifficulty.Easy => Difficulty.Easy,
+                _ => Difficulty.Normal,
+            });
 }

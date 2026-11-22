@@ -8,6 +8,12 @@
 
 export type BattleStatus = 'Created' | 'WaitingForPlayers' | 'InProgress' | 'Completed';
 
+/** How hard a battle against the bot is: on Easy the bot's monsters enter weakened. */
+export type Difficulty = 'Normal' | 'Easy';
+
+/** The difficulties a visitor can choose from, the default first. */
+export const DIFFICULTIES: readonly Difficulty[] = ['Normal', 'Easy'];
+
 /** An effect that lies on a monster for some rounds. */
 export type StatusEffect = 'Burn' | 'Guard' | 'Slow';
 
@@ -53,6 +59,8 @@ export interface Battle {
 	/** ISO 8601; null when no turn is pending. */
 	turnDeadline: string | null;
 	combatants: Combatant[];
+	/** Easy when the bot's monsters entered weakened; it stays so after the battle. */
+	difficulty: Difficulty;
 }
 
 /** How an ability's element stood against its target's. */

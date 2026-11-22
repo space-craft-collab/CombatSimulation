@@ -21,6 +21,7 @@ new entries.
 | 0010 | [Function-delegate test seams instead of test-only interfaces](0010-delegate-test-seams.md) | Accepted |
 | 0011 | [Require SQL Server for the cold path, in tests too](0011-sql-server-required.md) | Accepted |
 | 0012 | [Combat rules: abilities with cooldowns, no dice](0012-combat-rules.md) | Accepted |
+| 0013 | [Bot difficulty: an Easy bot is weakened on entry](0013-bot-difficulty.md) | Accepted |
 
 ## Diagrams
 

@@ -103,6 +103,10 @@ export interface BattleResponse extends AdditionalDataHolder, Parsable {
      */
     combatants?: CombatantResponse[] | null;
     /**
+     * How hard a battle against the bot is (ADR-0013). Only a bot sidehas one; a human side is never weakened, whatever it says. Storedas its number in grain state, so the values are frozen: neverrenumber or reuse one, add new members at the end with the nextnumber.
+     */
+    difficulty?: Difficulty | null;
+    /**
      * The round property
      */
     round?: number | null;
@@ -382,6 +386,7 @@ export function deserializeIntoBattleResponse(battleResponse: Partial<BattleResp
         "arenaId": n => { battleResponse.arenaId = n.getStringValue(); },
         "battleId": n => { battleResponse.battleId = n.getGuidValue(); },
         "combatants": n => { battleResponse.combatants = n.getCollectionOfObjectValues<CombatantResponse>(createCombatantResponseFromDiscriminatorValue); },
+        "difficulty": n => { battleResponse.difficulty = n.getEnumValue<Difficulty>(DifficultyObject); },
         "round": n => { battleResponse.round = n.getNumberValue(); },
         "status": n => { battleResponse.status = n.getEnumValue<BattleStatus>(BattleStatusObject); },
         "turnDeadline": n => { battleResponse.turnDeadline = n.getDateValue(); },
@@ -524,6 +529,7 @@ export function deserializeIntoSpeciesResponse(speciesResponse: Partial<SpeciesR
 // @ts-ignore
 export function deserializeIntoStartBattleRequest(startBattleRequest: Partial<StartBattleRequest> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "difficulty": n => { startBattleRequest.difficulty = n.getEnumValue<Difficulty>(DifficultyObject); },
         "monsterSpeciesIds": n => { startBattleRequest.monsterSpeciesIds = n.getCollectionOfPrimitiveValues<string>("string"); },
         "opponent": n => { startBattleRequest.opponent = n.getEnumValue<Opponent>(OpponentObject); },
         "playerId": n => { startBattleRequest.playerId = n.getStringValue(); },
@@ -543,6 +549,7 @@ export function deserializeIntoSubmitActionRequest(submitActionRequest: Partial<
         "targetSlot": n => { submitActionRequest.targetSlot = n.getNumberValue(); },
     }
 }
+export type Difficulty = (typeof DifficultyObject)[keyof typeof DifficultyObject];
 export interface EffectResponse extends AdditionalDataHolder, Parsable {
     /**
      * An effect that lies on a monster for some rounds (ADR-0012).
@@ -708,6 +715,7 @@ export function serializeBattleResponse(writer: SerializationWriter, battleRespo
     writer.writeStringValue("arenaId", battleResponse.arenaId);
     writer.writeGuidValue("battleId", battleResponse.battleId);
     writer.writeCollectionOfObjectValues<CombatantResponse>("combatants", battleResponse.combatants, serializeCombatantResponse);
+    writer.writeEnumValue<Difficulty>("difficulty", battleResponse.difficulty);
     writer.writeNumberValue("round", battleResponse.round);
     writer.writeEnumValue<BattleStatus>("status", battleResponse.status);
     writer.writeDateValue("turnDeadline", battleResponse.turnDeadline);
@@ -860,6 +868,7 @@ export function serializeSpeciesResponse(writer: SerializationWriter, speciesRes
 // @ts-ignore
 export function serializeStartBattleRequest(writer: SerializationWriter, startBattleRequest: Partial<StartBattleRequest> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
     if (!startBattleRequest || isSerializingDerivedType) { return; }
+    writer.writeEnumValue<Difficulty>("difficulty", startBattleRequest.difficulty);
     writer.writeCollectionOfPrimitiveValues<string>("monsterSpeciesIds", startBattleRequest.monsterSpeciesIds);
     writer.writeEnumValue<Opponent>("opponent", startBattleRequest.opponent);
     writer.writeStringValue("playerId", startBattleRequest.playerId);
@@ -916,6 +925,10 @@ export interface SpeciesResponse extends AdditionalDataHolder, Parsable {
 }
 export interface StartBattleRequest extends AdditionalDataHolder, Parsable {
     /**
+     * How hard a battle against the bot is (ADR-0013). Only a bot sidehas one; a human side is never weakened, whatever it says. Storedas its number in grain state, so the values are frozen: neverrenumber or reuse one, add new members at the end with the nextnumber.
+     */
+    difficulty?: Difficulty | null;
+    /**
      * The monsterSpeciesIds property
      */
     monsterSpeciesIds?: string[] | null;
@@ -965,6 +978,13 @@ export const BattleStatusObject = {
     WaitingForPlayers: "WaitingForPlayers",
     InProgress: "InProgress",
     Completed: "Completed",
+} as const;
+/**
+ * How hard a battle against the bot is (ADR-0013). Only a bot sidehas one; a human side is never weakened, whatever it says. Storedas its number in grain state, so the values are frozen: neverrenumber or reuse one, add new members at the end with the nextnumber.
+ */
+export const DifficultyObject = {
+    Normal: "Normal",
+    Easy: "Easy",
 } as const;
 /**
  * The element of a species or of an ability. Fire beats Nature,Nature beats Frost, Frost beats Fire; Element.Neutral hasneither an advantage nor a weakness. The numbers are stored ingrain state and must not change.

@@ -37,6 +37,11 @@ namespace Battles.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CompletedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<int>("Round")
                         .HasColumnType("int");
 

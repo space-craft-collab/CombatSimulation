@@ -1,4 +1,5 @@
 using Battles;
+using Battles.Domain;
 using Battles.Infrastructure;
 using Catalog;
 using Catalog.Infrastructure;
@@ -66,18 +67,22 @@ public sealed class ExactIdsMigrationTests(SqlServerFixture sql)
         await MigrateToAsync<BattlesDbContext>(modules, "InitialBattles");
         var battleId = Guid.NewGuid();
         await InsertBattleWonByAliceAsync(modules, battleId);
-        var snapshots = modules.GetRequiredService<BattleSnapshotReadRepository>();
-        Assert.Single(await snapshots.ListForParticipantAsync("alice", HistoryLimit, Cancellation));
+        Assert.Equal([battleId], await BattlesOfAtOldSchemaAsync(modules, "alice"));
 
         // Act
         await modules.MigrateModuleDatabasesAsync(Cancellation);
 
         // Assert
+        var snapshots = modules.GetRequiredService<BattleSnapshotReadRepository>();
         var kept = Assert.Single(await snapshots.ListForParticipantAsync("Alice", HistoryLimit, Cancellation));
         Assert.Equal(battleId, kept.BattleId);
         Assert.Equal("Alice", kept.WinnerId);
         Assert.Equal(["Alice", "bot"], kept.Combatants.OrderBy(entry => entry.Slot).Select(entry => entry.ParticipantId));
         Assert.Empty(await snapshots.ListForParticipantAsync("alice", HistoryLimit, Cancellation));
+
+        // Assert: the later BattleDifficulty migration gives a battle
+        // stored before it the Normal it was played on.
+        Assert.Equal(BattleDifficulty.Normal, kept.Difficulty);
     }
 
     [Fact]
@@ -183,10 +188,19 @@ public sealed class ExactIdsMigrationTests(SqlServerFixture sql)
         await MigrateToAsync<BattlesDbContext>(modules, "InitialBattles");
 
         // Assert: no key hangs on these columns, so twins cannot fail here.
-        var kept = Assert.Single(await snapshots.ListForParticipantAsync("alice", HistoryLimit, Cancellation));
-        Assert.Equal(battleId, kept.BattleId);
-        Assert.Equal("Alice", kept.WinnerId);
-        Assert.Equal(["Alice", "bot"], kept.Combatants.OrderBy(entry => entry.Slot).Select(entry => entry.ParticipantId));
+        Assert.Equal([battleId], await BattlesOfAtOldSchemaAsync(modules, "alice"));
+        await using var context = await CreateContextAsync<BattlesDbContext>(modules);
+        Assert.Equal(
+            ["Alice"],
+            await context.Database
+                .SqlQuery<string>($"SELECT WinnerId AS Value FROM battles.Battles WHERE BattleId = {battleId}")
+                .ToListAsync(Cancellation));
+        Assert.Equal(
+            ["Alice", "bot"],
+            await context.Database
+                .SqlQuery<string>(
+                    $"SELECT ParticipantId AS Value FROM battles.BattleCombatants WHERE BattleId = {battleId} ORDER BY Slot")
+                .ToListAsync(Cancellation));
     }
 
     [Fact]
@@ -298,6 +312,19 @@ public sealed class ExactIdsMigrationTests(SqlServerFixture sql)
                    ({battleId}, 1, 'bot', 1, 'ember-fox', 0, 40);
             """,
             Cancellation);
+    }
+
+    // The battles a participant fought in, found the way the history
+    // filters them, in plain SQL: at an older schema, today's
+    // repository would ask for columns that do not exist yet.
+    private static async Task<List<Guid>> BattlesOfAtOldSchemaAsync(IServiceProvider modules, string participantId)
+    {
+        await using var context = await CreateContextAsync<BattlesDbContext>(modules);
+
+        return await context.Database
+            .SqlQuery<Guid>(
+                $"SELECT DISTINCT BattleId AS Value FROM battles.BattleCombatants WHERE ParticipantId = {participantId}")
+            .ToListAsync(Cancellation);
     }
 
     // Brings one module's schema to the named migration, up or

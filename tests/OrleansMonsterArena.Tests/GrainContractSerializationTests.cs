@@ -23,7 +23,7 @@ public sealed class GrainContractSerializationTests(AppHostFixture host)
             "volcano",
             [
                 new ParticipantSetup("player-1", false, ["ember-fox", "lava-crab"]),
-                new ParticipantSetup("bot-1", true, ["frost-owl"]),
+                new ParticipantSetup("bot-1", true, ["frost-owl"], Difficulty.Easy),
             ]);
 
         // Act
@@ -35,6 +35,8 @@ public sealed class GrainContractSerializationTests(AppHostFixture host)
         Assert.Equal(2, copy.Participants.Length);
         Assert.Equal(setup.Participants[0].MonsterSpeciesIds, copy.Participants[0].MonsterSpeciesIds);
         Assert.True(copy.Participants[1].IsBot);
+        Assert.Equal(Difficulty.Normal, copy.Participants[0].Difficulty);
+        Assert.Equal(Difficulty.Easy, copy.Participants[1].Difficulty);
     }
 
     [Fact]
@@ -59,7 +61,8 @@ public sealed class GrainContractSerializationTests(AppHostFixture host)
                     60,
                     [new AbilityCooldown("magma-claw", 2)],
                     [new ActiveEffectSnapshot(StatusEffect.Guard, 50, 2)]),
-            ]);
+            ],
+            Difficulty.Easy);
 
         // Act
         var copy = serializer.Deserialize<BattleState>(serializer.SerializeToArray(state));

@@ -22,15 +22,21 @@ internal sealed class BotOpponent(ICatalogQueryService catalog, Func<int, int> d
     /// Puts the bot's team together.
     /// </summary>
     /// <param name="teamSize">The number of monsters the opponent fields.</param>
+    /// <param name="difficulty">How hard the bot is; on Easy the battle
+    /// weakens its monsters as they enter (ADR-0013).</param>
     /// <param name="cancellationToken">Cancels the Catalog lookup.</param>
     /// <returns>The bot as a participant.</returns>
-    public async Task<ParticipantSetup> FieldAsync(int teamSize, CancellationToken cancellationToken = default)
+    public async Task<ParticipantSetup> FieldAsync(
+        int teamSize,
+        Difficulty difficulty = Difficulty.Normal,
+        CancellationToken cancellationToken = default)
     {
         var species = await catalog.ListSpeciesAsync(cancellationToken);
 
         return new ParticipantSetup(
             BotId,
             true,
-            [.. BotTeam.Pick([.. species.Select(known => known.Id)], teamSize, draw)]);
+            [.. BotTeam.Pick([.. species.Select(known => known.Id)], teamSize, draw)],
+            difficulty);
     }
 }

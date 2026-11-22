@@ -56,7 +56,9 @@ internal sealed class Combatant
     public bool IsDefeated => HitPoints <= 0;
 
     /// <summary>
-    /// Stores a fighter that enters the battle.
+    /// Stores a fighter that enters the battle. Its stats, full hit
+    /// points included, are taken from the fighter, so a monster
+    /// weakened on entry (ADR-0013) keeps its weakened full health.
     /// </summary>
     /// <param name="fighter">The monster as the combat rules see it.</param>
     /// <param name="isBot">Whether its side is a bot.</param>
@@ -72,7 +74,7 @@ internal sealed class Combatant
             HitPoints = fighter.HitPoints,
             IsBot = isBot,
             SpeciesId = species.Id,
-            MaxHitPoints = species.MaxHitPoints,
+            MaxHitPoints = fighter.MaxHitPoints,
             Element = fighter.Element,
             Abilities = [.. fighter.Abilities.Select(CombatantAbility.From)],
             Effects = [.. fighter.Effects.Select(CombatantEffect.From)],

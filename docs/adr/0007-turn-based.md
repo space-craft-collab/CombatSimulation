@@ -154,6 +154,8 @@ template, and many matches run on it at once.
 - Orleans docs: Reminders vs Timers
 - [ADR-0012]: the combat rules a round resolves by, and what
   the bot rule grew into
+- [ADR-0013]: the bot's difficulty, which a visitor picks
+  with the "play vs bot" mode
 
 ## Corrections
 
@@ -166,3 +168,4 @@ template, and many matches run on it at once.
 [ADR-0002]: 0002-orleans-cohosted.md
 [ADR-0003]: 0003-no-outbox.md
 [ADR-0012]: 0012-combat-rules.md
+[ADR-0013]: 0013-bot-difficulty.md

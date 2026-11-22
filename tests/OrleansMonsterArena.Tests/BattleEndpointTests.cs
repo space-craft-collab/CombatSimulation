@@ -1,7 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
+using Battles.Domain;
 using Battles.Features.GetBattle;
 using Battles.Grains.Abstractions;
+using Catalog.Domain;
 using Catalog.Infrastructure;
 using Xunit;
 
@@ -18,6 +21,10 @@ public sealed class BattleEndpointTests(AppHostFixture host)
     // Two monsters a side: one action per side fells at most one
     // monster each, so the first round cannot end the battle.
     private static readonly string[] Pair = ["lava-crab", "moss-golem"];
+
+    private static readonly string[] Crab = ["lava-crab"];
+
+    private static readonly string[] Fox = ["ember-fox"];
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
@@ -39,11 +46,80 @@ public sealed class BattleEndpointTests(AppHostFixture host)
         Assert.NotNull(battle);
         Assert.Equal(BattleStatus.InProgress, battle.Status);
         Assert.NotNull(battle.TurnDeadline);
+        Assert.Equal(Difficulty.Normal, battle.Difficulty);
         Assert.Equal(new Uri($"/battles/{battle.BattleId}", UriKind.Relative), response.Headers.Location);
         Assert.Collection(
             battle.Combatants,
             player => AssertFresh(player, 0, "player-1", false, "lava-crab"),
             bot => AssertFresh(bot, 1, "bot", true, BotPick(0)));
+    }
+
+    [Fact]
+    public async Task PostBattle_DifficultyEasy_Returns201EasyAndWeakensOnlyTheBotsMonster()
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+        var crab = Seeded("lava-crab");
+        var botSpecies = Seeded(BotPick(0));
+
+        // Act
+        using var response = await client.PostAsJsonAsync(
+            TestArenas.VolcanoBattles,
+            new { playerId = "player-1", monsterSpeciesIds = Crab, difficulty = "Easy" },
+            Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var battle = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
+        Assert.NotNull(battle);
+        Assert.Equal(Difficulty.Easy, battle.Difficulty);
+        Assert.Equal(crab.MaxHitPoints, battle.Combatants[0].MaxHitPoints);
+        var bot = battle.Combatants[1];
+        AssertFresh(bot, 1, "bot", true, botSpecies.Id);
+        Assert.Equal(EasyHandicap.Scale(botSpecies.MaxHitPoints, EasyHandicap.MaxHitPointsPercent), bot.MaxHitPoints);
+    }
+
+    [Fact]
+    public async Task GetBattle_EasyBattleCompleted_ShowsEasyFromTheColdStore()
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+        var driver = new HttpBattleDriver(client);
+        using var started = await client.PostAsJsonAsync(
+            TestArenas.VolcanoBattles,
+            new { playerId = $"player-{Guid.NewGuid():N}", monsterSpeciesIds = Fox, difficulty = "Easy" },
+            Cancellation);
+        var battle = await started.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
+        Assert.NotNull(battle);
+
+        // Act
+        var final = await driver.PlayToTheEndAsync(battle.BattleId);
+
+        // Assert: the bot's monster keeps its weakened full health.
+        Assert.Equal(Difficulty.Easy, final.Difficulty);
+        var bot = Assert.Single(final.Combatants, combatant => combatant.IsBot);
+        Assert.Equal(
+            EasyHandicap.Scale(Seeded(bot.SpeciesId).MaxHitPoints, EasyHandicap.MaxHitPointsPercent),
+            bot.MaxHitPoints);
+    }
+
+    [Theory]
+    [InlineData("\"Hard\"")]
+    [InlineData("7")]
+    public async Task PostBattle_UnknownDifficulty_Returns400(string difficulty)
+    {
+        // Arrange
+        using var client = host.Factory.CreateClient();
+        using var body = new StringContent(
+            $$"""{"playerId":"player-1","monsterSpeciesIds":["lava-crab"],"difficulty":{{difficulty}}}""",
+            Encoding.UTF8,
+            "application/json");
+
+        // Act
+        using var response = await client.PostAsync(TestArenas.VolcanoBattles, body, Cancellation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -231,6 +307,9 @@ public sealed class BattleEndpointTests(AppHostFixture host)
     // the species in the order of their names.
     private static string BotPick(int position) =>
         SpeciesSeed.All.OrderBy(seeded => seeded.Name, StringComparer.Ordinal).ElementAt(position).Id;
+
+    private static MonsterSpecies Seeded(string speciesId) =>
+        SpeciesSeed.All.Single(seeded => seeded.Id == speciesId);
 
     private static void AssertFresh(
         CombatantResponse combatant,

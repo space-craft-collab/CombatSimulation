@@ -1,4 +1,6 @@
 using Battles.Features.GetBattle;
+using Battles.Features.StartBattle;
+using Battles.Grains.Abstractions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -9,7 +11,9 @@ namespace Battles.Features.JoinBattle;
 /// <summary>
 /// <c>POST /battles/{battleId}/participants</c> lets a second human
 /// join an open battle; <c>POST /battles/{battleId}/bot</c> seats the
-/// bot instead. Both answer with the battle's first state.
+/// bot instead, on the difficulty its optional <c>difficulty</c> query
+/// parameter names (<c>Normal</c> without one, ADR-0013). Both answer
+/// with the battle's first state.
 /// </summary>
 internal static class JoinBattleEndpoint
 {
@@ -39,10 +43,24 @@ internal static class JoinBattleEndpoint
         return await ToResultAsync(() => service.JoinAsync(battleId, request));
     }
 
-    private static Task<Results<Ok<BattleResponse>, NotFound, ValidationProblem, ProblemHttpResult>> HandleJoinBotAsync(
+    private static async Task<Results<Ok<BattleResponse>, NotFound, ValidationProblem, ProblemHttpResult>> HandleJoinBotAsync(
         Guid battleId,
-        JoinBattleService service) =>
-        ToResultAsync(() => service.JoinBotAsync(battleId));
+        JoinBattleService service,
+        Difficulty? difficulty)
+    {
+        // Optional and without a default in the signature: the OpenAPI
+        // document would show the default as a number.
+        var chosen = difficulty ?? Difficulty.Normal;
+        if (StartBattleRequest.ValidateDifficulty(chosen) is { } error)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                [nameof(difficulty)] = [error],
+            });
+        }
+
+        return await ToResultAsync(() => service.JoinBotAsync(battleId, chosen));
+    }
 
     private static async Task<Results<Ok<BattleResponse>, NotFound, ValidationProblem, ProblemHttpResult>> ToResultAsync(
         Func<Task<BattleResponse?>> join)

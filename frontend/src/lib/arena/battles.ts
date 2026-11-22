@@ -1,6 +1,6 @@
 import type { BattleResponse } from '#lib/api/models/index.ts';
 import { createArenaApi } from './api.ts';
-import type { Battle, BattleStatus, Move } from './battle.ts';
+import type { Battle, BattleStatus, Difficulty, Move } from './battle.ts';
 
 /** A request the API refused or could not answer. */
 export class ArenaApiError extends Error {
@@ -23,17 +23,19 @@ export class ArenaApiError extends Error {
  * @param arenaId The arena to fight on.
  * @param playerId The visitor's nickname.
  * @param speciesIds The team, in slot order.
+ * @param difficulty How hard the bot is; Easy weakens its monsters.
  */
 export function startBattleAgainstBot(
 	arenaId: string,
 	playerId: string,
-	speciesIds: string[]
+	speciesIds: string[],
+	difficulty: Difficulty = 'Normal'
 ): Promise<Battle> {
 	return call(async () =>
 		toBattle(
 			await createArenaApi()
 				.arenas.byArenaId(arenaId)
-				.battles.post({ playerId, monsterSpeciesIds: speciesIds, opponent: 'Bot' })
+				.battles.post({ playerId, monsterSpeciesIds: speciesIds, opponent: 'Bot', difficulty })
 		)
 	);
 }
@@ -91,6 +93,8 @@ function toBattle(response: BattleResponse | undefined): Battle {
 		round: response.round ?? 0,
 		winnerId: response.winnerId ?? null,
 		turnDeadline: response.turnDeadline?.toISOString() ?? null,
+		// A battle from an API without difficulties was a Normal one.
+		difficulty: (response.difficulty ?? 'Normal') satisfies Difficulty,
 		combatants: (response.combatants ?? []).map((combatant) => ({
 			slot: combatant.slot ?? 0,
 			participantId: combatant.participantId ?? '',
