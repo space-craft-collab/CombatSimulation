@@ -14,6 +14,11 @@ export type Difficulty = 'Normal' | 'Easy';
 /** The difficulties a visitor can choose from, the default first. */
 export const DIFFICULTIES: readonly Difficulty[] = ['Normal', 'Easy'];
 
+/** Reads a difficulty from text; anything that is none is the default. */
+export function parseDifficulty(raw: string | null): Difficulty {
+	return DIFFICULTIES.find((difficulty) => difficulty === raw) ?? DIFFICULTIES[0];
+}
+
 /** An effect that lies on a monster for some rounds. */
 export type StatusEffect = 'Burn' | 'Guard' | 'Slow';
 

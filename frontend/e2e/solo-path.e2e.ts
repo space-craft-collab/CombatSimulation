@@ -35,6 +35,9 @@ test('a visitor plays a battle against the bot, from the nickname to the result'
 	await expect(page.getByRole('heading', { name: 'Volcano' })).toBeVisible();
 	await page.getByTestId('species-ember-fox').getByRole('button', { name: /Add/ }).click();
 	await expect(page.getByTestId('team-member')).toHaveCount(1);
+	// On Easy, so "Fight again" has a difficulty other than the default to hand back.
+	await page.getByText('Easy', { exact: true }).click();
+	await expect(page.getByRole('radio', { name: 'Easy' })).toBeChecked();
 	await page.getByRole('button', { name: 'Fight the bot' }).click();
 
 	// The battle. The bot's team is its own business: its size and
@@ -86,8 +89,17 @@ test('a visitor plays a battle against the bot, from the nickname to the result'
 	await page.reload({ waitUntil: 'networkidle' });
 	await expect(result.locator('h2')).toHaveText(verdict ?? '');
 
-	// "Fight again" starts from the team just fielded.
+	// "Fight again" starts from the team just fielded, on its difficulty.
 	await page.getByRole('link', { name: 'Fight again' }).click();
 	await expect(page.getByTestId('team-member')).toHaveCount(1);
 	await expect(page.getByTestId('species-ember-fox').getByTestId('picked-count')).toBeVisible();
+	await expect(page.getByRole('radio', { name: 'Easy' })).toBeChecked();
+
+	// An arena chosen from the list starts with no team, on Normal,
+	// played before or not.
+	await page.getByRole('link', { name: 'All arenas' }).click();
+	await page.getByRole('link', { name: /Volcano/ }).click();
+	await expect(page.getByRole('heading', { name: 'Volcano' })).toBeVisible();
+	await expect(page.getByTestId('team-member')).toHaveCount(0);
+	await expect(page.getByRole('radio', { name: 'Normal' })).toBeChecked();
 });

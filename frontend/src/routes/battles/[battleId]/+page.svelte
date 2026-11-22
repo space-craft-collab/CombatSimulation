@@ -20,6 +20,7 @@
 	import { abilitiesById, type Ability, type Element } from '#lib/arena/catalog.ts';
 	import { LiveBattle } from '#lib/arena/live-battle.svelte.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
+	import { pickerQuery } from '#lib/arena/team.ts';
 	import AbilityPicker from '#lib/components/AbilityPicker.svelte';
 	import ArenaBackdrop from '#lib/components/ArenaBackdrop.svelte';
 	import CombatantCard from '#lib/components/CombatantCard.svelte';
@@ -102,6 +103,18 @@
 		data.catalog.arenas.find((arena) => arena.id === battle.arenaId)?.name ?? battle.arenaId
 	);
 	const lastRound = $derived(live.rounds.at(-1));
+	// "Fight again" starts the picker from the team the viewer just
+	// fielded and the difficulty it was fielded on; a spectator gets
+	// an empty picker.
+	const fightAgain = $derived(
+		resolve('/arenas/[arenaId]', { arenaId: battle.arenaId }) +
+			(playerId
+				? pickerQuery(
+						home.toSorted((a, b) => a.slot - b.slot).map((combatant) => combatant.speciesId),
+						battle.difficulty
+					)
+				: '')
+	);
 
 	const names: LogNames = {
 		monster: (slot) => {
@@ -212,10 +225,9 @@
 				{/if}
 			</p>
 			<p class="mt-4 flex flex-wrap justify-center gap-3">
-				<a
-					class="rounded bg-amber-500 px-4 py-2 font-semibold text-slate-950"
-					href={resolve('/arenas/[arenaId]', { arenaId: battle.arenaId })}
-				>
+				<!-- The path comes from resolve(); the rule only cannot see past the query appended to it. -->
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+				<a class="rounded bg-amber-500 px-4 py-2 font-semibold text-slate-950" href={fightAgain}>
 					Fight again
 				</a>
 				<a class="rounded border border-slate-600 px-4 py-2" href={resolve('/')}>All arenas</a>

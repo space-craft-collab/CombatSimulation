@@ -1,14 +1,18 @@
 // The team a visitor picks before a battle: its size, what the
-// picker shows about it, and the last one fielded, kept in the
-// browser so "Fight again" starts from it. Pure functions, apart
-// from the two that touch `localStorage`.
+// picker shows about it, and the team "Fight again" hands back to
+// the picker in the address, with the difficulty. Pure functions.
 
+import { DIFFICULTIES, type Difficulty } from './battle.ts';
 import type { Species } from './catalog.ts';
 
 /** The most monsters one side may field (`StartBattleRequest.MaxTeamSize`). */
 export const MAX_TEAM_SIZE = 3;
 
-const STORAGE_KEY = 'arena.team';
+/** The query parameter "Fight again" carries the team in. */
+export const TEAM_PARAM = 'team';
+
+/** The query parameter "Fight again" carries the difficulty in. */
+export const DIFFICULTY_PARAM = 'difficulty';
 
 /** The four base stats of a species, in the order the picker shows them. */
 export const STATS = [
@@ -43,52 +47,34 @@ export function countOf(team: string[], speciesId: string): number {
 }
 
 /**
- * Reads a stored team: a JSON array of species ids. Anything else
- * is no team. Ids the Catalog no longer lists are dropped, and the
- * rest is cut to the team size.
+ * Reads a team from the address: species ids, separated by commas.
+ * Ids the Catalog does not list are dropped, and the rest is cut
+ * to the team size. No parameter is no team.
  */
-export function parseStoredTeam(raw: string | null, known: Species[]): string[] {
-	if (raw === null) {
-		return [];
-	}
-
-	let stored: unknown;
-
-	try {
-		stored = JSON.parse(raw);
-	} catch {
-		// Not JSON: someone else wrote to the key.
-		return [];
-	}
-
-	if (!Array.isArray(stored)) {
+export function parseTeam(raw: string | null, known: Species[]): string[] {
+	if (!raw) {
 		return [];
 	}
 
 	const ids = new Set(known.map((species) => species.id));
 
-	return stored
-		.filter((id): id is string => typeof id === 'string' && ids.has(id))
+	return raw
+		.split(',')
+		.filter((id) => ids.has(id))
 		.slice(0, MAX_TEAM_SIZE);
 }
 
-// Storage can be unavailable (private mode, blocked by a policy).
-// The team then lasts for this visit to the page only.
+/**
+ * The query that hands a team and a difficulty to the picker,
+ * `?team=a,b&difficulty=Easy`. What the picker starts with anyway,
+ * no team and the default difficulty, is left out.
+ */
+export function pickerQuery(team: string[], difficulty: Difficulty): string {
+	const parts = [
+		// Each id encoded on its own, so the commas stay readable.
+		team.length > 0 ? `${TEAM_PARAM}=${team.map(encodeURIComponent).join(',')}` : null,
+		difficulty !== DIFFICULTIES[0] ? `${DIFFICULTY_PARAM}=${difficulty}` : null
+	].filter((part) => part !== null);
 
-/** The team last picked in this browser, as far as the Catalog still lists it. */
-export function loadStoredTeam(known: Species[]): string[] {
-	try {
-		return parseStoredTeam(localStorage.getItem(STORAGE_KEY), known);
-	} catch {
-		return [];
-	}
-}
-
-/** Keeps the team for the next visit. */
-export function storeTeam(team: string[]): void {
-	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(team));
-	} catch {
-		// See above: the team still holds on the page.
-	}
+	return parts.length === 0 ? '' : `?${parts.join('&')}`;
 }

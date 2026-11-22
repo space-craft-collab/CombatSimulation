@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Species } from './catalog';
-import { MAX_TEAM_SIZE, countOf, parseStoredTeam, statCeilings } from './team';
+import { MAX_TEAM_SIZE, countOf, parseTeam, pickerQuery, statCeilings } from './team';
 
 function species(id: string, overrides: Partial<Species> = {}): Species {
 	return {
@@ -44,35 +44,51 @@ describe('countOf', () => {
 	});
 });
 
-describe('parseStoredTeam', () => {
+describe('parseTeam', () => {
 	it('reads the ids in their order, a double included', () => {
-		expect(parseStoredTeam('["glacier-yak","ember-fox","glacier-yak"]', [FOX, YAK])).toEqual([
+		expect(parseTeam('glacier-yak,ember-fox,glacier-yak', [FOX, YAK])).toEqual([
 			'glacier-yak',
 			'ember-fox',
 			'glacier-yak'
 		]);
 	});
 
-	it('is no team when nothing is stored', () => {
-		expect(parseStoredTeam(null, [FOX])).toEqual([]);
+	it.each([null, ''])('is no team for %j', (raw) => {
+		expect(parseTeam(raw, [FOX])).toEqual([]);
 	});
 
-	it.each(['', 'ember-fox', '{"team":["ember-fox"]}', '"ember-fox"', 'null'])(
-		'is no team for %j',
-		(raw) => {
-			expect(parseStoredTeam(raw, [FOX])).toEqual([]);
-		}
-	);
-
 	it('drops what is no id of a listed species', () => {
-		expect(parseStoredTeam('["ember-fox","retired-newt",7,null]', [FOX, YAK])).toEqual([
-			'ember-fox'
-		]);
+		expect(parseTeam('ember-fox,retired-newt,,7', [FOX, YAK])).toEqual(['ember-fox']);
 	});
 
 	it('cuts a team that is too long to the team size', () => {
-		const stored = JSON.stringify(Array.from({ length: MAX_TEAM_SIZE + 2 }, () => 'ember-fox'));
+		const raw = Array.from({ length: MAX_TEAM_SIZE + 2 }, () => 'ember-fox').join(',');
 
-		expect(parseStoredTeam(stored, [FOX])).toHaveLength(MAX_TEAM_SIZE);
+		expect(parseTeam(raw, [FOX])).toHaveLength(MAX_TEAM_SIZE);
+	});
+});
+
+describe('pickerQuery', () => {
+	it('joins the ids with commas', () => {
+		expect(pickerQuery(['ember-fox', 'glacier-yak'], 'Normal')).toBe('?team=ember-fox,glacier-yak');
+	});
+
+	it('carries a difficulty other than the default', () => {
+		expect(pickerQuery(['ember-fox'], 'Easy')).toBe('?team=ember-fox&difficulty=Easy');
+	});
+
+	it('carries the difficulty without a team', () => {
+		expect(pickerQuery([], 'Easy')).toBe('?difficulty=Easy');
+	});
+
+	it('is empty for no team on the default', () => {
+		expect(pickerQuery([], 'Normal')).toBe('');
+	});
+
+	it('is read back by parseTeam', () => {
+		const team = ['glacier-yak', 'ember-fox', 'glacier-yak'];
+		const raw = new URLSearchParams(pickerQuery(team, 'Easy')).get('team');
+
+		expect(parseTeam(raw, [FOX, YAK])).toEqual(team);
 	});
 });

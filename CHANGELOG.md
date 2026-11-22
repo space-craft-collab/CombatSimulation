@@ -228,8 +228,10 @@ Inserted while Phase 4 was under way; condensed on
   the monster out. Above the list: which element beats which
   (`ElementCycle`), and `strike` named once instead of on
   every card.
-- The last team picked is kept in `localStorage`
-  (`arena.team`, `team.ts`), so "Fight again" starts from it.
+- "Fight again" hands the team just fielded and its
+  difficulty back to the picker in the address
+  (`?team=ember-fox&difficulty=Easy`, `team.ts`); an arena
+  chosen from the list starts empty, on Normal.
 - Smaller things in the UI: an arena card is the link as a
   whole, under "Choose an arena", without an "Enter" label
   that read like a button of its own; the header fits one
@@ -248,6 +250,9 @@ Inserted while Phase 4 was under way; condensed on
   Production, so `appsettings.Development.json` and the
   startup migrations did not apply. A `launchSettings.json`
   now selects Development and `http://localhost:5000`.
+- An arena chosen from the list no longer starts with the
+  team of the last battle: the team was kept in
+  `localStorage` for every visit, not only for "Fight again".
 
 #### Decided
 - [ADR-0013](docs/adr/0013-bot-difficulty.md) `Accepted`.

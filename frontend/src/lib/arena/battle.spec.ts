@@ -5,6 +5,7 @@ import {
 	changeOf,
 	newerOf,
 	outcomeFor,
+	parseDifficulty,
 	relationOf,
 	secondsUntil,
 	type Battle,
@@ -270,5 +271,15 @@ describe('secondsUntil', () => {
 describe('DIFFICULTIES', () => {
 	it('offers Normal first, as the default, and Easy', () => {
 		expect(DIFFICULTIES).toEqual(['Normal', 'Easy']);
+	});
+});
+
+describe('parseDifficulty', () => {
+	it.each(DIFFICULTIES)('reads %s', (difficulty) => {
+		expect(parseDifficulty(difficulty)).toBe(difficulty);
+	});
+
+	it.each([null, '', 'easy', 'Hard'])('is Normal for %j', (raw) => {
+		expect(parseDifficulty(raw)).toBe('Normal');
 	});
 });

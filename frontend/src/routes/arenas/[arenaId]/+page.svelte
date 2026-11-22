@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { STRIKE, summaryOf } from '#lib/arena/abilities.ts';
@@ -7,13 +6,7 @@
 	import { ArenaApiError, startBattleAgainstBot } from '#lib/arena/battles.ts';
 	import type { Species } from '#lib/arena/catalog.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
-	import {
-		MAX_TEAM_SIZE,
-		countOf,
-		loadStoredTeam,
-		statCeilings,
-		storeTeam
-	} from '#lib/arena/team.ts';
+	import { MAX_TEAM_SIZE, countOf, statCeilings } from '#lib/arena/team.ts';
 	import ArenaBackdrop from '#lib/components/ArenaBackdrop.svelte';
 	import ElementCycle from '#lib/components/ElementCycle.svelte';
 	import NicknameForm from '#lib/components/NicknameForm.svelte';
@@ -24,16 +17,12 @@
 	let { data }: PageProps = $props();
 
 	// Species ids in slot order; the same species may be fielded twice.
-	let team = $state<string[]>([]);
-	let difficulty = $state<Difficulty>('Normal');
+	// Both start from what "Fight again" handed over, if anything,
+	// and start over when the page data does (another arena).
+	let team = $derived([...data.team]);
+	let difficulty = $derived<Difficulty>(data.difficulty);
 	let starting = $state(false);
 	let failure = $state<string | null>(null);
-
-	// The team picked last time, so "Fight again" need not start from
-	// nothing. It lives in the browser only, like the nickname.
-	onMount(() => {
-		team = loadStoredTeam(data.species);
-	});
 
 	const full = $derived(team.length >= MAX_TEAM_SIZE);
 	const ceilings = $derived(statCeilings(data.species));
@@ -49,14 +38,12 @@
 
 	function add(speciesId: string) {
 		if (!full) {
-			team.push(speciesId);
-			storeTeam(team);
+			team = [...team, speciesId];
 		}
 	}
 
 	function remove(slot: number) {
-		team.splice(slot, 1);
-		storeTeam(team);
+		team = team.toSpliced(slot, 1);
 	}
 
 	async function start() {
