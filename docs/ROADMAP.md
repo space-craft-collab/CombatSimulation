@@ -28,16 +28,17 @@ the [`CHANGELOG`](../CHANGELOG.md); their checklists are in
   Azure Table Storage grain state + EF Core cold store, hot→cold
   snapshot bridge ([ADR-0003](adr/0003-no-outbox.md)).
   Completes the MVP.
-- **Phase 4 — Frontend** ⏸ paused
+- **Phase 4 — Frontend** ⬅ current
   SvelteKit + Svelte 5 runes, Kiota client; adapter spike
-  ([ADR-0004](adr/0004-sveltekit-frontend.md)). The solo path
-  is playable; the rest resumes after Phase 4.5.
-- **Phase 4.5 — Combat depth** ⬅ current
+  ([ADR-0004](adr/0004-sveltekit-frontend.md)).
+- **Phase 4.5 — Combat depth** ✅ done
   Elements, three abilities per monster with cooldowns, status
-  effects, more species, a bot with a team of its own, and a
-  balance simulator that guards the numbers
-  ([ADR-0012](adr/0012-combat-rules.md)). Numbered 4.5 so the
-  later phases keep the numbers the ADRs refer to.
+  effects, six species, a bot with a team of its own, and a
+  balance simulator whose guard rails hold the numbers
+  ([ADR-0012](adr/0012-combat-rules.md)). Inserted while
+  Phase 4 was under way, so the rest of the frontend is built
+  on the final battle model; numbered 4.5 so the later phases
+  keep the numbers the ADRs refer to.
 - **Phase 5 — Scale-out**
   Multi-silo on Azure Container Apps, cluster membership over
   Table Storage, a SignalR backplane so round deltas reach
@@ -57,100 +58,7 @@ the [`CHANGELOG`](../CHANGELOG.md); their checklists are in
 
 Phases 5+ are indicative and will be detailed when reached.
 
-## Phase 4.5 — Combat depth
-
-**Goal:** a battle is a string of decisions instead of the
-same button every round. Monsters differ by element and by
-their abilities, the bot fields a team of its own, and a
-simulator shows that no species or ability dominates.
-Inserted before the rest of Phase 4, so waiting for a human
-and the player dashboard are built once, on the final battle
-model.
-
-**Where it started:** one ability (`strike`), damage as
-attack minus defense. In a one-on-one the four species formed
-a strict ladder (Moss Golem > Lava Crab > Ember Fox > Frost
-Owl), Lava Crab against Moss Golem ran about 60 rounds at one
-damage per hit, speed almost never mattered, and the bot
-mirrored the visitor's team.
-
-### Checklist
-
-**Rules**
-
-- [x] The round logic leaves `LiveBattleGrain` for a pure
-      class in `Battles/Domain`: fighters and actions in,
-      events and the new state out. No new behaviour; the
-      grain keeps the state, the deadlines and the monster
-      grains
-- [x] Elements on the species (Fire > Nature > Frost > Fire:
-      ×1.5 with the advantage, ×0.75 against it) and a damage
-      rule in which defense scales damage down instead of
-      being subtracted, so no matchup ends at one damage per
-      hit
-- [x] Abilities as Catalog data, three per species: the
-      basic `strike`, an elemental attack and a utility.
-      Cooldowns per monster; an action is checked for
-      "belongs to the species" and "ready"
-- [x] Status effects: burn, guard, slow, heal. The round
-      delta carries general round events instead of strikes,
-      and the monster grain can restore hit points
-- [x] Two more species, so every element has a fast and a
-      sturdy monster
-- [ ] **Decision:** the combat rules as
-      [ADR-0012](adr/0012-combat-rules.md): no randomness,
-      cooldowns instead of an energy pool
-
-**Bot**
-
-- [x] The bot picks a team of its own instead of mirroring
-      the visitor's
-- [x] It chooses abilities by a rule: finish a monster it can
-      fell, use the element advantage, heal when low
-
-**Balance**
-
-- [x] A simulator plays bot against bot on the pure rules,
-      without Orleans: every one-on-one and every team of
-      three against every other
-- [x] Its first report records the starting point above
-- [ ] Guard rails as tests: every species wins between 40 %
-      and 60 % of its battles; no one-on-one is worse than
-      30/70 unless the element decides it; a battle lasts 5
-      to 12 rounds on average and never more than 30; every
-      ability is used in at least 10 % of the battles its
-      monster fights
-- [ ] Stats and abilities tuned until the guard rails hold
-
-**Frontend**
-
-- [x] Ability buttons with their cooldowns; element badges;
-      status effects on the monster cards; the battle log
-      names the ability, the element advantage and the
-      effects
-- [x] The team picker shows each species' element and
-      abilities
-- [x] Drawings for the new species
-
-**Wrap-up**
-
-- [ ] [ADR-0007](adr/0007-turn-based.md) brought in line: the
-      bot rule and what an action is
-- [ ] OpenAPI document and Kiota client regenerated
-- [ ] CHANGELOG Phase 4.5 completion entry
-
-### Definition of done
-
-A visitor fields a team, meets a different team, and chooses
-between three abilities per monster every round; the balance
-guard rails are green in CI; the frontend shows abilities,
-cooldowns, elements and effects; ADR, README and CHANGELOG
-are updated.
-
 ## Phase 4 — Frontend
-
-**Paused:** resumes with "Then" below once Phase 4.5 is
-done.
 
 **Goal:** a visitor opens the site, types a nickname, picks
 an arena and a team, and plays a battle against the bot in
@@ -222,6 +130,12 @@ host through a Kiota-generated client
       one from the cold store. The hub's message types are
       written by hand; Kiota covers HTTP only. Someone who
       is not a participant watches without controls
+
+**Combat depth**
+
+- [x] Phase 4.5: abilities, cooldowns, elements, effects and
+      the bot's own team in the battle view and the team
+      picker (see the [`CHANGELOG`](../CHANGELOG.md))
 
 **Then**
 
@@ -310,9 +224,13 @@ Deferred by the finished phases and still open.
 - A sweep for hot rows a crash left behind between the snapshot
   write and the clear ([ADR-0003](adr/0003-no-outbox.md)).
 - Arena rules such as "fire monsters only"
-  ([ADR-0007](adr/0007-turn-based.md)): species carry no
-  element or type yet, so a rule would have nothing to check.
-  They arrive together with the species attribute they need.
+  ([ADR-0007](adr/0007-turn-based.md)). Species carry an
+  element since Phase 4.5, so a rule now has something to
+  check; the rule itself is still open.
+- A rule that ends a battle two players keep alive by only
+  guarding and healing
+  ([ADR-0012](adr/0012-combat-rules.md)). The turn deadline
+  ends a battle nobody plays, not one played without end.
 - Event-storming notes (paper, photo in the README), pending
   since Phase 0.
 

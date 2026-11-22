@@ -1,6 +1,6 @@
 # ADR-0012: Combat rules — abilities with cooldowns, no dice
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-22)
 - **Date:** 2026-11-22
 - **Deciders:** aha (solo maintainer)
 
@@ -34,9 +34,25 @@ The rules of a round are a pure function in `Battles/Domain`
 (`RoundResolver`): the fighters and the round's actions go in,
 the events and the fighters afterwards come out. It knows no
 grain, no storage and no clock. `LiveBattleGrain` keeps the
-state, the deadlines and the broadcast, and applies every
-change in hit points to the monster grain, which stays their
-authority. The balance simulator plays on the same function.
+state, the deadlines and the broadcast. The balance simulator
+plays on the same function.
+
+The rules decide a monster's hit points, not the monster
+grain. After a round the battle tells each monster grain
+whose monster changed where it stands now, as an absolute
+value, and only then stores its own state. A failure in
+between leaves the battle on the state it last stored; the
+round is played again, and telling a monster the same value
+twice does no harm.
+
+### What a client is told
+
+After every round the grain sends the events of the round,
+in order, and every monster as it stands afterwards: hit
+points, cooldowns and effects. A client shows the events and
+takes its state from the monsters; it never works out a
+cooldown or an effect itself, so the rules exist in one place
+only.
 
 ### No randomness
 
@@ -110,14 +126,46 @@ of the same kind do not stack; applying one again replaces it.
 The battle ends the moment only one side is left standing,
 also in the middle of step 2.
 
+### The bot
+
+The bot of [ADR-0007] keeps its place in the round loop and
+gets a team and a rule that fit these rules:
+
+- It fields a team of its own, as large as its opponent's,
+  drawn at random and without repeats from the Catalog's
+  species. It no longer mirrors the visitor's team.
+- Each round it rates every legal move and makes the best
+  one. An attack counts by the share of its target it
+  removes, weighted by the target's attack and doubled when it
+  fells the target; a burn's later damage and a slow that
+  lets one of its monsters act first count on top. A heal
+  counts by what it gives back, a guard by what it is likely
+  to spare.
+- It looks at the current round only and rolls no dice, so
+  the same position always gets the same move.
+
 ### Balance is measured
 
 `docs/balance.md` is written by a simulator that plays the bot
-against itself on the pure rules. Tests hold the guard rails:
-no species wins more than 60 % or less than 40 % of its
-battles, a battle lasts 5 to 12 rounds on average and never
-more than 30, and every ability is used. A change to a number
-shows its effect on every matchup in the diff of the report.
+against itself on the pure rules: every pair of species one on
+one, and every team of three against every other. Both sides
+mix a fifth of random legal moves into the bot's rule, with a
+seed per battle, so a rerun gives the same numbers. Tests hold
+the guard rails:
+
+- Every species wins between 40 % and 60 % of its team
+  battles.
+- One on one, no species wins less than 30 % against a
+  species that does not beat it by element.
+- A one-on-one lasts 4 to 9 rounds on average, three against
+  three 8 to 14, and no battle more than 30. The two kinds
+  have ranges of their own: felling three monsters takes
+  about three times as long as felling one.
+- Every ability is used in at least a tenth of the battles
+  its monster fights.
+
+A change to a number shows its effect on every matchup in the
+diff of the report.
 
 ## Consequences
 
@@ -132,6 +180,14 @@ shows its effect on every matchup in the diff of the report.
 - **Negative:**
   - No dice means no lucky comeback; a lost position stays
     lost. Acceptable for battles of ten rounds.
+  - One on one, the element usually decides: a species almost
+    never beats the one that counters it. The choices are in
+    teams of three, where a side picks which monster meets
+    which.
+  - A battle between two well-matched monsters can turn on a
+    single point of a stat, because nothing is rolled. The
+    numbers are therefore found with the simulator, not by
+    feel.
   - The battle state grows by cooldowns and effects, all of it
     stored format (`CONTRIBUTING.md`).
   - Two players who only guard and heal could keep a battle

@@ -152,6 +152,8 @@ template, and many matches run on it at once.
 - [ADR-0003]: No outbox — the hot→cold handoff that builds on
   a consistent state at the round boundary
 - Orleans docs: Reminders vs Timers
+- [ADR-0012]: the combat rules a round resolves by, and what
+  the bot rule grew into
 
 ## Corrections
 
@@ -163,3 +165,4 @@ template, and many matches run on it at once.
 [ADR-0001]: 0001-modular-monolith.md
 [ADR-0002]: 0002-orleans-cohosted.md
 [ADR-0003]: 0003-no-outbox.md
+[ADR-0012]: 0012-combat-rules.md

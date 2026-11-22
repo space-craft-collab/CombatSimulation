@@ -11,11 +11,18 @@ backend, with a **SvelteKit** frontend.
 
 ## Status
 
-Phase 4 — Frontend (in progress). Phase 3 is done:
-live battles keep their state in Table Storage and
-survive a restart; finished battles, the Catalog and
-the player stats live in SQL Server through EF Core.
-See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Phase 4 — Frontend (in progress). Phase 4.5 — Combat
+depth is done: six species in three elements, three
+abilities each with cooldowns, status effects, and a
+bot that fields a team of its own. A simulator plays
+the bot against itself and writes
+[`docs/balance.md`](docs/balance.md); tests hold the
+numbers inside their guard rails
+([ADR-0012](docs/adr/0012-combat-rules.md)). Live
+battles keep their state in Table Storage and survive
+a restart; finished battles, the Catalog and the
+player stats live in SQL Server through EF Core. See
+[`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 To run the host locally, start the infrastructure
 first (Docker; the steps are in
@@ -46,15 +53,19 @@ A battle against the bot is already playable over HTTP:
 # Pick an arena
 curl localhost:5000/arenas
 
-# Start a battle; the bot mirrors your team
+# The species, each with its element and abilities
+curl localhost:5000/species
+
+# Start a battle; the bot fields a monster of its own
 curl -X POST localhost:5000/arenas/volcano/battles \
   -H 'Content-Type: application/json' \
   -d '{"playerId":"me","monsterSpeciesIds":["ember-fox"]}'
 
-# Strike the bot's monster (slot 1) with yours (slot 0)
+# Your monster (slot 0) uses Flame Dash on the bot's (slot 1);
+# without an abilityId it is the basic strike
 curl -X POST localhost:5000/battles/<battleId>/actions \
   -H 'Content-Type: application/json' \
-  -d '{"participantId":"me","actorSlot":0,"targetSlot":1}'
+  -d '{"participantId":"me","actorSlot":0,"targetSlot":1,"abilityId":"flame-dash"}'
 
 # Read the state
 curl localhost:5000/battles/<battleId>

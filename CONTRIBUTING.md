@@ -44,6 +44,17 @@ dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests -- 
 dotnet run --configuration Release --project tests/OrleansMonsterArena.Tests -- -trait "Category=Integration"
 ```
 
+Tests that play a battle do not pin hit points, round
+counts or the bot's moves, because the numbers are
+retuned (see [Balance report](#balance-report)). They
+play to a condition through `GrainBattleDriver` or
+`HttpBattleDriver`, field three monsters against one
+where a winner must be known, and assert relations
+("took damage", "fell"). The test hosts give the bot
+a draw without chance, so it always fields the same
+team. Exact numbers belong in the unit tests of the
+rules, which build their own fighters (`Monsters`).
+
 The container images are pinned in `compose.yaml`;
 the tests read them from there, so a version is
 changed in that one place.
@@ -99,7 +110,9 @@ readable, so these values are **frozen**:
   takes the next free number; a removed member's
   number stays retired (leave a comment).
 - **Enum values** stored in state (`BattleStatus`,
-  `Element`) carry explicit numbers. Never renumber; add new
+  and the Catalog's `Element` and `AbilityEffect`, which
+  a battle copies into its own state) carry explicit
+  numbers. Never renumber; add new
   members at the end with the next number.
 - **`[Alias("...")]`** on every serializable type
   keeps its identity independent of the CLR name, so
@@ -179,6 +192,16 @@ UPDATE_BALANCE=1 dotnet run --configuration Release --project tests/OrleansMonst
 Commit the report with the change that caused it, and
 read the diff: it shows what the change did to every
 matchup.
+
+`BalanceGuardRailTests` holds the limits the numbers
+must stay within
+([ADR-0012](docs/adr/0012-combat-rules.md)): how often
+a species may win, how lopsided a one-on-one may be,
+how long a battle lasts, and that every ability gets
+used. A change to a species or an ability is therefore
+three things in one commit: the seed
+(`SpeciesSeed`, `AbilitySeed`), a Catalog migration
+that carries it into SQL, and the refreshed report.
 
 ## Frontend
 

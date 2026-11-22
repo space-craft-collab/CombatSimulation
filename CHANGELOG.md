@@ -11,145 +11,103 @@ and this project adheres to
 Entries are grouped by roadmap phase
 ([`docs/ROADMAP.md`](docs/ROADMAP.md)). The reasons behind the
 design are in the ADRs ([`docs/adr/`](docs/adr/)), not here.
-Phases 0–3 were condensed on 2026-11-21; the full entries are
-in [this file's history][full-changelog].
+Phases 0–3 were condensed on 2026-11-21, Phase 4.5 on
+2026-11-22; the full entries are in this file's history
+([Phases 0–3][full-changelog]).
 
 ## [Unreleased]
 
-### Phase 4.5 — Combat depth (in progress)
+### Phase 4.5 — Combat depth ✅
+
+Inserted while Phase 4 was under way; condensed on
+2026-11-22. The rules are in
+[ADR-0012](docs/adr/0012-combat-rules.md), the numbers in
+[`docs/balance.md`](docs/balance.md).
 
 #### Added
-- ROADMAP Phase 4.5 checklist: elements, abilities with
-  cooldowns, status effects, more species, a bot with a team
-  of its own and a balance simulator, before the rest of
-  Phase 4.
-
-- Balance simulator in the test project (`Balance/`): plays
-  the bot against itself on `RoundResolver`, without a silo,
-  every one-on-one and every team of three against every
-  other, 20 times per seat order. Both sides mix 20 % random
-  legal moves into the bot rule; the random source is seeded
-  per battle, so a rerun gives the same numbers.
-- `docs/balance.md`, the simulator's report: win rates per
-  species and per pair, battle lengths, ability use.
-  `BalanceReportTests` fails when the rules or the Catalog
-  seed no longer give the committed report
-  (`UPDATE_BALANCE=1` refreshes it).
-- The first report records the starting point: a strict
-  ladder one on one (Moss Golem 100 %, Frost Owl 0 %), Lava
-  Crab against Moss Golem at 60 rounds, and teams of three
-  at 79 rounds on average, with 40 of 240 battles still
-  undecided after 100 rounds.
-
-- Elements: `Element` (Fire, Frost, Nature, Neutral) in
-  `Catalog.Contracts`, a column on `catalog.Species`
-  (migration `AddElements`), in `GET /species` and on every
-  combatant of a battle. `ElementChart` holds the triangle
-  Fire > Nature > Frost > Fire.
-- [ADR-0012](docs/adr/0012-combat-rules.md), `Proposed`: the
-  combat rules of Phase 4.5.
-- `GrainStateSerializationTests`: the battle's stored state
-  goes through the Orleans serializer without a silo.
-
-- Abilities as Catalog data: `catalog.Abilities` and
-  `catalog.SpeciesAbilities` (migration `AddAbilities`),
-  `AbilityDto` on `MonsterSpeciesDto`, and the abilities of
-  every species in `GET /species`. Seeded: the neutral
-  `strike` for everyone and one elemental attack per species
-  (Flame Dash, Magma Claw, Ice Shard, Root Slam).
-- Cooldowns: an ability with a cooldown of *n* is not ready
-  in the *n* rounds after its use; cooldowns run down every
-  round, per monster. A battle copies its monsters'
-  abilities from the Catalog when it starts and stores them
-  with their cooldowns; `GET /battles/{id}` and the hub show
-  each monster's abilities and the rounds until they are
-  ready.
-- `MoveRule`: which moves a side may make. The grain
-  refuses an ability the monster does not know or has not
-  ready with 400; the simulator takes its random moves from
-  the same list.
-- Status effects (ADR-0012): burn (hit points lost at the
-  end of each round), guard (a share off every hit), slow
-  (speed down, so the monster acts later) and heal (a share
-  of full health back at once). Burn and slow ride on an
-  attack, guard and heal are used by a monster on itself. An
-  effect of the same kind is replaced, not stacked; a burn
-  that would fell the last monsters of both sides only fells
-  the lower slot, so a battle always has a winner.
-- A third ability per species, the utility: Ember Bite
-  (burn), Shell Up (guard), Chill Wind (slow), Regrow (heal);
-  migration `AddUtilityAbilities`.
-- `IMonsterInstanceGrain.RestoreAsync`: a heal goes through
-  the monster grain like damage does.
-- A battle shows the effects on each monster next to its
-  cooldowns (`GET /battles/{id}`, the hub).
-- Two species, so each element has a fast and a sturdy
-  monster: Glacier Yak (Frost; Avalanche, Thick Hide) and
-  Thorn Lynx (Nature; Vine Whip, Pounce); migration
-  `AddYakAndLynx`.
-- `ICatalogQueryService.ListSpeciesAsync`, for the bot's
-  choice of team.
-- Frontend, battle view: the viewer picks a monster, one of
-  its abilities and a target. Each ability shows what it does
-  and when it is ready again; a guard or a heal needs no
-  target. A line above the button names the element
-  advantage before the move is sent. Monster cards carry an
-  element badge and the effects on them with the rounds left;
-  the log names abilities, element advantage, effects, heals
-  and burn damage (`abilities.ts`, `battle-log.ts`,
-  `AbilityPicker`, `ElementBadge`).
-- Frontend, team picker: each species with its element and
-  its abilities.
-- Drawings for Glacier Yak and Thorn Lynx.
-- Vitest for the ability and log wording; the Playwright
-  smoke test no longer assumes the bot's team or who wins.
-- Test helpers that play battles without knowing the numbers
-  (`GrainBattleDriver`, `HttpBattleDriver`, `BattleRounds`,
-  `BattleAssert`).
+- Elements: Fire > Nature > Frost > Fire, on every species
+  and every ability (`Element`, `ElementChart`); ×1.5 with
+  the advantage, ×0.75 against it. The basic `strike` is
+  neutral.
+- Abilities as Catalog data (`catalog.Abilities`,
+  `catalog.SpeciesAbilities`), three per species: `strike`,
+  an elemental attack and a utility. `GET /species` and
+  `MonsterSpeciesDto` list them.
+- Cooldowns per monster and ability. `MoveRule` says which
+  moves are legal; an ability the monster does not know or
+  has not ready is a 400.
+- Status effects: burn, guard, slow and heal.
+- Two species, Glacier Yak and Thorn Lynx: six in all, a
+  fast and a sturdy one per element.
+- A bot with a team of its own, as large as the visitor's,
+  drawn from the Catalog (`BotTeam`, `BotOpponent`), and a
+  rule that rates every legal move (`BotStrategy`).
+- Balance simulator in the test project: the bot against
+  itself on the pure rules, every one-on-one and every team
+  of three against every other. Its report is
+  `docs/balance.md`; `BalanceReportTests` keeps it current.
+- `BalanceGuardRailTests`: a species wins 40–60 % of its
+  team battles; nobody wins less than 30 % one on one except
+  against its element counter; a one-on-one lasts 4–9 rounds
+  on average, three against three 8–14, none over 30; every
+  ability is used in at least a tenth of its battles.
+- Frontend: an ability picker with cooldowns, element
+  badges, effect chips, a hint on the element advantage and
+  a log that words every event; elements and abilities in
+  the team picker; drawings for the two new species.
+- `ICatalogQueryService.ListSpeciesAsync`.
+- Catalog migrations `AddElements`, `AddAbilities`,
+  `AddUtilityAbilities`, `AddYakAndLynx`, `RetuneCombat`.
+- [ADR-0012](docs/adr/0012-combat-rules.md): the combat
+  rules.
 
 #### Changed
-- The rules of a round left `LiveBattleGrain` for
-  `RoundResolver` in `Battles/Domain`: fighters and actions
-  in, events and the fighters afterwards out, with no grain
-  or storage in reach. The grain applies each hit to its
-  monster grain as before. Same rules, now unit-tested
-  without a silo.
-- Damage rule: defense scales a hit down by
-  `10 / (10 + defense)` instead of being subtracted, the
-  ability's power and the element scale it, in whole-number
-  arithmetic. Lava Crab against Moss Golem went from 60
-  rounds to 15, teams of three from 79 on average to 28.
+- The rules of a round left `LiveBattleGrain` for the pure
+  `RoundResolver`: the actions by speed, then burns, then
+  effects and cooldowns run down.
+- Damage: defense scales a hit by `10 / (10 + defense)`
+  instead of being subtracted; the ability's power, the
+  element and a guard scale it too, in whole numbers.
+- A battle stores its monsters' abilities, cooldowns and
+  effects; `GET /battles/{id}` and the hub show them.
+- The hub's round delta carries `events` (an ability used,
+  or a burn's damage) instead of `strikes`, and every
+  monster as it stands after the round.
 - `POST /battles/{id}/actions` checks `abilityId` against
-  the acting monster's abilities; before, `strike` was the
-  only id it knew.
-- The round delta on the hub (`RoundResolved`) carries
-  `events` instead of `strikes`: an ability that was used,
-  with damage, healing, element advantage and the effect it
-  brought, or a burn's damage. It also carries every monster
-  as it stands after the round, so a client takes hit points,
-  cooldowns and effects from there instead of working them
-  out again. The frontend does so and words the new events
-  in its log.
-- The bot fields a team of its own, as large as the
-  visitor's, drawn at random without repeats from the
-  Catalog's species (`BotTeam`, `BotOpponent`), instead of
-  mirroring the visitor's team. The draw is a delegate
-  (ADR-0010); the test hosts replace it with one that takes
-  no chances.
-- The bot rates every legal move and makes the best one
-  (`BotStrategy`): the share of an opponent it removes,
-  weighted by that opponent's attack, double for a finishing
-  blow, with a burn's later damage and a useful slow counted
-  in; a heal by what it gives back to a monster that is low;
-  a guard by what it is likely to spare. It replaces "the
-  strongest monster hits the weakest opponent".
-- The battle tests no longer pin hit points, round counts or
-  the bot's moves: they play to a condition, use three
-  monsters against one where a winner must be known, and
-  assert relations ("took damage", "fell"). The Catalog tests
-  compare against the seed.
+  the acting monster; a guard or a heal targets the monster
+  itself.
+- The monster grain is told its monster's hit points after
+  a round (`SetHitPointsAsync`) instead of each hit
+  (`ApplyDamageAsync`); a round that fails halfway falls
+  back to the stored state and can be played again.
+- The bot no longer mirrors the visitor's team, and no
+  longer sends its strongest monster at the weakest
+  opponent.
+- Every species and ability retuned. A team battle went
+  from 79 rounds on average, often undecided after 100, to
+  13; one on one from a strict ladder to matchups the
+  element or a close race decides.
+- Tests: the battle tests play to a condition through
+  `GrainBattleDriver` and `HttpBattleDriver` instead of
+  pinning hit points and round counts; the test hosts give
+  the bot a draw without chance. New unit tests for the
+  rules, the bot, the seed, the stored format of a battle
+  (old state included) and the frontend's wording.
 
-### Phase 4 — Frontend (paused)
+#### Fixed
+- A storage failure in the middle of a round could apply a
+  hit twice when the round was replayed at the deadline, or
+  leave a round that never resolved.
+
+#### Decided
+- [ADR-0012](docs/adr/0012-combat-rules.md) `Accepted`.
+- The phase is numbered 4.5, so Phases 5–8 keep the numbers
+  the ADRs refer to.
+- The guard rail on battle length is set per kind of battle;
+  the single range of 5–12 rounds first planned cannot hold
+  for one against one and three against three at once.
+
+### Phase 4 — Frontend (in progress)
 
 #### Added
 - ROADMAP Phase 4 checklist: the container-only toolchain
