@@ -338,10 +338,7 @@ internal sealed class LiveBattleGrain(
 
     private void AddBotActions()
     {
-        var fighters = Battle.Combatants
-            .Select(combatant => new Fighter(
-                combatant.Slot, combatant.ParticipantId, combatant.Attack, combatant.HitPoints))
-            .ToList();
+        var fighters = Fighters();
 
         foreach (var botId in Standing().Where(combatant => combatant.IsBot).Select(combatant => combatant.ParticipantId).Distinct())
         {
@@ -349,6 +346,18 @@ internal sealed class LiveBattleGrain(
             Battle.PendingActions[botId] = new BattleAction(botId, move.ActorSlot, move.TargetSlot, Ability.Strike);
         }
     }
+
+    // The battle as the combat rules see it.
+    private List<Fighter> Fighters() =>
+        [.. Battle.Combatants.Select(combatant => new Fighter
+        {
+            Slot = combatant.Slot,
+            ParticipantId = combatant.ParticipantId,
+            Attack = combatant.Attack,
+            Defense = combatant.Defense,
+            Speed = combatant.Speed,
+            HitPoints = combatant.HitPoints,
+        })];
 
     /// <summary>
     /// Resolves the pending actions, arms the next round, stores the
@@ -470,29 +479,29 @@ internal sealed class LiveBattleGrain(
             strikes));
 
     /// <summary>
-    /// Plays the round's actions fastest monster first. An action whose
-    /// actor or target fell earlier in the same round is dropped.
+    /// Lets the combat rules resolve the pending actions, then
+    /// applies each hit to its monster grain, which stays the
+    /// authority on hit points.
     /// </summary>
     /// <returns>The actions that landed, in resolution order.</returns>
     private async Task<List<StrikeDto>> ResolveRoundAsync()
     {
+        var result = RoundResolver.Resolve(
+            Fighters(),
+            [.. Battle.PendingActions.Values.Select(action => new RoundAction(
+                action.ParticipantId, action.ActorSlot, action.TargetSlot, action.AbilityId))]);
+
         var strikes = new List<StrikeDto>();
-        var ordered = Battle.PendingActions.Values
-            .Select(action => (Action: action, Actor: Battle.Combatants[action.ActorSlot]))
-            .OrderByDescending(entry => entry.Actor.Speed)
-            .ThenBy(entry => entry.Actor.Slot);
-
-        foreach (var (action, actor) in ordered)
+        foreach (var roundEvent in result.Events)
         {
-            var target = Battle.Combatants[action.TargetSlot];
-            if (actor.IsDefeated || target.IsDefeated)
-            {
-                continue;
-            }
-
-            var snapshot = await Monster(target.Slot).ApplyDamageAsync(DamageRule.Calculate(actor.Attack, target.Defense));
+            var target = Battle.Combatants[roundEvent.TargetSlot];
+            var snapshot = await Monster(target.Slot).ApplyDamageAsync(roundEvent.Damage);
             strikes.Add(new StrikeDto(
-                actor.Slot, target.Slot, action.AbilityId, target.HitPoints - snapshot.HitPoints, snapshot.HitPoints));
+                roundEvent.ActorSlot,
+                target.Slot,
+                roundEvent.AbilityId,
+                target.HitPoints - snapshot.HitPoints,
+                snapshot.HitPoints));
             target.HitPoints = snapshot.HitPoints;
         }
 

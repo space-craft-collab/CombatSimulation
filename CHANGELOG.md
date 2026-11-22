@@ -16,7 +16,23 @@ in [this file's history][full-changelog].
 
 ## [Unreleased]
 
-### Phase 4 — Frontend (in progress)
+### Phase 4.5 — Combat depth (in progress)
+
+#### Added
+- ROADMAP Phase 4.5 checklist: elements, abilities with
+  cooldowns, status effects, more species, a bot with a team
+  of its own and a balance simulator, before the rest of
+  Phase 4.
+
+#### Changed
+- The rules of a round left `LiveBattleGrain` for
+  `RoundResolver` in `Battles/Domain`: fighters and actions
+  in, events and the fighters afterwards out, with no grain
+  or storage in reach. The grain applies each hit to its
+  monster grain as before. Same rules, now unit-tested
+  without a silo.
+
+### Phase 4 — Frontend (paused)
 
 #### Added
 - ROADMAP Phase 4 checklist: the container-only toolchain

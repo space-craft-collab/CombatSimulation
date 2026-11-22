@@ -8,15 +8,26 @@ namespace OrleansMonsterArena.Tests;
 /// </summary>
 public sealed class BotStrategyTests
 {
+    private static Fighter Monster(int slot, string participantId, int attack, int hitPoints) =>
+        new()
+        {
+            Slot = slot,
+            ParticipantId = participantId,
+            Attack = attack,
+            Defense = 5,
+            Speed = 10,
+            HitPoints = hitPoints,
+        };
+
     [Fact]
     public void Decide_SeveralOpponents_TargetsWeakest()
     {
         // Arrange
         Fighter[] fighters =
         [
-            new(0, "player-1", 8, 80),
-            new(1, "player-1", 12, 35),
-            new(2, "bot-1", 14, 40),
+            Monster(0, "player-1", 8, 80),
+            Monster(1, "player-1", 12, 35),
+            Monster(2, "bot-1", 14, 40),
         ];
 
         // Act
@@ -32,9 +43,9 @@ public sealed class BotStrategyTests
         // Arrange
         Fighter[] fighters =
         [
-            new(0, "player-1", 10, 60),
-            new(1, "bot-1", 8, 80),
-            new(2, "bot-1", 14, 40),
+            Monster(0, "player-1", 10, 60),
+            Monster(1, "bot-1", 8, 80),
+            Monster(2, "bot-1", 14, 40),
         ];
 
         // Act
@@ -50,10 +61,10 @@ public sealed class BotStrategyTests
         // Arrange
         Fighter[] fighters =
         [
-            new(0, "player-1", 10, 0),
-            new(1, "player-1", 12, 35),
-            new(2, "bot-1", 20, 0),
-            new(3, "bot-1", 8, 80),
+            Monster(0, "player-1", 10, 0),
+            Monster(1, "player-1", 12, 35),
+            Monster(2, "bot-1", 20, 0),
+            Monster(3, "bot-1", 8, 80),
         ];
 
         // Act
@@ -69,10 +80,10 @@ public sealed class BotStrategyTests
         // Arrange: both sides field two identical monsters.
         Fighter[] fighters =
         [
-            new(0, "player-1", 10, 60),
-            new(1, "player-1", 10, 60),
-            new(2, "bot-1", 10, 60),
-            new(3, "bot-1", 10, 60),
+            Monster(0, "player-1", 10, 60),
+            Monster(1, "player-1", 10, 60),
+            Monster(2, "bot-1", 10, 60),
+            Monster(3, "bot-1", 10, 60),
         ];
 
         // Act
@@ -86,7 +97,7 @@ public sealed class BotStrategyTests
     public void Decide_NoStandingOwnMonster_ThrowsInvalidOperationException()
     {
         // Arrange
-        Fighter[] fighters = [new(0, "player-1", 10, 60), new(1, "bot-1", 14, 0)];
+        Fighter[] fighters = [Monster(0, "player-1", 10, 60), Monster(1, "bot-1", 14, 0)];
 
         // Act + Assert
         Assert.Throws<InvalidOperationException>(() => BotStrategy.Decide("bot-1", fighters));
@@ -96,7 +107,7 @@ public sealed class BotStrategyTests
     public void Decide_NoStandingOpponent_ThrowsInvalidOperationException()
     {
         // Arrange
-        Fighter[] fighters = [new(0, "player-1", 10, 0), new(1, "bot-1", 14, 40)];
+        Fighter[] fighters = [Monster(0, "player-1", 10, 0), Monster(1, "bot-1", 14, 40)];
 
         // Act + Assert
         Assert.Throws<InvalidOperationException>(() => BotStrategy.Decide("bot-1", fighters));

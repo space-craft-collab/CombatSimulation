@@ -78,7 +78,7 @@ mirrored the visitor's team.
 
 **Rules**
 
-- [ ] The round logic leaves `LiveBattleGrain` for a pure
+- [x] The round logic leaves `LiveBattleGrain` for a pure
       class in `Battles/Domain`: fighters and actions in,
       events and the new state out. No new behaviour; the
       grain keeps the state, the deadlines and the monster
