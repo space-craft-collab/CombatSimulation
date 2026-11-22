@@ -83,6 +83,10 @@ in [this file's history][full-changelog].
   the monster grain like damage does.
 - A battle shows the effects on each monster next to its
   cooldowns (`GET /battles/{id}`, the hub).
+- Two species, so each element has a fast and a sturdy
+  monster: Glacier Yak (Frost; Avalanche, Thick Hide) and
+  Thorn Lynx (Nature; Vine Whip, Pounce); migration
+  `AddYakAndLynx`.
 - Test helpers that play battles without knowing the numbers
   (`GrainBattleDriver`, `HttpBattleDriver`, `BattleRounds`,
   `BattleAssert`).

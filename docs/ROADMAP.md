@@ -95,7 +95,7 @@ mirrored the visitor's team.
 - [x] Status effects: burn, guard, slow, heal. The round
       delta carries general round events instead of strikes,
       and the monster grain can restore hit points
-- [ ] Two more species, so every element has a fast and a
+- [x] Two more species, so every element has a fast and a
       sturdy monster
 - [ ] **Decision:** the combat rules as
       [ADR-0012](adr/0012-combat-rules.md): no randomness,

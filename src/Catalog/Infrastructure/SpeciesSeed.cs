@@ -16,5 +16,7 @@ internal static class SpeciesSeed
         new("lava-crab", "Lava Crab", Element.Fire, 60, 10, 8, 5),
         new("frost-owl", "Frost Owl", Element.Frost, 35, 12, 5, 14),
         new("moss-golem", "Moss Golem", Element.Nature, 80, 8, 10, 3),
+        new("glacier-yak", "Glacier Yak", Element.Frost, 70, 9, 9, 4),
+        new("thorn-lynx", "Thorn Lynx", Element.Nature, 44, 13, 5, 11),
     ];
 }

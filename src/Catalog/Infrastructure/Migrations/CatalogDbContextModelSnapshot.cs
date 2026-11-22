@@ -159,6 +159,50 @@ namespace Catalog.Infrastructure.Migrations
                             Element = "Nature",
                             Name = "Regrow",
                             Power = 0
+                        },
+                        new
+                        {
+                            Id = "avalanche",
+                            Cooldown = 3,
+                            Effect = "None",
+                            EffectRounds = 0,
+                            EffectValue = 0,
+                            Element = "Frost",
+                            Name = "Avalanche",
+                            Power = 160
+                        },
+                        new
+                        {
+                            Id = "thick-hide",
+                            Cooldown = 5,
+                            Effect = "Guard",
+                            EffectRounds = 4,
+                            EffectValue = 40,
+                            Element = "Neutral",
+                            Name = "Thick Hide",
+                            Power = 0
+                        },
+                        new
+                        {
+                            Id = "vine-whip",
+                            Cooldown = 1,
+                            Effect = "None",
+                            EffectRounds = 0,
+                            EffectValue = 0,
+                            Element = "Nature",
+                            Name = "Vine Whip",
+                            Power = 130
+                        },
+                        new
+                        {
+                            Id = "pounce",
+                            Cooldown = 4,
+                            Effect = "None",
+                            EffectRounds = 0,
+                            EffectValue = 0,
+                            Element = "Nature",
+                            Name = "Pounce",
+                            Power = 200
                         });
                 });
 
@@ -269,6 +313,26 @@ namespace Catalog.Infrastructure.Migrations
                             MaxHitPoints = 80,
                             Name = "Moss Golem",
                             Speed = 3
+                        },
+                        new
+                        {
+                            Id = "glacier-yak",
+                            Attack = 9,
+                            Defense = 9,
+                            Element = "Frost",
+                            MaxHitPoints = 70,
+                            Name = "Glacier Yak",
+                            Speed = 4
+                        },
+                        new
+                        {
+                            Id = "thorn-lynx",
+                            Attack = 13,
+                            Defense = 5,
+                            Element = "Nature",
+                            MaxHitPoints = 44,
+                            Name = "Thorn Lynx",
+                            Speed = 11
                         });
                 });
 
@@ -364,6 +428,42 @@ namespace Catalog.Infrastructure.Migrations
                         {
                             SpeciesId = "moss-golem",
                             AbilityId = "regrow",
+                            Position = 2
+                        },
+                        new
+                        {
+                            SpeciesId = "glacier-yak",
+                            AbilityId = "strike",
+                            Position = 0
+                        },
+                        new
+                        {
+                            SpeciesId = "glacier-yak",
+                            AbilityId = "avalanche",
+                            Position = 1
+                        },
+                        new
+                        {
+                            SpeciesId = "glacier-yak",
+                            AbilityId = "thick-hide",
+                            Position = 2
+                        },
+                        new
+                        {
+                            SpeciesId = "thorn-lynx",
+                            AbilityId = "strike",
+                            Position = 0
+                        },
+                        new
+                        {
+                            SpeciesId = "thorn-lynx",
+                            AbilityId = "vine-whip",
+                            Position = 1
+                        },
+                        new
+                        {
+                            SpeciesId = "thorn-lynx",
+                            AbilityId = "pounce",
                             Position = 2
                         });
                 });
