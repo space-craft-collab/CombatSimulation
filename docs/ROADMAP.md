@@ -152,6 +152,22 @@ host through a Kiota-generated client
 **Look**
 
 - [x] Tailwind CSS; monsters as inline SVG, no image assets
+- [ ] Arena images, first: one per arena (volcano, glacier,
+      moss grove), 16:9 WebP around 1600 px with a calm
+      centre. Used as the tile on the start page, a banner
+      on the team picker, and a dimmed backdrop behind the
+      battle view. Arenas differ only by name today
+- [ ] Monster portraits, once the arena images hold up:
+      one per species, in the same style, WebP around
+      512 px under `src/lib/assets`. `MonsterSprite` keeps
+      `data-species`, the CSS for defeated monsters, and the
+      SVG blob as the fallback for a species without a picture
+- [ ] Badges, health bars, icons and effects stay SVG/CSS.
+      Pictures are AI-generated (Nano Banana), and the
+      README says so
+- [ ] **Decision:** amend
+      [ADR-0004](adr/0004-sveltekit-frontend.md), which still
+      says the repository carries no image assets
 - [x] Usable on a phone-width screen: the solo path was
       checked at 390 px; a battle of three against three
       fits one screen with the strike button in reach
@@ -227,6 +243,11 @@ Deferred by the finished phases and still open.
   ([ADR-0007](adr/0007-turn-based.md)). Species carry an
   element since Phase 4.5, so a rule now has something to
   check; the rule itself is still open.
+- An arena bonus for its own element (fire in the volcano,
+  and so on), so arenas differ in play as well as in
+  looks. A rules change: it needs
+  [ADR-0012](adr/0012-combat-rules.md) and the balance
+  guard rails.
 - A rule that ends a battle two players keep alive by only
   guarding and healing
   ([ADR-0012](adr/0012-combat-rules.md)). The turn deadline
