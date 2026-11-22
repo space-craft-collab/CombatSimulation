@@ -22,6 +22,102 @@ namespace Catalog.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Catalog.Domain.Ability", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<int>("Cooldown")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Effect")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<int>("EffectRounds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EffectValue")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Element")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Power")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Abilities", "catalog");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "strike",
+                            Cooldown = 0,
+                            Effect = "None",
+                            EffectRounds = 0,
+                            EffectValue = 0,
+                            Element = "Neutral",
+                            Name = "Strike",
+                            Power = 100
+                        },
+                        new
+                        {
+                            Id = "flame-dash",
+                            Cooldown = 2,
+                            Effect = "None",
+                            EffectRounds = 0,
+                            EffectValue = 0,
+                            Element = "Fire",
+                            Name = "Flame Dash",
+                            Power = 150
+                        },
+                        new
+                        {
+                            Id = "magma-claw",
+                            Cooldown = 2,
+                            Effect = "None",
+                            EffectRounds = 0,
+                            EffectValue = 0,
+                            Element = "Fire",
+                            Name = "Magma Claw",
+                            Power = 140
+                        },
+                        new
+                        {
+                            Id = "ice-shard",
+                            Cooldown = 2,
+                            Effect = "None",
+                            EffectRounds = 0,
+                            EffectValue = 0,
+                            Element = "Frost",
+                            Name = "Ice Shard",
+                            Power = 150
+                        },
+                        new
+                        {
+                            Id = "root-slam",
+                            Cooldown = 3,
+                            Effect = "None",
+                            EffectRounds = 0,
+                            EffectValue = 0,
+                            Element = "Nature",
+                            Name = "Root Slam",
+                            Power = 150
+                        });
+                });
+
             modelBuilder.Entity("Catalog.Domain.Arena", b =>
                 {
                     b.Property<string>("Id")
@@ -130,6 +226,93 @@ namespace Catalog.Infrastructure.Migrations
                             Name = "Moss Golem",
                             Speed = 3
                         });
+                });
+
+            modelBuilder.Entity("Catalog.Domain.SpeciesAbility", b =>
+                {
+                    b.Property<string>("SpeciesId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("AbilityId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("int");
+
+                    b.HasKey("SpeciesId", "AbilityId");
+
+                    b.HasIndex("AbilityId");
+
+                    b.ToTable("SpeciesAbilities", "catalog");
+
+                    b.HasData(
+                        new
+                        {
+                            SpeciesId = "ember-fox",
+                            AbilityId = "strike",
+                            Position = 0
+                        },
+                        new
+                        {
+                            SpeciesId = "ember-fox",
+                            AbilityId = "flame-dash",
+                            Position = 1
+                        },
+                        new
+                        {
+                            SpeciesId = "lava-crab",
+                            AbilityId = "strike",
+                            Position = 0
+                        },
+                        new
+                        {
+                            SpeciesId = "lava-crab",
+                            AbilityId = "magma-claw",
+                            Position = 1
+                        },
+                        new
+                        {
+                            SpeciesId = "frost-owl",
+                            AbilityId = "strike",
+                            Position = 0
+                        },
+                        new
+                        {
+                            SpeciesId = "frost-owl",
+                            AbilityId = "ice-shard",
+                            Position = 1
+                        },
+                        new
+                        {
+                            SpeciesId = "moss-golem",
+                            AbilityId = "strike",
+                            Position = 0
+                        },
+                        new
+                        {
+                            SpeciesId = "moss-golem",
+                            AbilityId = "root-slam",
+                            Position = 1
+                        });
+                });
+
+            modelBuilder.Entity("Catalog.Domain.SpeciesAbility", b =>
+                {
+                    b.HasOne("Catalog.Domain.Ability", null)
+                        .WithMany()
+                        .HasForeignKey("AbilityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Catalog.Domain.MonsterSpecies", null)
+                        .WithMany()
+                        .HasForeignKey("SpeciesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

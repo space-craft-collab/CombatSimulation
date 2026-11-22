@@ -215,7 +215,9 @@ internal sealed class LiveBattleGrain(
                 combatant.IsBot,
                 combatant.SpeciesId,
                 combatant.HitPoints,
-                combatant.MaxHitPoints))]);
+                combatant.MaxHitPoints,
+                [.. combatant.Abilities.Select(ability =>
+                    new AbilityCooldown(ability.AbilityId, ability.CooldownLeft))]))]);
 
     private static void ValidateSetup(BattleSetup setup)
     {
@@ -270,19 +272,8 @@ internal sealed class LiveBattleGrain(
         foreach (var monster in species)
         {
             var slot = Battle.Combatants.Count;
-            Battle.Combatants.Add(new Combatant
-            {
-                Slot = slot,
-                ParticipantId = participant.ParticipantId,
-                Attack = monster.Attack,
-                Defense = monster.Defense,
-                Speed = monster.Speed,
-                HitPoints = monster.MaxHitPoints,
-                IsBot = participant.IsBot,
-                SpeciesId = monster.Id,
-                MaxHitPoints = monster.MaxHitPoints,
-                Element = monster.Element,
-            });
+            Battle.Combatants.Add(Combatant.From(
+                Fighter.Enter(slot, participant.ParticipantId, monster), participant.IsBot, monster));
             initializations.Add(Monster(slot).InitializeAsync(new MonsterStats(
                 monster.Id, monster.MaxHitPoints, monster.Attack, monster.Defense, monster.Speed)));
         }
@@ -319,21 +310,9 @@ internal sealed class LiveBattleGrain(
                 $"'{action.ParticipantId}' already acted in round {Battle.Round}.");
         }
 
-        if (!Ability.IsKnown(action.AbilityId))
+        if (MoveRule.Reject(Fighters(), ToRoundAction(action)) is { } reason)
         {
-            throw new ArgumentException($"Unknown ability '{action.AbilityId}'.", nameof(action));
-        }
-
-        var actor = FindStanding(action.ActorSlot);
-        if (actor?.ParticipantId != action.ParticipantId)
-        {
-            throw new ArgumentException($"Slot {action.ActorSlot} is not a standing monster of '{action.ParticipantId}'.", nameof(action));
-        }
-
-        var target = FindStanding(action.TargetSlot);
-        if (target is null || target.ParticipantId == action.ParticipantId)
-        {
-            throw new ArgumentException($"Slot {action.TargetSlot} is not a standing opponent.", nameof(action));
+            throw new ArgumentException(reason, nameof(action));
         }
     }
 
@@ -344,22 +323,15 @@ internal sealed class LiveBattleGrain(
         foreach (var botId in Standing().Where(combatant => combatant.IsBot).Select(combatant => combatant.ParticipantId).Distinct())
         {
             var move = BotStrategy.Decide(botId, fighters);
-            Battle.PendingActions[botId] = new BattleAction(botId, move.ActorSlot, move.TargetSlot, Ability.Strike);
+            Battle.PendingActions[botId] = new BattleAction(botId, move.ActorSlot, move.TargetSlot, move.AbilityId);
         }
     }
 
     // The battle as the combat rules see it.
-    private List<Fighter> Fighters() =>
-        [.. Battle.Combatants.Select(combatant => new Fighter
-        {
-            Slot = combatant.Slot,
-            ParticipantId = combatant.ParticipantId,
-            Element = combatant.Element,
-            Attack = combatant.Attack,
-            Defense = combatant.Defense,
-            Speed = combatant.Speed,
-            HitPoints = combatant.HitPoints,
-        })];
+    private List<Fighter> Fighters() => [.. Battle.Combatants.Select(combatant => combatant.ToFighter())];
+
+    private static RoundAction ToRoundAction(BattleAction action) =>
+        new(action.ParticipantId, action.ActorSlot, action.TargetSlot, action.AbilityId);
 
     /// <summary>
     /// Resolves the pending actions, arms the next round, stores the
@@ -483,15 +455,12 @@ internal sealed class LiveBattleGrain(
     /// <summary>
     /// Lets the combat rules resolve the pending actions, then
     /// applies each hit to its monster grain, which stays the
-    /// authority on hit points.
+    /// authority on hit points, and takes over the cooldowns.
     /// </summary>
     /// <returns>The actions that landed, in resolution order.</returns>
     private async Task<List<StrikeDto>> ResolveRoundAsync()
     {
-        var result = RoundResolver.Resolve(
-            Fighters(),
-            [.. Battle.PendingActions.Values.Select(action => new RoundAction(
-                action.ParticipantId, action.ActorSlot, action.TargetSlot, action.AbilityId))]);
+        var result = RoundResolver.Resolve(Fighters(), [.. Battle.PendingActions.Values.Select(ToRoundAction)]);
 
         var strikes = new List<StrikeDto>();
         foreach (var roundEvent in result.Events)
@@ -505,6 +474,11 @@ internal sealed class LiveBattleGrain(
                 target.HitPoints - snapshot.HitPoints,
                 snapshot.HitPoints));
             target.HitPoints = snapshot.HitPoints;
+        }
+
+        foreach (var after in result.Fighters)
+        {
+            Battle.Combatants[after.Slot].Take(after);
         }
 
         Battle.PendingActions.Clear();
@@ -612,9 +586,6 @@ internal sealed class LiveBattleGrain(
 
     private HashSet<string> HumanSidesStanding() =>
         [.. Standing().Where(combatant => !combatant.IsBot).Select(combatant => combatant.ParticipantId)];
-
-    private Combatant? FindStanding(int slot) =>
-        Battle.Combatants.ElementAtOrDefault(slot) is { IsDefeated: false } combatant ? combatant : null;
 
     private IMonsterInstanceGrain Monster(int slot) =>
         GrainFactory.GetGrain<IMonsterInstanceGrain>($"{this.GetPrimaryKey()}:{slot}");

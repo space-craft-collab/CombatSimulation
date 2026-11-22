@@ -4,6 +4,55 @@
 // @ts-ignore
 import { type AdditionalDataHolder, type ApiError, type Guid, type Parsable, type ParseNode, type SerializationWriter } from '@microsoft/kiota-abstractions';
 
+export interface AbilityCooldownResponse extends AdditionalDataHolder, Parsable {
+    /**
+     * The abilityId property
+     */
+    abilityId?: string | null;
+    /**
+     * The roundsLeft property
+     */
+    roundsLeft?: number | null;
+}
+export type AbilityEffect = (typeof AbilityEffectObject)[keyof typeof AbilityEffectObject];
+export interface AbilityResponse extends AdditionalDataHolder, Parsable {
+    /**
+     * The cooldown property
+     */
+    cooldown?: number | null;
+    /**
+     * What an ability does besides dealing damage. The numbers arestored in grain state and must not change.
+     */
+    effect?: AbilityEffect | null;
+    /**
+     * The effectRounds property
+     */
+    effectRounds?: number | null;
+    /**
+     * The effectValue property
+     */
+    effectValue?: number | null;
+    /**
+     * The element of a species or of an ability. Fire beats Nature,Nature beats Frost, Frost beats Fire; Element.Neutral hasneither an advantage nor a weakness. The numbers are stored ingrain state and must not change.
+     */
+    element?: Element | null;
+    /**
+     * The id property
+     */
+    id?: string | null;
+    /**
+     * The name property
+     */
+    name?: string | null;
+    /**
+     * The power property
+     */
+    power?: number | null;
+    /**
+     * The targetsSelf property
+     */
+    targetsSelf?: boolean | null;
+}
 export interface ArenaResponse extends AdditionalDataHolder, Parsable {
     /**
      * The id property
@@ -87,6 +136,10 @@ export interface BattleSummaryResponse extends AdditionalDataHolder, Parsable {
 }
 export interface CombatantResponse extends AdditionalDataHolder, Parsable {
     /**
+     * The abilities property
+     */
+    abilities?: AbilityCooldownResponse[] | null;
+    /**
      * The hitPoints property
      */
     hitPoints?: number | null;
@@ -110,6 +163,24 @@ export interface CombatantResponse extends AdditionalDataHolder, Parsable {
      * The speciesId property
      */
     speciesId?: string | null;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AbilityCooldownResponse}
+ */
+// @ts-ignore
+export function createAbilityCooldownResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAbilityCooldownResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {AbilityResponse}
+ */
+// @ts-ignore
+export function createAbilityResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoAbilityResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -230,6 +301,37 @@ export function createSubmitActionRequestFromDiscriminatorValue(parseNode: Parse
 }
 /**
  * The deserialization information for the current model
+ * @param AbilityCooldownResponse The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAbilityCooldownResponse(abilityCooldownResponse: Partial<AbilityCooldownResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "abilityId": n => { abilityCooldownResponse.abilityId = n.getStringValue(); },
+        "roundsLeft": n => { abilityCooldownResponse.roundsLeft = n.getNumberValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @param AbilityResponse The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoAbilityResponse(abilityResponse: Partial<AbilityResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "cooldown": n => { abilityResponse.cooldown = n.getNumberValue(); },
+        "effect": n => { abilityResponse.effect = n.getEnumValue<AbilityEffect>(AbilityEffectObject); },
+        "effectRounds": n => { abilityResponse.effectRounds = n.getNumberValue(); },
+        "effectValue": n => { abilityResponse.effectValue = n.getNumberValue(); },
+        "element": n => { abilityResponse.element = n.getEnumValue<Element>(ElementObject); },
+        "id": n => { abilityResponse.id = n.getStringValue(); },
+        "name": n => { abilityResponse.name = n.getStringValue(); },
+        "power": n => { abilityResponse.power = n.getNumberValue(); },
+        "targetsSelf": n => { abilityResponse.targetsSelf = n.getBooleanValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
  * @param ArenaResponse The instance to deserialize into.
  * @returns {Record<string, (node: ParseNode) => void>}
  */
@@ -294,6 +396,7 @@ export function deserializeIntoBattleSummaryResponse(battleSummaryResponse: Part
 // @ts-ignore
 export function deserializeIntoCombatantResponse(combatantResponse: Partial<CombatantResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "abilities": n => { combatantResponse.abilities = n.getCollectionOfObjectValues<AbilityCooldownResponse>(createAbilityCooldownResponseFromDiscriminatorValue); },
         "hitPoints": n => { combatantResponse.hitPoints = n.getNumberValue(); },
         "isBot": n => { combatantResponse.isBot = n.getBooleanValue(); },
         "maxHitPoints": n => { combatantResponse.maxHitPoints = n.getNumberValue(); },
@@ -376,6 +479,7 @@ export function deserializeIntoProblemDetails(problemDetails: Partial<ProblemDet
 // @ts-ignore
 export function deserializeIntoSpeciesResponse(speciesResponse: Partial<SpeciesResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
+        "abilities": n => { speciesResponse.abilities = n.getCollectionOfObjectValues<AbilityResponse>(createAbilityResponseFromDiscriminatorValue); },
         "attack": n => { speciesResponse.attack = n.getNumberValue(); },
         "defense": n => { speciesResponse.defense = n.getNumberValue(); },
         "element": n => { speciesResponse.element = n.getEnumValue<Element>(ElementObject); },
@@ -490,6 +594,39 @@ export interface ProblemDetails extends AdditionalDataHolder, ApiError, Parsable
 }
 /**
  * Serializes information the current object
+ * @param AbilityCooldownResponse The instance to serialize from.
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAbilityCooldownResponse(writer: SerializationWriter, abilityCooldownResponse: Partial<AbilityCooldownResponse> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!abilityCooldownResponse || isSerializingDerivedType) { return; }
+    writer.writeStringValue("abilityId", abilityCooldownResponse.abilityId);
+    writer.writeNumberValue("roundsLeft", abilityCooldownResponse.roundsLeft);
+    writer.writeAdditionalData(abilityCooldownResponse.additionalData);
+}
+/**
+ * Serializes information the current object
+ * @param AbilityResponse The instance to serialize from.
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeAbilityResponse(writer: SerializationWriter, abilityResponse: Partial<AbilityResponse> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!abilityResponse || isSerializingDerivedType) { return; }
+    writer.writeNumberValue("cooldown", abilityResponse.cooldown);
+    writer.writeEnumValue<AbilityEffect>("effect", abilityResponse.effect);
+    writer.writeNumberValue("effectRounds", abilityResponse.effectRounds);
+    writer.writeNumberValue("effectValue", abilityResponse.effectValue);
+    writer.writeEnumValue<Element>("element", abilityResponse.element);
+    writer.writeStringValue("id", abilityResponse.id);
+    writer.writeStringValue("name", abilityResponse.name);
+    writer.writeNumberValue("power", abilityResponse.power);
+    writer.writeBooleanValue("targetsSelf", abilityResponse.targetsSelf);
+    writer.writeAdditionalData(abilityResponse.additionalData);
+}
+/**
+ * Serializes information the current object
  * @param ArenaResponse The instance to serialize from.
  * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
  * @param writer Serialization writer to use to serialize this model
@@ -559,6 +696,7 @@ export function serializeBattleSummaryResponse(writer: SerializationWriter, batt
 // @ts-ignore
 export function serializeCombatantResponse(writer: SerializationWriter, combatantResponse: Partial<CombatantResponse> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
     if (!combatantResponse || isSerializingDerivedType) { return; }
+    writer.writeCollectionOfObjectValues<AbilityCooldownResponse>("abilities", combatantResponse.abilities, serializeAbilityCooldownResponse);
     writer.writeNumberValue("hitPoints", combatantResponse.hitPoints);
     writer.writeBooleanValue("isBot", combatantResponse.isBot);
     writer.writeNumberValue("maxHitPoints", combatantResponse.maxHitPoints);
@@ -647,6 +785,7 @@ export function serializeProblemDetails(writer: SerializationWriter, problemDeta
 // @ts-ignore
 export function serializeSpeciesResponse(writer: SerializationWriter, speciesResponse: Partial<SpeciesResponse> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
     if (!speciesResponse || isSerializingDerivedType) { return; }
+    writer.writeCollectionOfObjectValues<AbilityResponse>("abilities", speciesResponse.abilities, serializeAbilityResponse);
     writer.writeNumberValue("attack", speciesResponse.attack);
     writer.writeNumberValue("defense", speciesResponse.defense);
     writer.writeEnumValue<Element>("element", speciesResponse.element);
@@ -686,6 +825,10 @@ export function serializeSubmitActionRequest(writer: SerializationWriter, submit
     writer.writeAdditionalData(submitActionRequest.additionalData);
 }
 export interface SpeciesResponse extends AdditionalDataHolder, Parsable {
+    /**
+     * The abilities property
+     */
+    abilities?: AbilityResponse[] | null;
     /**
      * The attack property
      */
@@ -747,6 +890,16 @@ export interface SubmitActionRequest extends AdditionalDataHolder, Parsable {
      */
     targetSlot?: number | null;
 }
+/**
+ * What an ability does besides dealing damage. The numbers arestored in grain state and must not change.
+ */
+export const AbilityEffectObject = {
+    None: "None",
+    Burn: "Burn",
+    Guard: "Guard",
+    Slow: "Slow",
+    Heal: "Heal",
+} as const;
 /**
  * Lifecycle of a live battle (ADR-0007). Stored as its number ingrain state, so the values are frozen: never renumber or reuse one,add new members at the end with the next number.
  */

@@ -9,10 +9,13 @@ namespace Battles.Features.GetBattle;
 /// <param name="SpeciesId">The Catalog species.</param>
 /// <param name="HitPoints">Remaining hit points.</param>
 /// <param name="MaxHitPoints">Hit points at full health.</param>
+/// <param name="Abilities">The monster's abilities in their order, each with its cooldown; empty once the
+/// battle is over.</param>
 internal sealed record CombatantResponse(
     int Slot,
     string ParticipantId,
     bool IsBot,
     string SpeciesId,
     int HitPoints,
-    int MaxHitPoints);
+    int MaxHitPoints,
+    IReadOnlyList<AbilityCooldownResponse> Abilities);

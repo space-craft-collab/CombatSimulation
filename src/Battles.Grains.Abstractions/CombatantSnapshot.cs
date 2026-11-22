@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Battles.Grains.Abstractions;
 
 /// <summary>
@@ -10,6 +12,7 @@ namespace Battles.Grains.Abstractions;
 /// <param name="SpeciesId">The Catalog species.</param>
 /// <param name="HitPoints">Remaining hit points.</param>
 /// <param name="MaxHitPoints">Hit points at full health.</param>
+/// <param name="Abilities">The monster's abilities in their order, each with its cooldown.</param>
 [GenerateSerializer]
 [Alias("battles.CombatantSnapshot")]
 public sealed record CombatantSnapshot(
@@ -18,4 +21,5 @@ public sealed record CombatantSnapshot(
     [property: Id(2)] bool IsBot,
     [property: Id(3)] string SpeciesId,
     [property: Id(4)] int HitPoints,
-    [property: Id(5)] int MaxHitPoints);
+    [property: Id(5)] int MaxHitPoints,
+    [property: Id(6)] ImmutableArray<AbilityCooldown> Abilities);

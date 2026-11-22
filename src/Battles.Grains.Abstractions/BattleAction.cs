@@ -5,8 +5,9 @@ namespace Battles.Grains.Abstractions;
 /// </summary>
 /// <param name="ParticipantId">The participant submitting the action.</param>
 /// <param name="ActorSlot">The slot of the acting monster.</param>
-/// <param name="TargetSlot">The slot of the targeted monster.</param>
-/// <param name="AbilityId">The Catalog ability being used.</param>
+/// <param name="TargetSlot">The slot of the targeted monster; the acting monster's own slot for an
+/// ability it uses on itself.</param>
+/// <param name="AbilityId">The Catalog ability being used; the acting monster must know it and have it ready.</param>
 [GenerateSerializer]
 [Alias("battles.BattleAction")]
 public sealed record BattleAction(

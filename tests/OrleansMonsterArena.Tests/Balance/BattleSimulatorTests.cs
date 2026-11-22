@@ -15,15 +15,7 @@ public sealed class BattleSimulatorTests
     };
 
     private static Fighter Monster(int slot, string participantId, int hitPoints, int attack) =>
-        new()
-        {
-            Slot = slot,
-            ParticipantId = participantId,
-            Attack = attack,
-            Defense = 0,
-            Speed = 10,
-            HitPoints = hitPoints,
-        };
+        Monsters.Create(slot, participantId, hitPoints, attack);
 
     [Fact]
     public void Play_StrongerSide_WinsAndReportsRoundsAndUses()

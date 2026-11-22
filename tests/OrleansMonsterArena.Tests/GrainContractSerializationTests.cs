@@ -49,7 +49,7 @@ public sealed class GrainContractSerializationTests(AppHostFixture host)
             3,
             "player-1",
             DateTimeOffset.UnixEpoch,
-            [new CombatantSnapshot(0, "player-1", false, "lava-crab", 42, 60)]);
+            [new CombatantSnapshot(0, "player-1", false, "lava-crab", 42, 60, [new AbilityCooldown("magma-claw", 2)])]);
 
         // Act
         var copy = serializer.Deserialize<BattleState>(serializer.SerializeToArray(state));
@@ -58,6 +58,8 @@ public sealed class GrainContractSerializationTests(AppHostFixture host)
         // combatants are checked element-wise.
         Assert.NotNull(copy);
         Assert.Equal(state with { Combatants = [] }, copy with { Combatants = [] });
-        Assert.Equal(state.Combatants, copy.Combatants);
+        var combatant = Assert.Single(copy.Combatants);
+        Assert.Equal(state.Combatants[0] with { Abilities = [] }, combatant with { Abilities = [] });
+        Assert.Equal(state.Combatants[0].Abilities, combatant.Abilities);
     }
 }

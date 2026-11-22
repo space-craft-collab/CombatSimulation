@@ -10,6 +10,7 @@ namespace Catalog.Contracts;
 /// <param name="Attack">Offensive strength.</param>
 /// <param name="Defense">Damage reduction.</param>
 /// <param name="Speed">Decides turn order within a round.</param>
+/// <param name="Abilities">The abilities the species knows, the basic attack first.</param>
 public sealed record MonsterSpeciesDto(
     string Id,
     string Name,
@@ -17,4 +18,5 @@ public sealed record MonsterSpeciesDto(
     int MaxHitPoints,
     int Attack,
     int Defense,
-    int Speed);
+    int Speed,
+    IReadOnlyList<AbilityDto> Abilities);

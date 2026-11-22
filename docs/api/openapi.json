@@ -413,6 +413,79 @@
   },
   "components": {
     "schemas": {
+      "AbilityCooldownResponse": {
+        "required": [
+          "abilityId",
+          "roundsLeft"
+        ],
+        "type": "object",
+        "properties": {
+          "abilityId": {
+            "type": "string"
+          },
+          "roundsLeft": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AbilityEffect": {
+        "enum": [
+          "None",
+          "Burn",
+          "Guard",
+          "Slow",
+          "Heal"
+        ],
+        "description": "What an ability does besides dealing damage. The numbers are\nstored in grain state and must not change."
+      },
+      "AbilityResponse": {
+        "required": [
+          "id",
+          "name",
+          "element",
+          "power",
+          "cooldown",
+          "effect",
+          "effectValue",
+          "effectRounds",
+          "targetsSelf"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "element": {
+            "$ref": "#/components/schemas/Element"
+          },
+          "power": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cooldown": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "effect": {
+            "$ref": "#/components/schemas/AbilityEffect"
+          },
+          "effectValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "effectRounds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetsSelf": {
+            "type": "boolean"
+          }
+        }
+      },
       "ArenaResponse": {
         "required": [
           "id",
@@ -554,7 +627,8 @@
           "isBot",
           "speciesId",
           "hitPoints",
-          "maxHitPoints"
+          "maxHitPoints",
+          "abilities"
         ],
         "type": "object",
         "properties": {
@@ -578,6 +652,12 @@
           "maxHitPoints": {
             "type": "integer",
             "format": "int32"
+          },
+          "abilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbilityCooldownResponse"
+            }
           }
         }
       },
@@ -724,7 +804,8 @@
           "maxHitPoints",
           "attack",
           "defense",
-          "speed"
+          "speed",
+          "abilities"
         ],
         "type": "object",
         "properties": {
@@ -752,6 +833,12 @@
           "speed": {
             "type": "integer",
             "format": "int32"
+          },
+          "abilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbilityResponse"
+            }
           }
         }
       },

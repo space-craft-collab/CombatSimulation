@@ -1,11 +1,15 @@
 using Battles.Domain;
+using Catalog.Domain;
+using Catalog.Features.QueryCatalog;
 using Catalog.Infrastructure;
 
 namespace OrleansMonsterArena.Tests.Balance;
 
 /// <summary>
 /// The species the simulator plays with: the Catalog's own seed, so
-/// the report measures the numbers the game ships.
+/// the report measures the numbers the game ships. A monster enters
+/// through <see cref="Fighter.Enter"/>, the same way as in the battle
+/// grain.
 /// </summary>
 internal static class Roster
 {
@@ -16,19 +20,19 @@ internal static class Roster
     [
         .. SpeciesSeed.All
             .OrderBy(species => species.Name, StringComparer.Ordinal)
+            .Select(species => SpeciesDtoMapper.ToDto(new SpeciesProfile(species, AbilitiesOf(species.Id))))
             .Select(species => new RosterEntry(
                 species.Id,
                 species.Name,
-                [Ability.Strike],
-                (slot, participantId) => new Fighter
-                {
-                    Slot = slot,
-                    ParticipantId = participantId,
-                    Element = species.Element,
-                    Attack = species.Attack,
-                    Defense = species.Defense,
-                    Speed = species.Speed,
-                    HitPoints = species.MaxHitPoints,
-                })),
+                [.. species.Abilities.Select(ability => ability.Id)],
+                (slot, participantId) => Fighter.Enter(slot, participantId, species))),
+    ];
+
+    private static List<Ability> AbilitiesOf(string speciesId) =>
+    [
+        .. AbilitySeed.BySpecies
+            .Where(link => link.SpeciesId == speciesId)
+            .OrderBy(link => link.Position)
+            .Select(link => AbilitySeed.All.Single(ability => ability.Id == link.AbilityId)),
     ];
 }

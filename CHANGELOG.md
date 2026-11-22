@@ -51,6 +51,23 @@ in [this file's history][full-changelog].
 - `GrainStateSerializationTests`: the battle's stored state
   goes through the Orleans serializer without a silo.
 
+- Abilities as Catalog data: `catalog.Abilities` and
+  `catalog.SpeciesAbilities` (migration `AddAbilities`),
+  `AbilityDto` on `MonsterSpeciesDto`, and the abilities of
+  every species in `GET /species`. Seeded: the neutral
+  `strike` for everyone and one elemental attack per species
+  (Flame Dash, Magma Claw, Ice Shard, Root Slam).
+- Cooldowns: an ability with a cooldown of *n* is not ready
+  in the *n* rounds after its use; cooldowns run down every
+  round, per monster. A battle copies its monsters'
+  abilities from the Catalog when it starts and stores them
+  with their cooldowns; `GET /battles/{id}` and the hub show
+  each monster's abilities and the rounds until they are
+  ready.
+- `MoveRule`: which moves a side may make. The grain
+  refuses an ability the monster does not know or has not
+  ready with 400; the simulator takes its random moves from
+  the same list.
 - Test helpers that play battles without knowing the numbers
   (`GrainBattleDriver`, `HttpBattleDriver`, `BattleRounds`,
   `BattleAssert`).
@@ -67,6 +84,11 @@ in [this file's history][full-changelog].
   ability's power and the element scale it, in whole-number
   arithmetic. Lava Crab against Moss Golem went from 60
   rounds to 15, teams of three from 79 on average to 28.
+- The bot uses the hardest-hitting attack its strongest
+  monster has ready, instead of always `strike`.
+- `POST /battles/{id}/actions` checks `abilityId` against
+  the acting monster's abilities; before, `strike` was the
+  only id it knew.
 - The battle tests no longer pin hit points, round counts or
   the bot's moves: they play to a condition, use three
   monsters against one where a winner must be known, and

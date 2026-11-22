@@ -14,7 +14,7 @@ internal static class Policies
     {
         var move = BotStrategy.Decide(participantId, fighters);
 
-        return new RoundAction(participantId, move.ActorSlot, move.TargetSlot, Ability.Strike);
+        return new RoundAction(participantId, move.ActorSlot, move.TargetSlot, move.AbilityId);
     }
 
     /// <summary>
@@ -34,22 +34,8 @@ internal static class Policies
                 return Bot(participantId, fighters);
             }
 
-            var moves = LegalMoves(participantId, fighters);
+            var moves = MoveRule.LegalMoves(participantId, fighters);
 
             return moves[random.Next(moves.Count)];
         };
-
-    private static List<RoundAction> LegalMoves(string participantId, IReadOnlyList<Fighter> fighters)
-    {
-        var standing = fighters.Where(fighter => !fighter.IsDefeated).ToList();
-
-        return
-        [
-            .. from actor in standing
-               where actor.ParticipantId == participantId
-               from target in standing
-               where target.ParticipantId != participantId
-               select new RoundAction(participantId, actor.Slot, target.Slot, Ability.Strike),
-        ];
-    }
 }

@@ -22,16 +22,7 @@ internal sealed class CatalogQueryService(
 
         var found = await species.FindAsync(speciesId, cancellationToken);
 
-        return found is null
-            ? null
-            : new MonsterSpeciesDto(
-                found.Id,
-                found.Name,
-                found.Element,
-                found.MaxHitPoints,
-                found.Attack,
-                found.Defense,
-                found.Speed);
+        return found is null ? null : SpeciesDtoMapper.ToDto(found);
     }
 
     /// <inheritdoc />

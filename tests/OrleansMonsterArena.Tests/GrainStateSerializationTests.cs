@@ -45,6 +45,20 @@ public sealed class GrainStateSerializationTests
                     SpeciesId = "ember-fox",
                     MaxHitPoints = 40,
                     Element = Element.Fire,
+                    Abilities =
+                    [
+                        new CombatantAbility
+                        {
+                            AbilityId = "flame-dash",
+                            Element = Element.Fire,
+                            Power = 150,
+                            Cooldown = 2,
+                            Effect = AbilityEffect.Burn,
+                            EffectValue = 4,
+                            EffectRounds = 3,
+                            CooldownLeft = 1,
+                        },
+                    ],
                 },
             ],
             PendingActions = { ["player-1"] = new BattleAction("player-1", 0, 1, "strike") },
@@ -62,5 +76,10 @@ public sealed class GrainStateSerializationTests
         Assert.Equal(Element.Fire, combatant.Element);
         Assert.Equal(31, combatant.HitPoints);
         Assert.Equal("ember-fox", combatant.SpeciesId);
+        var ability = Assert.Single(combatant.Abilities);
+        Assert.Equal("flame-dash", ability.AbilityId);
+        Assert.Equal(Element.Fire, ability.Element);
+        Assert.Equal(AbilityEffect.Burn, ability.Effect);
+        Assert.Equal((150, 2, 4, 3, 1), (ability.Power, ability.Cooldown, ability.EffectValue, ability.EffectRounds, ability.CooldownLeft));
     }
 }

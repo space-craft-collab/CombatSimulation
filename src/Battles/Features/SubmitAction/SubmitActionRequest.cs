@@ -19,12 +19,14 @@ internal sealed record SubmitActionRequest
     public required int ActorSlot { get; init; }
 
     /// <summary>
-    /// The slot of the opponent's monster it targets.
+    /// The slot of the opponent's monster it targets; the acting
+    /// monster's own slot for an ability it uses on itself.
     /// </summary>
     public required int TargetSlot { get; init; }
 
     /// <summary>
-    /// The ability used; only the basic attack exists so far.
+    /// The ability used, one the acting monster knows and has ready
+    /// (<c>GET /species</c> lists them); the basic attack if left out.
     /// </summary>
-    public string AbilityId { get; init; } = Ability.Strike;
+    public string AbilityId { get; init; } = AbilitySpec.StrikeId;
 }

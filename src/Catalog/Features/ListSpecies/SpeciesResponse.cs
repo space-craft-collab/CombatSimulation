@@ -13,6 +13,7 @@ namespace Catalog.Features.ListSpecies;
 /// <param name="Attack">Offensive strength.</param>
 /// <param name="Defense">Damage reduction.</param>
 /// <param name="Speed">Decides turn order within a round.</param>
+/// <param name="Abilities">The abilities the species knows, the basic attack first.</param>
 internal sealed record SpeciesResponse(
     string Id,
     string Name,
@@ -20,4 +21,5 @@ internal sealed record SpeciesResponse(
     int MaxHitPoints,
     int Attack,
     int Defense,
-    int Speed);
+    int Speed,
+    IReadOnlyList<AbilityResponse> Abilities);

@@ -23,6 +23,16 @@ internal sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> option
     public DbSet<MonsterSpecies> Species => Set<MonsterSpecies>();
 
     /// <summary>
+    /// The abilities.
+    /// </summary>
+    public DbSet<Ability> Abilities => Set<Ability>();
+
+    /// <summary>
+    /// Which species knows which ability.
+    /// </summary>
+    public DbSet<SpeciesAbility> SpeciesAbilities => Set<SpeciesAbility>();
+
+    /// <summary>
     /// The arenas battles run on.
     /// </summary>
     public DbSet<Arena> Arenas => Set<Arena>();

@@ -1,4 +1,5 @@
 using Battles.Domain;
+using Catalog.Contracts;
 using Xunit;
 
 namespace OrleansMonsterArena.Tests;
@@ -8,16 +9,12 @@ namespace OrleansMonsterArena.Tests;
 /// </summary>
 public sealed class BotStrategyTests
 {
+    private static readonly AbilitySpec Fireball = new("fireball", Element.Fire, 150, 2);
+
+    private static readonly AbilitySpec Shield = new("shield", Element.Neutral, 0, 3, AbilityEffect.Guard, 50, 2);
+
     private static Fighter Monster(int slot, string participantId, int attack, int hitPoints) =>
-        new()
-        {
-            Slot = slot,
-            ParticipantId = participantId,
-            Attack = attack,
-            Defense = 5,
-            Speed = 10,
-            HitPoints = hitPoints,
-        };
+        Monsters.Create(slot, participantId, hitPoints, attack);
 
     [Fact]
     public void Decide_SeveralOpponents_TargetsWeakest()
@@ -91,6 +88,54 @@ public sealed class BotStrategyTests
 
         // Assert
         Assert.Equal(new BotMove(2, 0), move);
+    }
+
+    [Fact]
+    public void Decide_StrongerAbilityReady_UsesIt()
+    {
+        // Arrange
+        Fighter[] fighters = [Monsters.Create(0, "player-1"), Monsters.Create(1, "bot-1", abilities: [Fireball, Shield])];
+
+        // Act
+        var move = BotStrategy.Decide("bot-1", fighters);
+
+        // Assert
+        Assert.Equal(new BotMove(1, 0, "fireball"), move);
+    }
+
+    [Fact]
+    public void Decide_StrongerAbilityOnCooldown_FallsBackToTheBasicAttack()
+    {
+        // Arrange
+        Fighter[] fighters =
+        [
+            Monsters.Create(0, "player-1"),
+            Monsters.Create(1, "bot-1", abilities: Fireball).WithCooldown("fireball", 2),
+        ];
+
+        // Act
+        var move = BotStrategy.Decide("bot-1", fighters);
+
+        // Assert
+        Assert.Equal(new BotMove(1, 0, "strike"), move);
+    }
+
+    [Fact]
+    public void Decide_ElementMakesTheAbilityWeaker_UsesTheBasicAttack()
+    {
+        // Arrange: 120 % of the attack at ×0.75 is less than a plain hit.
+        var ember = new AbilitySpec("ember", Element.Fire, 120, 1);
+        Fighter[] fighters =
+        [
+            Monsters.Create(0, "player-1", element: Element.Frost),
+            Monsters.Create(1, "bot-1", abilities: ember),
+        ];
+
+        // Act
+        var move = BotStrategy.Decide("bot-1", fighters);
+
+        // Assert
+        Assert.Equal(new BotMove(1, 0, "strike"), move);
     }
 
     [Fact]

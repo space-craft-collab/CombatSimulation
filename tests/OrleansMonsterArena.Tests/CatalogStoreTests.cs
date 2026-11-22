@@ -40,6 +40,32 @@ public sealed class CatalogStoreTests(AppHostFixture host)
     }
 
     [Fact]
+    public async Task FindSpeciesAsync_SeededSpecies_ReturnsItsAbilitiesInOrder()
+    {
+        // Arrange
+        var catalog = host.Factory.Services.GetRequiredService<ICatalogQueryService>();
+
+        // Act
+        var species = await catalog.FindSpeciesAsync("lava-crab", Cancellation);
+
+        // Assert: the abilities the seed links to the species, the
+        // basic attack first, each with its seeded numbers.
+        var expected = AbilitySeed.BySpecies
+            .Where(link => link.SpeciesId == "lava-crab")
+            .OrderBy(link => link.Position)
+            .Select(link => AbilitySeed.All.Single(ability => ability.Id == link.AbilityId))
+            .ToList();
+        Assert.NotNull(species);
+        Assert.Equal(AbilitySeed.Strike, species.Abilities[0].Id);
+        Assert.Equal(
+            expected.Select(ability => (ability.Id, ability.Name, ability.Element, ability.Power, ability.Cooldown)),
+            species.Abilities.Select(ability => (ability.Id, ability.Name, ability.Element, ability.Power, ability.Cooldown)));
+        Assert.Equal(
+            expected.Select(ability => (ability.Effect, ability.EffectValue, ability.EffectRounds)),
+            species.Abilities.Select(ability => (ability.Effect, ability.EffectValue, ability.EffectRounds)));
+    }
+
+    [Fact]
     public async Task FindSpeciesAsync_UnknownSpecies_ReturnsNull()
     {
         // Arrange
@@ -131,6 +157,8 @@ public sealed class CatalogStoreTests(AppHostFixture host)
         }
 
         // Assert
-        Assert.Equal(["Arenas", "Species", "__EFMigrationsHistory"], tables.Order(StringComparer.Ordinal));
+        Assert.Equal(
+            ["Abilities", "Arenas", "Species", "SpeciesAbilities", "__EFMigrationsHistory"],
+            tables.Order(StringComparer.Ordinal));
     }
 }
