@@ -24,7 +24,17 @@ a restart; finished battles, the Catalog and the
 player stats live in SQL Server through EF Core. See
 [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
-To run the host locally, start the infrastructure
+The short way to a round in the browser is one script
+(Docker and the .NET SDK are all it needs); it starts
+the infrastructure, the host and the frontend, and
+prints the address:
+
+```bash
+scripts/play-start.sh
+scripts/play-stop.sh    # --wipe also deletes the data
+```
+
+Step by step: to run the host, start the infrastructure
 first (Docker; the steps are in
 [`compose.yaml`](compose.yaml)):
 

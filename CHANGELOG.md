@@ -158,6 +158,10 @@ Inserted while Phase 4 was under way; condensed on
   packages and its `Dockerfile`.
 - `CONTRIBUTING.md`: the API contract and client, the
   frontend, and the rules for npm dependencies.
+- `scripts/play-start.sh` and `scripts/play-stop.sh`: the
+  infrastructure, the host and the frontend for a round in
+  the browser, as a compose project of its own (`oma-play`)
+  that needs no `.env`; `--wipe` also deletes its data.
 
 #### Changed
 - [ADR-0004](docs/adr/0004-sveltekit-frontend.md) records
