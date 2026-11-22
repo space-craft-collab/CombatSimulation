@@ -85,4 +85,9 @@ test('a visitor plays a battle against the bot, from the nickname to the result'
 	// The finished battle is still there after a reload, now from the cold store.
 	await page.reload({ waitUntil: 'networkidle' });
 	await expect(result.locator('h2')).toHaveText(verdict ?? '');
+
+	// "Fight again" starts from the team just fielded.
+	await page.getByRole('link', { name: 'Fight again' }).click();
+	await expect(page.getByTestId('team-member')).toHaveCount(1);
+	await expect(page.getByTestId('species-ember-fox').getByTestId('picked-count')).toBeVisible();
 });

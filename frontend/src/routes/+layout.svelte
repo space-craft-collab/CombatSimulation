@@ -20,10 +20,14 @@
 <div class="min-h-screen bg-slate-950 text-slate-100">
 	<header class="border-b border-slate-800">
 		<div class="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
-			<a class="text-lg font-bold" href={resolve('/')}>Orleans Monster Arena</a>
+			<a class="shrink-0 text-base font-bold sm:text-lg" href={resolve('/')}>
+				Orleans Monster Arena
+			</a>
 			{#if player.nickname}
+				<!-- On a phone the name alone: next to the title there is no room for more. -->
 				<span class="truncate text-sm text-slate-400" data-testid="playing-as">
-					Playing as <span class="font-semibold text-slate-200">{player.nickname}</span>
+					<span class="max-sm:sr-only">Playing as</span>
+					<span class="font-semibold text-slate-200">{player.nickname}</span>
 				</span>
 			{/if}
 		</div>

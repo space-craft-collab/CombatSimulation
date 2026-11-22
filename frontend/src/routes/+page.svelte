@@ -37,17 +37,16 @@
 	{/if}
 
 	<section>
-		<h2 class="mb-3 text-lg font-semibold">Arenas</h2>
+		<h2 class="mb-3 text-lg font-semibold">Choose an arena</h2>
 		<ul class="grid gap-3 sm:grid-cols-2">
 			{#each data.arenas as arena (arena.id)}
 				<li>
 					<a
-						class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900 p-4 hover:border-amber-300"
+						class="block rounded-lg border border-slate-700 bg-slate-900 p-4 font-medium hover:border-amber-300"
 						href={resolve('/arenas/[arenaId]', { arenaId: arena.id })}
 						data-testid="arena"
 					>
-						<span class="font-medium">{arena.name}</span>
-						<span class="text-sm text-amber-400" aria-hidden="true">Enter →</span>
+						{arena.name}
 					</a>
 				</li>
 			{:else}

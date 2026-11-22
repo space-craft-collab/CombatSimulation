@@ -15,8 +15,8 @@ import type { Ability, Element } from './catalog.ts';
 /** The basic attack every species knows; what the API assumes without an ability. */
 export const STRIKE = 'strike';
 
-/** The element each element beats. */
-const BEATS: Record<Element, Element | null> = {
+/** The element each element beats; neutral beats none. */
+export const BEATS: Record<Element, Element | null> = {
 	Fire: 'Nature',
 	Nature: 'Frost',
 	Frost: 'Fire',

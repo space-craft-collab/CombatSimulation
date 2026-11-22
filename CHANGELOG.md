@@ -182,6 +182,24 @@ Inserted while Phase 4 was under way; condensed on
 - The HTTP API reads numbers from JSON numbers only, no
   longer from strings as well; the OpenAPI document typed
   every integer as "integer or string" otherwise.
+- The team picker, reworked after playing it: a whole
+  species card adds the monster (`SpeciesCard`), with a bar
+  per stat measured against the best on offer and a count of
+  how often it is picked. The team sits in a bar that stays
+  at the bottom of the screen with its three slots and the
+  "Fight the bot" button (`TeamDock`); a tap on a slot takes
+  the monster out. Above the list: which element beats which
+  (`ElementCycle`), and `strike` named once instead of on
+  every card.
+- The last team picked is kept in `localStorage`
+  (`arena.team`, `team.ts`), so "Fight again" starts from it.
+- Smaller things in the UI: an arena card is the link as a
+  whole, under "Choose an arena", without an "Enter" label
+  that read like a button of its own; the header fits one
+  line on a phone, the battle view's section labels are plain text
+  instead of tracked capitals, and a monster stands on a
+  tile in its element's colour in the picker, the team bar
+  and the battle.
 
 #### Fixed
 - `dotnet run --project src/AppHost` started the host as

@@ -222,7 +222,7 @@
 		onpick: (slot: number) => void
 	)}
 		<section aria-label={label} data-testid={testId}>
-			<h2 class="mb-1 text-xs font-semibold tracking-widest text-slate-500 uppercase">{label}</h2>
+			<h2 class="mb-1 text-sm font-semibold text-slate-400">{label}</h2>
 			<ul class="flex justify-center gap-2">
 				{#each combatants as combatant (combatant.slot)}
 					<li class="max-w-40 min-w-0 flex-1 basis-0">
@@ -261,10 +261,7 @@
 
 	{#if canAct && actor && ability && move}
 		<section aria-labelledby="abilities-heading">
-			<h2
-				id="abilities-heading"
-				class="mb-1 text-xs font-semibold tracking-widest text-slate-500 uppercase"
-			>
+			<h2 id="abilities-heading" class="mb-1 text-sm font-semibold text-slate-400">
 				{nameOf(actor.speciesId)}'s abilities
 			</h2>
 			<AbilityPicker

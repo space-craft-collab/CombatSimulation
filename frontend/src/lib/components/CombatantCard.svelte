@@ -3,6 +3,7 @@
 	import { isStanding, type Combatant } from '#lib/arena/battle.ts';
 	import type { Element } from '#lib/arena/catalog.ts';
 	import ElementBadge from './ElementBadge.svelte';
+	import { ELEMENT_STYLES } from './element-styles.ts';
 	import HealthBar from './HealthBar.svelte';
 	import MonsterSprite from './MonsterSprite.svelte';
 
@@ -49,7 +50,9 @@
 	data-testid="combatant"
 	data-slot={combatant.slot}
 >
-	<MonsterSprite speciesId={combatant.speciesId} defeated={!standing} class="h-14 w-14" />
+	<span class={['rounded-lg border p-1', ELEMENT_STYLES[element].tile, !standing && 'opacity-50']}>
+		<MonsterSprite speciesId={combatant.speciesId} defeated={!standing} class="h-12 w-12" />
+	</span>
 
 	<span class="w-full truncate text-sm font-medium">{name}</span>
 	<span class="sr-only">{owner}</span>
