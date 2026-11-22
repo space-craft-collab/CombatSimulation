@@ -6,7 +6,7 @@
 		outcomeFor,
 		secondsUntil,
 		type Combatant,
-		type Strike
+		type RoundEvent
 	} from '#lib/arena/battle.ts';
 	import { LiveBattle } from '#lib/arena/live-battle.svelte.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
@@ -107,19 +107,30 @@
 	}
 
 	// "Your Ember Fox hits the bot's Lava Crab for 6 and defeats it."
-	function sentence(hit: Strike): string {
-		const actorName = describe(hit.actorSlot);
-		const outcome = hit.targetHitPoints === 0 ? ' and defeats it' : '';
+	function sentence(happened: RoundEvent): string {
+		const actorName = describe(happened.actorSlot);
+		const subject = actorName.charAt(0).toUpperCase() + actorName.slice(1);
+		const outcome = happened.targetHitPoints === 0 ? ' and defeats it' : '';
 
-		return (
-			actorName.charAt(0).toUpperCase() +
-			actorName.slice(1) +
-			` hits ${describe(hit.targetSlot)} for ${hit.damage}${outcome}.`
-		);
+		if (happened.kind === 'Burn') {
+			return `${subject} burns for ${happened.damage}${outcome && ' and is defeated'}.`;
+		}
+
+		if (happened.effect === 'Heal') {
+			return `${subject} heals itself by ${happened.healing}.`;
+		}
+
+		if (happened.effect === 'Guard') {
+			return `${subject} guards itself.`;
+		}
+
+		return `${subject} hits ${describe(happened.targetSlot)} for ${happened.damage}${outcome}.`;
 	}
 
 	function lastHitOf(slot: number): { round: number; damage: number } | undefined {
-		const strike = lastRound?.strikes.findLast((entry) => entry.targetSlot === slot);
+		const strike = lastRound?.events.findLast(
+			(entry) => entry.targetSlot === slot && entry.damage > 0
+		);
 
 		return strike && lastRound ? { round: lastRound.round, damage: strike.damage } : undefined;
 	}
@@ -260,8 +271,8 @@
 					<li class="rounded border border-slate-800 p-2">
 						<span class="font-medium text-slate-300">Round {played.round}</span>
 						<ul class="mt-1 text-slate-400">
-							{#each played.strikes as hit, index (index)}
-								<li>{sentence(hit)}</li>
+							{#each played.events as happened, index (index)}
+								<li>{sentence(happened)}</li>
 							{:else}
 								<li>No move was made.</li>
 							{/each}

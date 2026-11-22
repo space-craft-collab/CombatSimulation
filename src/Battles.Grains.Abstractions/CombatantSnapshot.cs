@@ -13,6 +13,7 @@ namespace Battles.Grains.Abstractions;
 /// <param name="HitPoints">Remaining hit points.</param>
 /// <param name="MaxHitPoints">Hit points at full health.</param>
 /// <param name="Abilities">The monster's abilities in their order, each with its cooldown.</param>
+/// <param name="Effects">The effects on the monster.</param>
 [GenerateSerializer]
 [Alias("battles.CombatantSnapshot")]
 public sealed record CombatantSnapshot(
@@ -22,4 +23,5 @@ public sealed record CombatantSnapshot(
     [property: Id(3)] string SpeciesId,
     [property: Id(4)] int HitPoints,
     [property: Id(5)] int MaxHitPoints,
-    [property: Id(6)] ImmutableArray<AbilityCooldown> Abilities);
+    [property: Id(6)] ImmutableArray<AbilityCooldown> Abilities,
+    [property: Id(7)] ImmutableArray<ActiveEffectSnapshot> Effects);

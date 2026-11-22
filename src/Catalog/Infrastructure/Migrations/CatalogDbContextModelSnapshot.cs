@@ -115,6 +115,50 @@ namespace Catalog.Infrastructure.Migrations
                             Element = "Nature",
                             Name = "Root Slam",
                             Power = 150
+                        },
+                        new
+                        {
+                            Id = "ember-bite",
+                            Cooldown = 3,
+                            Effect = "Burn",
+                            EffectRounds = 3,
+                            EffectValue = 4,
+                            Element = "Fire",
+                            Name = "Ember Bite",
+                            Power = 80
+                        },
+                        new
+                        {
+                            Id = "shell-up",
+                            Cooldown = 4,
+                            Effect = "Guard",
+                            EffectRounds = 3,
+                            EffectValue = 50,
+                            Element = "Neutral",
+                            Name = "Shell Up",
+                            Power = 0
+                        },
+                        new
+                        {
+                            Id = "chill-wind",
+                            Cooldown = 3,
+                            Effect = "Slow",
+                            EffectRounds = 3,
+                            EffectValue = 50,
+                            Element = "Frost",
+                            Name = "Chill Wind",
+                            Power = 80
+                        },
+                        new
+                        {
+                            Id = "regrow",
+                            Cooldown = 4,
+                            Effect = "Heal",
+                            EffectRounds = 0,
+                            EffectValue = 30,
+                            Element = "Nature",
+                            Name = "Regrow",
+                            Power = 0
                         });
                 });
 
@@ -264,6 +308,12 @@ namespace Catalog.Infrastructure.Migrations
                         },
                         new
                         {
+                            SpeciesId = "ember-fox",
+                            AbilityId = "ember-bite",
+                            Position = 2
+                        },
+                        new
+                        {
                             SpeciesId = "lava-crab",
                             AbilityId = "strike",
                             Position = 0
@@ -273,6 +323,12 @@ namespace Catalog.Infrastructure.Migrations
                             SpeciesId = "lava-crab",
                             AbilityId = "magma-claw",
                             Position = 1
+                        },
+                        new
+                        {
+                            SpeciesId = "lava-crab",
+                            AbilityId = "shell-up",
+                            Position = 2
                         },
                         new
                         {
@@ -288,6 +344,12 @@ namespace Catalog.Infrastructure.Migrations
                         },
                         new
                         {
+                            SpeciesId = "frost-owl",
+                            AbilityId = "chill-wind",
+                            Position = 2
+                        },
+                        new
+                        {
                             SpeciesId = "moss-golem",
                             AbilityId = "strike",
                             Position = 0
@@ -297,6 +359,12 @@ namespace Catalog.Infrastructure.Migrations
                             SpeciesId = "moss-golem",
                             AbilityId = "root-slam",
                             Position = 1
+                        },
+                        new
+                        {
+                            SpeciesId = "moss-golem",
+                            AbilityId = "regrow",
+                            Position = 2
                         });
                 });
 

@@ -21,6 +21,14 @@ public interface IMonsterInstanceGrain : IGrainWithStringKey
     Task<MonsterSnapshot> ApplyDamageAsync(int amount);
 
     /// <summary>
+    /// Gives the monster hit points back, up to full health. A
+    /// defeated monster stays defeated.
+    /// </summary>
+    /// <param name="amount">The hit points to restore; must not be negative.</param>
+    /// <returns>The monster's state after the healing.</returns>
+    Task<MonsterSnapshot> RestoreAsync(int amount);
+
+    /// <summary>
     /// Returns the monster's current state.
     /// </summary>
     /// <returns>The current state.</returns>

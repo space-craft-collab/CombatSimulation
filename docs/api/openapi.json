@@ -628,7 +628,8 @@
           "speciesId",
           "hitPoints",
           "maxHitPoints",
-          "abilities"
+          "abilities",
+          "effects"
         ],
         "type": "object",
         "properties": {
@@ -658,6 +659,33 @@
             "items": {
               "$ref": "#/components/schemas/AbilityCooldownResponse"
             }
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EffectResponse"
+            }
+          }
+        }
+      },
+      "EffectResponse": {
+        "required": [
+          "kind",
+          "value",
+          "roundsLeft"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/StatusEffect"
+          },
+          "value": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roundsLeft": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -862,6 +890,14 @@
             "$ref": "#/components/schemas/Opponent"
           }
         }
+      },
+      "StatusEffect": {
+        "enum": [
+          "Burn",
+          "Guard",
+          "Slow"
+        ],
+        "description": "An effect that lies on a monster for some rounds (ADR-0012)."
       },
       "SubmitActionRequest": {
         "required": [

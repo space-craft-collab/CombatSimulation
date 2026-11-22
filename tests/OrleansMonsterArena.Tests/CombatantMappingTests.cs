@@ -51,17 +51,35 @@ public sealed class CombatantMappingTests
     }
 
     [Fact]
-    public void Take_FighterAfterARound_TakesOverTheCooldowns()
+    public void Take_FighterAfterARound_TakesOverCooldownsAndEffects()
     {
         // Arrange
         var fighter = Fighter.Enter(0, "player-1", Species);
         var combatant = Combatant.From(fighter, isBot: false, Species);
+        var after = fighter
+            .WithCooldown("ember-bite", 3)
+            .With(new ActiveEffect(AbilityEffect.Burn, 4, 2))
+            .With(new ActiveEffect(AbilityEffect.Guard, 50, 1));
 
         // Act
-        combatant.Take(fighter.WithCooldown("ember-bite", 3));
+        combatant.Take(after);
 
         // Assert
-        Assert.Equivalent(fighter.WithCooldown("ember-bite", 3), combatant.ToFighter(), strict: true);
+        Assert.Equivalent(after, combatant.ToFighter(), strict: true);
+    }
+
+    [Fact]
+    public void Take_EffectsHaveRunOut_ClearsThem()
+    {
+        // Arrange
+        var fighter = Fighter.Enter(0, "player-1", Species);
+        var combatant = Combatant.From(fighter.With(new ActiveEffect(AbilityEffect.Slow, 50, 1)), isBot: false, Species);
+
+        // Act
+        combatant.Take(fighter);
+
+        // Assert
+        Assert.Empty(combatant.Effects);
     }
 
     [Fact]
@@ -86,5 +104,6 @@ public sealed class CombatantMappingTests
 
         // Assert
         Assert.Equal(AbilitySpec.StrikeId, Assert.Single(fighter.Abilities).Spec.Id);
+        Assert.Empty(fighter.Effects);
     }
 }

@@ -140,6 +140,10 @@ export interface CombatantResponse extends AdditionalDataHolder, Parsable {
      */
     abilities?: AbilityCooldownResponse[] | null;
     /**
+     * The effects property
+     */
+    effects?: EffectResponse[] | null;
+    /**
      * The hitPoints property
      */
     hitPoints?: number | null;
@@ -226,6 +230,15 @@ export function createBattleSummaryResponseFromDiscriminatorValue(parseNode: Par
 // @ts-ignore
 export function createCombatantResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
     return deserializeIntoCombatantResponse;
+}
+/**
+ * Creates a new instance of the appropriate class based on discriminator value
+ * @param parseNode The parse node to use to read the discriminator value and create the object
+ * @returns {EffectResponse}
+ */
+// @ts-ignore
+export function createEffectResponseFromDiscriminatorValue(parseNode: ParseNode | undefined) : ((instance?: Parsable) => Record<string, (node: ParseNode) => void>) {
+    return deserializeIntoEffectResponse;
 }
 /**
  * Creates a new instance of the appropriate class based on discriminator value
@@ -397,12 +410,26 @@ export function deserializeIntoBattleSummaryResponse(battleSummaryResponse: Part
 export function deserializeIntoCombatantResponse(combatantResponse: Partial<CombatantResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
     return {
         "abilities": n => { combatantResponse.abilities = n.getCollectionOfObjectValues<AbilityCooldownResponse>(createAbilityCooldownResponseFromDiscriminatorValue); },
+        "effects": n => { combatantResponse.effects = n.getCollectionOfObjectValues<EffectResponse>(createEffectResponseFromDiscriminatorValue); },
         "hitPoints": n => { combatantResponse.hitPoints = n.getNumberValue(); },
         "isBot": n => { combatantResponse.isBot = n.getBooleanValue(); },
         "maxHitPoints": n => { combatantResponse.maxHitPoints = n.getNumberValue(); },
         "participantId": n => { combatantResponse.participantId = n.getStringValue(); },
         "slot": n => { combatantResponse.slot = n.getNumberValue(); },
         "speciesId": n => { combatantResponse.speciesId = n.getStringValue(); },
+    }
+}
+/**
+ * The deserialization information for the current model
+ * @param EffectResponse The instance to deserialize into.
+ * @returns {Record<string, (node: ParseNode) => void>}
+ */
+// @ts-ignore
+export function deserializeIntoEffectResponse(effectResponse: Partial<EffectResponse> | undefined = {}) : Record<string, (node: ParseNode) => void> {
+    return {
+        "kind": n => { effectResponse.kind = n.getEnumValue<StatusEffect>(StatusEffectObject); },
+        "roundsLeft": n => { effectResponse.roundsLeft = n.getNumberValue(); },
+        "value": n => { effectResponse.value = n.getNumberValue(); },
     }
 }
 /**
@@ -515,6 +542,20 @@ export function deserializeIntoSubmitActionRequest(submitActionRequest: Partial<
         "participantId": n => { submitActionRequest.participantId = n.getStringValue(); },
         "targetSlot": n => { submitActionRequest.targetSlot = n.getNumberValue(); },
     }
+}
+export interface EffectResponse extends AdditionalDataHolder, Parsable {
+    /**
+     * An effect that lies on a monster for some rounds (ADR-0012).
+     */
+    kind?: StatusEffect | null;
+    /**
+     * The roundsLeft property
+     */
+    roundsLeft?: number | null;
+    /**
+     * The value property
+     */
+    value?: number | null;
 }
 export type Element = (typeof ElementObject)[keyof typeof ElementObject];
 export interface HttpValidationProblemDetails extends AdditionalDataHolder, ApiError, Parsable {
@@ -697,6 +738,7 @@ export function serializeBattleSummaryResponse(writer: SerializationWriter, batt
 export function serializeCombatantResponse(writer: SerializationWriter, combatantResponse: Partial<CombatantResponse> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
     if (!combatantResponse || isSerializingDerivedType) { return; }
     writer.writeCollectionOfObjectValues<AbilityCooldownResponse>("abilities", combatantResponse.abilities, serializeAbilityCooldownResponse);
+    writer.writeCollectionOfObjectValues<EffectResponse>("effects", combatantResponse.effects, serializeEffectResponse);
     writer.writeNumberValue("hitPoints", combatantResponse.hitPoints);
     writer.writeBooleanValue("isBot", combatantResponse.isBot);
     writer.writeNumberValue("maxHitPoints", combatantResponse.maxHitPoints);
@@ -704,6 +746,20 @@ export function serializeCombatantResponse(writer: SerializationWriter, combatan
     writer.writeNumberValue("slot", combatantResponse.slot);
     writer.writeStringValue("speciesId", combatantResponse.speciesId);
     writer.writeAdditionalData(combatantResponse.additionalData);
+}
+/**
+ * Serializes information the current object
+ * @param EffectResponse The instance to serialize from.
+ * @param isSerializingDerivedType A boolean indicating whether the serialization is for a derived type.
+ * @param writer Serialization writer to use to serialize this model
+ */
+// @ts-ignore
+export function serializeEffectResponse(writer: SerializationWriter, effectResponse: Partial<EffectResponse> | undefined | null = {}, isSerializingDerivedType: boolean = false) : void {
+    if (!effectResponse || isSerializingDerivedType) { return; }
+    writer.writeEnumValue<StatusEffect>("kind", effectResponse.kind);
+    writer.writeNumberValue("roundsLeft", effectResponse.roundsLeft);
+    writer.writeNumberValue("value", effectResponse.value);
+    writer.writeAdditionalData(effectResponse.additionalData);
 }
 /**
  * Serializes information the current object
@@ -872,6 +928,7 @@ export interface StartBattleRequest extends AdditionalDataHolder, Parsable {
      */
     playerId?: string | null;
 }
+export type StatusEffect = (typeof StatusEffectObject)[keyof typeof StatusEffectObject];
 export interface SubmitActionRequest extends AdditionalDataHolder, Parsable {
     /**
      * The abilityId property
@@ -921,6 +978,14 @@ export const ElementObject = {
 export const OpponentObject = {
     Bot: "Bot",
     Human: "Human",
+} as const;
+/**
+ * An effect that lies on a monster for some rounds (ADR-0012).
+ */
+export const StatusEffectObject = {
+    Burn: "Burn",
+    Guard: "Guard",
+    Slow: "Slow",
 } as const;
 /* tslint:enable */
 /* eslint-enable */

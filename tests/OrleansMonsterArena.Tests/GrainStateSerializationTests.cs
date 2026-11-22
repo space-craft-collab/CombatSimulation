@@ -59,6 +59,7 @@ public sealed class GrainStateSerializationTests
                             CooldownLeft = 1,
                         },
                     ],
+                    Effects = [new CombatantEffect { Kind = AbilityEffect.Slow, Value = 50, RoundsLeft = 2 }],
                 },
             ],
             PendingActions = { ["player-1"] = new BattleAction("player-1", 0, 1, "strike") },
@@ -76,6 +77,8 @@ public sealed class GrainStateSerializationTests
         Assert.Equal(Element.Fire, combatant.Element);
         Assert.Equal(31, combatant.HitPoints);
         Assert.Equal("ember-fox", combatant.SpeciesId);
+        var effect = Assert.Single(combatant.Effects);
+        Assert.Equal((AbilityEffect.Slow, 50, 2), (effect.Kind, effect.Value, effect.RoundsLeft));
         var ability = Assert.Single(combatant.Abilities);
         Assert.Equal("flame-dash", ability.AbilityId);
         Assert.Equal(Element.Fire, ability.Element);

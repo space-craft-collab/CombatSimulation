@@ -90,6 +90,27 @@ public sealed class DamageRuleTests
         Assert.Equal(expected, damage);
     }
 
+    [Theory]
+    [InlineData(0, 20)]
+    [InlineData(50, 10)]
+    [InlineData(25, 15)]
+    [InlineData(100, 1)]
+    public void Calculate_Guard_TakesItsShareOffTheHit(int guard, int expected)
+    {
+        // Act: a hit of 20, never below 1.
+        var damage = DamageRule.Calculate(40, DamageRule.DefenseScale, guard: guard);
+
+        // Assert
+        Assert.Equal(expected, damage);
+    }
+
+    [Fact]
+    public void Calculate_GuardAboveAHundredPercent_ThrowsArgumentOutOfRangeException()
+    {
+        // Act + Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => DamageRule.Calculate(10, 5, guard: 101));
+    }
+
     [Fact]
     public void Calculate_NegativeAttack_ThrowsArgumentOutOfRangeException()
     {

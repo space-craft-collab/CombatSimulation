@@ -5,7 +5,7 @@ import { ArenaApiError, submitStrike } from './battles.ts';
 /** What one round did, for the battle log. */
 export interface PlayedRound {
 	round: number;
-	strikes: BattleEvent['strikes'];
+	events: BattleEvent['events'];
 }
 
 /** Whether round deltas currently arrive. */
@@ -18,7 +18,7 @@ export type Feed = 'connecting' | 'live' | 'offline';
  * A round reaches the browser twice, in no fixed order: as a delta
  * on the hub and, for the visitor's own move, as the full state in
  * the HTTP response. The state takes whichever is further; the log
- * takes each round's strikes once.
+ * takes each round's events once.
  */
 export class LiveBattle {
 	#battle = $state<Battle>() as Battle;
@@ -133,7 +133,7 @@ export class LiveBattle {
 		}
 
 		if (!this.#rounds.some((played) => played.round === battleEvent.round)) {
-			this.#rounds.push({ round: battleEvent.round, strikes: battleEvent.strikes });
+			this.#rounds.push({ round: battleEvent.round, events: battleEvent.events });
 		}
 
 		switch (relationOf(this.#battle, battleEvent)) {

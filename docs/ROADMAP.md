@@ -88,15 +88,11 @@ mirrored the visitor's team.
       rule in which defense scales damage down instead of
       being subtracted, so no matchup ends at one damage per
       hit
-      (the triangle is in place; it starts to matter with the
-      first elemental ability)
 - [x] Abilities as Catalog data, three per species: the
       basic `strike`, an elemental attack and a utility.
       Cooldowns per monster; an action is checked for
       "belongs to the species" and "ready"
-      (the basic attack and the elemental one so far; the
-      utility comes with the status effects)
-- [ ] Status effects: burn, guard, slow, heal. The round
+- [x] Status effects: burn, guard, slow, heal. The round
       delta carries general round events instead of strikes,
       and the monster grain can restore hit points
 - [ ] Two more species, so every element has a fast and a

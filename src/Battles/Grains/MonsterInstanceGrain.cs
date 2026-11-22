@@ -45,6 +45,21 @@ internal sealed class MonsterInstanceGrain(
     }
 
     /// <inheritdoc />
+    public async Task<MonsterSnapshot> RestoreAsync(int amount)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(amount);
+        var stats = RequireStats();
+
+        if (state.State.HitPoints > 0)
+        {
+            state.State.HitPoints = Math.Min(stats.MaxHitPoints, state.State.HitPoints + amount);
+            await state.WriteStateAsync();
+        }
+
+        return new MonsterSnapshot(stats.SpeciesId, state.State.HitPoints, stats.MaxHitPoints);
+    }
+
+    /// <inheritdoc />
     public Task<MonsterSnapshot> GetSnapshotAsync()
     {
         var stats = RequireStats();

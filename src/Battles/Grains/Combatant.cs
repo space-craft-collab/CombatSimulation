@@ -5,7 +5,7 @@ namespace Battles.Grains;
 
 /// <summary>
 /// One monster slot as the battle stores it: owner, combat stats,
-/// abilities and a mirror of its hit points. The monster grain stays
+/// abilities, effects and a mirror of its hit points. The monster grain stays
 /// the authority on hit points; the battle copies them from each
 /// snapshot so the rules can run without extra grain calls.
 /// </summary>
@@ -50,6 +50,9 @@ internal sealed class Combatant
     [Id(10)]
     public List<CombatantAbility> Abilities { get; init; } = [];
 
+    [Id(11)]
+    public List<CombatantEffect> Effects { get; init; } = [];
+
     public bool IsDefeated => HitPoints <= 0;
 
     /// <summary>
@@ -72,6 +75,7 @@ internal sealed class Combatant
             MaxHitPoints = species.MaxHitPoints,
             Element = fighter.Element,
             Abilities = [.. fighter.Abilities.Select(CombatantAbility.From)],
+            Effects = [.. fighter.Effects.Select(CombatantEffect.From)],
         };
 
     /// <summary>
@@ -87,7 +91,9 @@ internal sealed class Combatant
             Attack = Attack,
             Defense = Defense,
             Speed = Speed,
+            MaxHitPoints = MaxHitPoints,
             HitPoints = HitPoints,
+            Effects = [.. Effects.Select(effect => effect.ToActiveEffect())],
         };
 
         return Abilities.Count == 0
@@ -106,5 +112,8 @@ internal sealed class Combatant
         {
             ability.CooldownLeft = after.Find(ability.AbilityId)?.CooldownLeft ?? 0;
         }
+
+        Effects.Clear();
+        Effects.AddRange(after.Effects.Select(CombatantEffect.From));
     }
 }

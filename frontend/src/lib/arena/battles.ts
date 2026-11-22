@@ -102,7 +102,16 @@ function toBattle(response: BattleResponse | undefined): Battle {
 			isBot: combatant.isBot ?? false,
 			speciesId: combatant.speciesId ?? '',
 			hitPoints: combatant.hitPoints ?? 0,
-			maxHitPoints: combatant.maxHitPoints ?? 0
+			maxHitPoints: combatant.maxHitPoints ?? 0,
+			abilities: (combatant.abilities ?? []).map((ability) => ({
+				abilityId: ability.abilityId ?? '',
+				roundsLeft: ability.roundsLeft ?? 0
+			})),
+			effects: (combatant.effects ?? []).flatMap((effect) =>
+				effect.kind
+					? [{ kind: effect.kind, value: effect.value ?? 0, roundsLeft: effect.roundsLeft ?? 0 }]
+					: []
+			)
 		}))
 	};
 }

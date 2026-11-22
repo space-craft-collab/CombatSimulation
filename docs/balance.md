@@ -23,10 +23,10 @@ Share of its battles a species won.
 
 | Species | One on one | In a team |
 |---|---:|---:|
-| Ember Fox | 0 % | 41 % |
-| Frost Owl | 33 % | 54 % |
-| Lava Crab | 100 % | 59 % |
-| Moss Golem | 67 % | 46 % |
+| Ember Fox | 37 % | 44 % |
+| Frost Owl | 28 % | 51 % |
+| Lava Crab | 89 % | 55 % |
+| Moss Golem | 47 % | 49 % |
 
 ## One on one
 
@@ -34,30 +34,30 @@ Wins of the row species against the column species.
 
 | | Ember Fox | Frost Owl | Lava Crab | Moss Golem |
 |---|---:|---:|---:|---:|
-| **Ember Fox** | – | 0 % | 0 % | 0 % |
-| **Frost Owl** | 100 % | – | 0 % | 0 % |
-| **Lava Crab** | 100 % | 100 % | – | 100 % |
-| **Moss Golem** | 100 % | 100 % | 0 % | – |
+| **Ember Fox** | – | 18 % | 0 % | 93 % |
+| **Frost Owl** | 83 % | – | 0 % | 0 % |
+| **Lava Crab** | 100 % | 100 % | – | 68 % |
+| **Moss Golem** | 8 % | 100 % | 33 % | – |
 
 Average length in rounds.
 
 | | Ember Fox | Frost Owl | Lava Crab | Moss Golem |
 |---|---:|---:|---:|---:|
-| **Ember Fox** | – | 4.0 | 5.0 | 7.0 |
-| **Frost Owl** | 4.0 | – | 5.0 | 5.2 |
-| **Lava Crab** | 5.0 | 5.0 | – | 12.0 |
-| **Moss Golem** | 7.0 | 5.2 | 12.0 | – |
+| **Ember Fox** | – | 3.8 | 5.4 | 7.4 |
+| **Frost Owl** | 3.8 | – | 5.2 | 5.6 |
+| **Lava Crab** | 5.4 | 5.2 | – | 15.5 |
+| **Moss Golem** | 7.4 | 5.6 | 15.5 | – |
 
 - Battles: 240
-- Average length: 6.4 rounds
-- Longest battle: 13 rounds
+- Average length: 7.1 rounds
+- Longest battle: 20 rounds
 - Undecided after 100 rounds: 0
 
 ## Teams of 3
 
 - Battles: 240
-- Average length: 23.6 rounds
-- Longest battle: 32 rounds
+- Average length: 28.4 rounds
+- Longest battle: 52 rounds
 - Undecided after 100 rounds: 0
 
 ## Ability use
@@ -69,9 +69,13 @@ ability at least once, over all battles above.
 |---|---|---:|
 | Ember Fox | `strike` | 99 % |
 | Ember Fox | `flame-dash` | 100 % |
-| Frost Owl | `strike` | 61 % |
-| Frost Owl | `ice-shard` | 60 % |
+| Ember Fox | `ember-bite` | 38 % |
+| Frost Owl | `strike` | 57 % |
+| Frost Owl | `ice-shard` | 58 % |
+| Frost Owl | `chill-wind` | 43 % |
 | Lava Crab | `strike` | 100 % |
 | Lava Crab | `magma-claw` | 94 % |
-| Moss Golem | `strike` | 99 % |
-| Moss Golem | `root-slam` | 97 % |
+| Lava Crab | `shell-up` | 39 % |
+| Moss Golem | `strike` | 100 % |
+| Moss Golem | `root-slam` | 95 % |
+| Moss Golem | `regrow` | 69 % |

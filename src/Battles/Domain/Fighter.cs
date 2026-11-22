@@ -4,8 +4,8 @@ namespace Battles.Domain;
 
 /// <summary>
 /// One monster in a battle as the combat rules see it: owner, combat
-/// stats, abilities and current hit points. Zero hit points means
-/// defeated.
+/// stats, abilities, the effects on it and current hit points. Zero
+/// hit points means defeated.
 /// </summary>
 internal sealed record Fighter
 {
@@ -42,6 +42,11 @@ internal sealed record Fighter
     public required int Speed { get; init; }
 
     /// <summary>
+    /// Hit points at full health.
+    /// </summary>
+    public required int MaxHitPoints { get; init; }
+
+    /// <summary>
     /// Remaining hit points.
     /// </summary>
     public required int HitPoints { get; init; }
@@ -53,9 +58,25 @@ internal sealed record Fighter
     public IReadOnlyList<FighterAbility> Abilities { get; init; } = BasicAttackOnly;
 
     /// <summary>
+    /// The effects on the monster, at most one of a kind.
+    /// </summary>
+    public IReadOnlyList<ActiveEffect> Effects { get; init; } = [];
+
+    /// <summary>
     /// Whether the monster is out of the fight.
     /// </summary>
     public bool IsDefeated => HitPoints <= 0;
+
+    /// <summary>
+    /// The speed the monster acts with: its speed, less a slow.
+    /// </summary>
+    public int EffectiveSpeed => Speed * (100 - ValueOf(AbilityEffect.Slow)) / 100;
+
+    /// <summary>
+    /// The share of a hit the monster's guard takes off, in percent;
+    /// 0 without a guard.
+    /// </summary>
+    public int GuardPercent => ValueOf(AbilityEffect.Guard);
 
     /// <summary>
     /// Puts a fresh monster of a species into a slot: full hit
@@ -78,6 +99,7 @@ internal sealed record Fighter
             Attack = species.Attack,
             Defense = species.Defense,
             Speed = species.Speed,
+            MaxHitPoints = species.MaxHitPoints,
             HitPoints = species.MaxHitPoints,
             Abilities = species.Abilities.Count == 0
                 ? BasicAttackOnly
@@ -92,4 +114,27 @@ internal sealed record Fighter
     /// <returns>The ability, or <see langword="null"/> if the monster does not know it.</returns>
     public FighterAbility? Find(string abilityId) =>
         Abilities.FirstOrDefault(ability => ability.Spec.Id == abilityId);
+
+    /// <summary>
+    /// Whether an effect of the kind lies on the monster.
+    /// </summary>
+    /// <param name="kind">The kind of effect.</param>
+    /// <returns><see langword="true"/> if it does.</returns>
+    public bool Has(AbilityEffect kind) => Effects.Any(effect => effect.Kind == kind);
+
+    /// <summary>
+    /// The monster with an effect put on it. An effect of the same
+    /// kind is replaced, not stacked.
+    /// </summary>
+    /// <param name="effect">The new effect.</param>
+    /// <returns>The monster under the effect.</returns>
+    public Fighter With(ActiveEffect effect)
+    {
+        ArgumentNullException.ThrowIfNull(effect);
+
+        return this with { Effects = [.. Effects.Where(other => other.Kind != effect.Kind), effect] };
+    }
+
+    private int ValueOf(AbilityEffect kind) =>
+        Effects.FirstOrDefault(effect => effect.Kind == kind)?.Value ?? 0;
 }

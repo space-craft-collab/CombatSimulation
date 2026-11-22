@@ -11,7 +11,8 @@ namespace OrleansMonsterArena.Tests;
 internal static class Monsters
 {
     /// <summary>
-    /// A fighter with round numbers: 40 hit points, attack 10,
+    /// A fighter with round numbers: 40 hit points (also its full
+    /// health unless given), attack 10,
     /// defense 0 (so a basic attack deals exactly the attack), speed
     /// 10, neutral, knowing only the basic attack.
     /// </summary>
@@ -23,6 +24,7 @@ internal static class Monsters
         int defense = 0,
         int speed = 10,
         Element element = Element.Neutral,
+        int? maxHitPoints = null,
         params AbilitySpec[] abilities) =>
         new()
         {
@@ -32,6 +34,7 @@ internal static class Monsters
             Attack = attack,
             Defense = defense,
             Speed = speed,
+            MaxHitPoints = maxHitPoints ?? hitPoints,
             HitPoints = hitPoints,
             Abilities = [new FighterAbility(AbilitySpec.Strike), .. abilities.Select(spec => new FighterAbility(spec))],
         };

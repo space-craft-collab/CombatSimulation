@@ -6,11 +6,45 @@ import {
 	relationOf,
 	secondsUntil,
 	type Battle,
-	type BattleEvent
+	type BattleEvent,
+	type Combatant,
+	type RoundEvent
 } from './battle';
 
 const PLAYER = 'ada';
 const BOT = 'bot';
+
+function monster(slot: number, participantId: string, hitPoints: number): Combatant {
+	return {
+		slot,
+		participantId,
+		isBot: participantId === BOT,
+		speciesId: 'ember-fox',
+		hitPoints,
+		maxHitPoints: 40,
+		abilities: [{ abilityId: 'strike', roundsLeft: 0 }],
+		effects: []
+	};
+}
+
+function hit(
+	actorSlot: number,
+	targetSlot: number,
+	damage: number,
+	targetHitPoints: number
+): RoundEvent {
+	return {
+		kind: 'Ability',
+		actorSlot,
+		targetSlot,
+		abilityId: 'strike',
+		damage,
+		healing: 0,
+		targetHitPoints,
+		effectiveness: 'Normal',
+		effect: 'None'
+	};
+}
 
 function battle(overrides: Partial<Battle> = {}): Battle {
 	return {
@@ -20,24 +54,7 @@ function battle(overrides: Partial<Battle> = {}): Battle {
 		round: 2,
 		winnerId: null,
 		turnDeadline: '2026-11-21T20:00:00.000Z',
-		combatants: [
-			{
-				slot: 0,
-				participantId: PLAYER,
-				isBot: false,
-				speciesId: 'ember-fox',
-				hitPoints: 30,
-				maxHitPoints: 40
-			},
-			{
-				slot: 1,
-				participantId: BOT,
-				isBot: true,
-				speciesId: 'ember-fox',
-				hitPoints: 30,
-				maxHitPoints: 40
-			}
-		],
+		combatants: [monster(0, PLAYER, 30), monster(1, BOT, 30)],
 		...overrides
 	};
 }
@@ -49,10 +66,8 @@ function roundEvent(overrides: Partial<BattleEvent> = {}): BattleEvent {
 		status: 'InProgress',
 		winnerId: null,
 		turnDeadline: '2026-11-21T20:01:00.000Z',
-		strikes: [
-			{ actorSlot: 0, targetSlot: 1, abilityId: 'strike', damage: 10, targetHitPoints: 20 },
-			{ actorSlot: 1, targetSlot: 0, abilityId: 'strike', damage: 10, targetHitPoints: 20 }
-		],
+		events: [hit(0, 1, 10, 20), hit(1, 0, 10, 20)],
+		combatants: [monster(0, PLAYER, 20), monster(1, BOT, 20)],
 		...overrides
 	};
 }
@@ -76,7 +91,7 @@ describe('relationOf', () => {
 });
 
 describe('applyRound', () => {
-	it('takes the hit points from the strikes and moves on to the next round', () => {
+	it('takes the monsters from the delta and moves on to the next round', () => {
 		const after = applyRound(battle(), roundEvent());
 
 		expect(after.round).toBe(3);
@@ -85,18 +100,19 @@ describe('applyRound', () => {
 		expect(after.combatants.map((combatant) => combatant.hitPoints)).toEqual([20, 20]);
 	});
 
-	it('keeps the later value for a monster hit twice', () => {
+	it('takes cooldowns and effects from the delta', () => {
+		const burning: Combatant = {
+			...monster(1, BOT, 16),
+			abilities: [{ abilityId: 'flame-dash', roundsLeft: 2 }],
+			effects: [{ kind: 'Burn', value: 4, roundsLeft: 2 }]
+		};
+
 		const after = applyRound(
 			battle(),
-			roundEvent({
-				strikes: [
-					{ actorSlot: 0, targetSlot: 1, abilityId: 'strike', damage: 10, targetHitPoints: 20 },
-					{ actorSlot: 0, targetSlot: 1, abilityId: 'strike', damage: 10, targetHitPoints: 10 }
-				]
-			})
+			roundEvent({ combatants: [monster(0, PLAYER, 20), burning] })
 		);
 
-		expect(after.combatants[1].hitPoints).toBe(10);
+		expect(after.combatants[1]).toEqual(burning);
 	});
 
 	it('stays on the last round and names the winner when the battle is decided', () => {
@@ -106,9 +122,8 @@ describe('applyRound', () => {
 				status: 'Completed',
 				winnerId: PLAYER,
 				turnDeadline: null,
-				strikes: [
-					{ actorSlot: 0, targetSlot: 1, abilityId: 'strike', damage: 30, targetHitPoints: 0 }
-				]
+				events: [hit(0, 1, 30, 0)],
+				combatants: [monster(0, PLAYER, 30), monster(1, BOT, 0)]
 			})
 		);
 
@@ -126,7 +141,12 @@ describe('applyRound', () => {
 
 		const after = applyRound(
 			before,
-			roundEvent({ status: 'Completed', turnDeadline: null, strikes: [] })
+			roundEvent({
+				status: 'Completed',
+				turnDeadline: null,
+				events: [],
+				combatants: before.combatants
+			})
 		);
 
 		expect(after.status).toBe('Completed');

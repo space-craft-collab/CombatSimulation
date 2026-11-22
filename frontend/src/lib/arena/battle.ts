@@ -8,6 +8,25 @@
 
 export type BattleStatus = 'Created' | 'WaitingForPlayers' | 'InProgress' | 'Completed';
 
+/** An effect that lies on a monster for some rounds. */
+export type StatusEffect = 'Burn' | 'Guard' | 'Slow';
+
+/** One ability of a monster in a battle and when it is ready. */
+export interface AbilityCooldown {
+	abilityId: string;
+	/** Rounds until the monster can use it again; 0 when ready. */
+	roundsLeft: number;
+}
+
+/** One effect on a monster in a battle. */
+export interface ActiveEffect {
+	kind: StatusEffect;
+	/** Hit points per round for a burn, percent for a guard or a slow. */
+	value: number;
+	/** Rounds it still lasts, the current one included. */
+	roundsLeft: number;
+}
+
 /** One monster on the field. */
 export interface Combatant {
 	slot: number;
@@ -16,6 +35,10 @@ export interface Combatant {
 	speciesId: string;
 	hitPoints: number;
 	maxHitPoints: number;
+	/** The monster's abilities in their order; empty once the battle is over. */
+	abilities: AbilityCooldown[];
+	/** The effects on the monster; empty once the battle is over. */
+	effects: ActiveEffect[];
 }
 
 /** A battle's full state. */
@@ -32,13 +55,30 @@ export interface Battle {
 	combatants: Combatant[];
 }
 
-/** One hit within a round. */
-export interface Strike {
+/** How an ability's element stood against its target's. */
+export type Effectiveness = 'Weak' | 'Normal' | 'Strong';
+
+/** What an ability does besides its damage. */
+export type AbilityEffect = 'None' | StatusEffect | 'Heal';
+
+/**
+ * One thing that happened within a round: an ability that was used
+ * and what it did, or a burn that took its toll.
+ */
+export interface RoundEvent {
+	kind: 'Ability' | 'Burn';
+	/** The monster that acted; for a burn, the burning monster itself. */
 	actorSlot: number;
+	/** The monster it happened to; the actor itself for a guard, a heal and a burn. */
 	targetSlot: number;
-	abilityId: string;
+	/** Null for a burn. */
+	abilityId: string | null;
 	damage: number;
+	healing: number;
 	targetHitPoints: number;
+	effectiveness: Effectiveness;
+	/** The effect that came into play; `None` for a plain hit. */
+	effect: AbilityEffect;
 }
 
 /** What one resolved round changed: the hub's `RoundResolved` message. */
@@ -50,7 +90,10 @@ export interface BattleEvent {
 	status: BattleStatus;
 	winnerId: string | null;
 	turnDeadline: string | null;
-	strikes: Strike[];
+	/** What happened, in order: for the log. */
+	events: RoundEvent[];
+	/** Every monster as it stands after the round. */
+	combatants: Combatant[];
 }
 
 /**
@@ -75,15 +118,6 @@ export function relationOf(battle: Battle, event: BattleEvent): RoundRelation {
  * new state; `battle` itself is not changed.
  */
 export function applyRound(battle: Battle, event: BattleEvent): Battle {
-	const hitPoints = new Map(
-		battle.combatants.map((combatant) => [combatant.slot, combatant.hitPoints])
-	);
-
-	// In order: a monster hit twice ends on the later strike's value.
-	for (const strike of event.strikes) {
-		hitPoints.set(strike.targetSlot, strike.targetHitPoints);
-	}
-
 	return {
 		...battle,
 		status: event.status,
@@ -91,10 +125,9 @@ export function applyRound(battle: Battle, event: BattleEvent): Battle {
 		turnDeadline: event.turnDeadline,
 		// A decided battle stays on its last round; otherwise the next one begins.
 		round: event.status === 'Completed' ? event.round : event.round + 1,
-		combatants: battle.combatants.map((combatant) => ({
-			...combatant,
-			hitPoints: hitPoints.get(combatant.slot) ?? combatant.hitPoints
-		}))
+		// The delta carries the monsters as they stand: hit points,
+		// cooldowns and effects are not worked out a second time here.
+		combatants: event.combatants
 	};
 }
 

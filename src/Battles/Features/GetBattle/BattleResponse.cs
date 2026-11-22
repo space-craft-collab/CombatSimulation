@@ -45,7 +45,9 @@ internal sealed record BattleResponse(
                 combatant.HitPoints,
                 combatant.MaxHitPoints,
                 [.. combatant.Abilities.Select(ability =>
-                    new AbilityCooldownResponse(ability.AbilityId, ability.RoundsLeft))]))]);
+                    new AbilityCooldownResponse(ability.AbilityId, ability.RoundsLeft))],
+                [.. combatant.Effects.Select(effect =>
+                    new EffectResponse(effect.Kind, effect.Value, effect.RoundsLeft))]))]);
 
     /// <summary>
     /// Maps a completed battle from the cold store.
@@ -67,5 +69,6 @@ internal sealed record BattleResponse(
                     combatant.SpeciesId,
                     combatant.HitPoints,
                     combatant.MaxHitPoints,
+                    [],
                     []))]);
 }

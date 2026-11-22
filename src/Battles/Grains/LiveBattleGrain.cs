@@ -217,7 +217,22 @@ internal sealed class LiveBattleGrain(
                 combatant.HitPoints,
                 combatant.MaxHitPoints,
                 [.. combatant.Abilities.Select(ability =>
-                    new AbilityCooldown(ability.AbilityId, ability.CooldownLeft))]))]);
+                    new AbilityCooldown(ability.AbilityId, ability.CooldownLeft))],
+                [.. combatant.Effects.Select(ToSnapshot)]))]);
+
+    // Only effects that last are stored on a combatant; a heal is
+    // over the moment it is used.
+    private static ActiveEffectSnapshot ToSnapshot(CombatantEffect effect) =>
+        new(
+            effect.Kind switch
+            {
+                AbilityEffect.Burn => StatusEffect.Burn,
+                AbilityEffect.Guard => StatusEffect.Guard,
+                AbilityEffect.Slow => StatusEffect.Slow,
+                _ => throw new InvalidOperationException($"'{effect.Kind}' is not an effect that lasts."),
+            },
+            effect.Value,
+            effect.RoundsLeft);
 
     private static void ValidateSetup(BattleSetup setup)
     {
@@ -342,10 +357,10 @@ internal sealed class LiveBattleGrain(
     private async Task PlayRoundAsync()
     {
         var round = Battle.Round;
-        var strikes = await ResolveRoundAsync();
+        var roundEvents = await ResolveRoundAsync();
         await ScheduleNextRoundAsync();
         await state.WriteStateAsync();
-        await PublishAsync(round, strikes);
+        await PublishAsync(round, roundEvents);
 
         if (Battle.Status == BattleStatus.Completed)
         {
@@ -443,37 +458,49 @@ internal sealed class LiveBattleGrain(
                 [.. humans.Where(id => id != winnerId)]);
     }
 
-    private Task PublishAsync(int round, IReadOnlyList<StrikeDto> strikes) =>
+    private Task PublishAsync(int round, IReadOnlyList<RoundEventDto> roundEvents) =>
         events.PublishAsync(new BattleEventDto(
             this.GetPrimaryKey(),
             round,
             Battle.Status,
             Battle.WinnerId,
             Battle.TurnDeadline,
-            strikes));
+            roundEvents,
+            BattleResponse.From(Snapshot()).Combatants));
 
     /// <summary>
     /// Lets the combat rules resolve the pending actions, then
-    /// applies each hit to its monster grain, which stays the
-    /// authority on hit points, and takes over the cooldowns.
+    /// applies each change in hit points to its monster grain, which
+    /// stays their authority, and takes over cooldowns and effects.
     /// </summary>
-    /// <returns>The actions that landed, in resolution order.</returns>
-    private async Task<List<StrikeDto>> ResolveRoundAsync()
+    /// <returns>What happened, in resolution order.</returns>
+    private async Task<List<RoundEventDto>> ResolveRoundAsync()
     {
         var result = RoundResolver.Resolve(Fighters(), [.. Battle.PendingActions.Values.Select(ToRoundAction)]);
 
-        var strikes = new List<StrikeDto>();
+        var roundEvents = new List<RoundEventDto>();
         foreach (var roundEvent in result.Events)
         {
             var target = Battle.Combatants[roundEvent.TargetSlot];
-            var snapshot = await Monster(target.Slot).ApplyDamageAsync(roundEvent.Damage);
-            strikes.Add(new StrikeDto(
+            if (roundEvent.Damage > 0)
+            {
+                target.HitPoints = (await Monster(target.Slot).ApplyDamageAsync(roundEvent.Damage)).HitPoints;
+            }
+            else if (roundEvent.Healing > 0)
+            {
+                target.HitPoints = (await Monster(target.Slot).RestoreAsync(roundEvent.Healing)).HitPoints;
+            }
+
+            roundEvents.Add(new RoundEventDto(
+                roundEvent.Kind,
                 roundEvent.ActorSlot,
-                target.Slot,
+                roundEvent.TargetSlot,
                 roundEvent.AbilityId,
-                target.HitPoints - snapshot.HitPoints,
-                snapshot.HitPoints));
-            target.HitPoints = snapshot.HitPoints;
+                roundEvent.Damage,
+                roundEvent.Healing,
+                target.HitPoints,
+                roundEvent.Effectiveness,
+                roundEvent.Effect));
         }
 
         foreach (var after in result.Fighters)
@@ -494,7 +521,7 @@ internal sealed class LiveBattleGrain(
             Battle.Round++;
         }
 
-        return strikes;
+        return roundEvents;
     }
 
     /// <summary>

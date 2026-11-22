@@ -23,14 +23,18 @@ internal static class AbilitySeed
         new("magma-claw", "Magma Claw", Element.Fire, 140, 2),
         new("ice-shard", "Ice Shard", Element.Frost, 150, 2),
         new("root-slam", "Root Slam", Element.Nature, 150, 3),
+        new("ember-bite", "Ember Bite", Element.Fire, 80, 3, AbilityEffect.Burn, 4, 3),
+        new("shell-up", "Shell Up", Element.Neutral, 0, 4, AbilityEffect.Guard, 50, 3),
+        new("chill-wind", "Chill Wind", Element.Frost, 80, 3, AbilityEffect.Slow, 50, 3),
+        new("regrow", "Regrow", Element.Nature, 0, 4, AbilityEffect.Heal, 30),
     ];
 
     public static IReadOnlyList<SpeciesAbility> BySpecies { get; } =
     [
-        .. Knows("ember-fox", Strike, "flame-dash"),
-        .. Knows("lava-crab", Strike, "magma-claw"),
-        .. Knows("frost-owl", Strike, "ice-shard"),
-        .. Knows("moss-golem", Strike, "root-slam"),
+        .. Knows("ember-fox", Strike, "flame-dash", "ember-bite"),
+        .. Knows("lava-crab", Strike, "magma-claw", "shell-up"),
+        .. Knows("frost-owl", Strike, "ice-shard", "chill-wind"),
+        .. Knows("moss-golem", Strike, "root-slam", "regrow"),
     ];
 
     private static IEnumerable<SpeciesAbility> Knows(string speciesId, params string[] abilityIds) =>

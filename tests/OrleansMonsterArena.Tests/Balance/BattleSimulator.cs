@@ -36,7 +36,9 @@ internal static class BattleSimulator
 
             var result = RoundResolver.Resolve(fighters, actions);
             fighters = result.Fighters;
-            uses.AddRange(result.Events.Select(landed => new AbilityUse(landed.ActorSlot, landed.AbilityId)));
+            uses.AddRange(result.Events
+                .Where(landed => landed.AbilityId is not null)
+                .Select(landed => new AbilityUse(landed.ActorSlot, landed.AbilityId!)));
 
             var standing = SidesStanding(fighters);
             if (standing.Count <= 1)

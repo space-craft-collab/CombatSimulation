@@ -11,6 +11,7 @@ namespace Battles.Features.GetBattle;
 /// <param name="MaxHitPoints">Hit points at full health.</param>
 /// <param name="Abilities">The monster's abilities in their order, each with its cooldown; empty once the
 /// battle is over.</param>
+/// <param name="Effects">The effects on the monster; empty once the battle is over.</param>
 internal sealed record CombatantResponse(
     int Slot,
     string ParticipantId,
@@ -18,4 +19,5 @@ internal sealed record CombatantResponse(
     string SpeciesId,
     int HitPoints,
     int MaxHitPoints,
-    IReadOnlyList<AbilityCooldownResponse> Abilities);
+    IReadOnlyList<AbilityCooldownResponse> Abilities,
+    IReadOnlyList<EffectResponse> Effects);

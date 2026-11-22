@@ -68,6 +68,21 @@ in [this file's history][full-changelog].
   refuses an ability the monster does not know or has not
   ready with 400; the simulator takes its random moves from
   the same list.
+- Status effects (ADR-0012): burn (hit points lost at the
+  end of each round), guard (a share off every hit), slow
+  (speed down, so the monster acts later) and heal (a share
+  of full health back at once). Burn and slow ride on an
+  attack, guard and heal are used by a monster on itself. An
+  effect of the same kind is replaced, not stacked; a burn
+  that would fell the last monsters of both sides only fells
+  the lower slot, so a battle always has a winner.
+- A third ability per species, the utility: Ember Bite
+  (burn), Shell Up (guard), Chill Wind (slow), Regrow (heal);
+  migration `AddUtilityAbilities`.
+- `IMonsterInstanceGrain.RestoreAsync`: a heal goes through
+  the monster grain like damage does.
+- A battle shows the effects on each monster next to its
+  cooldowns (`GET /battles/{id}`, the hub).
 - Test helpers that play battles without knowing the numbers
   (`GrainBattleDriver`, `HttpBattleDriver`, `BattleRounds`,
   `BattleAssert`).
@@ -89,6 +104,14 @@ in [this file's history][full-changelog].
 - `POST /battles/{id}/actions` checks `abilityId` against
   the acting monster's abilities; before, `strike` was the
   only id it knew.
+- The round delta on the hub (`RoundResolved`) carries
+  `events` instead of `strikes`: an ability that was used,
+  with damage, healing, element advantage and the effect it
+  brought, or a burn's damage. It also carries every monster
+  as it stands after the round, so a client takes hit points,
+  cooldowns and effects from there instead of working them
+  out again. The frontend does so and words the new events
+  in its log.
 - The battle tests no longer pin hit points, round counts or
   the bot's moves: they play to a condition, use three
   monsters against one where a winner must be known, and
