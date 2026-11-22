@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	applyRound,
+	changeOf,
 	newerOf,
 	outcomeFor,
 	relationOf,
@@ -192,6 +193,27 @@ describe('newerOf', () => {
 		const current = battle();
 
 		expect(newerOf(current, battle({ battleId: 'b-2', round: 9 }))).toBe(current);
+	});
+});
+
+describe('changeOf', () => {
+	it('adds up the hits and the burn a monster took in a round', () => {
+		const burn: RoundEvent = { ...hit(1, 1, 4, 16), kind: 'Burn', abilityId: null };
+
+		expect(changeOf([hit(0, 1, 10, 20), hit(1, 0, 10, 20), burn], 1)).toEqual({
+			damage: 14,
+			healing: 0
+		});
+	});
+
+	it('counts a heal', () => {
+		const heal: RoundEvent = { ...hit(0, 0, 0, 32), effect: 'Heal', healing: 12 };
+
+		expect(changeOf([heal], 0)).toEqual({ damage: 0, healing: 12 });
+	});
+
+	it('is nothing for a monster the round did not touch', () => {
+		expect(changeOf([hit(0, 1, 10, 20)], 0)).toEqual({ damage: 0, healing: 0 });
 	});
 });
 

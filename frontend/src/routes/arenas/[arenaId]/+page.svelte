@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { cooldownText, summaryOf } from '#lib/arena/abilities.ts';
 	import { ArenaApiError, startBattleAgainstBot } from '#lib/arena/battles.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
+	import ElementBadge from '#lib/components/ElementBadge.svelte';
 	import MonsterSprite from '#lib/components/MonsterSprite.svelte';
 	import NicknameForm from '#lib/components/NicknameForm.svelte';
 	import type { PageProps } from './$types';
@@ -50,7 +52,7 @@
 		<a class="text-sm text-slate-400 underline" href={resolve('/')}>← All arenas</a>
 		<h1 class="mt-2 text-2xl font-bold">{data.arena.name}</h1>
 		<p class="mt-1 text-slate-300">
-			Field one to {MAX_TEAM_SIZE} monsters. The bot fields the same.
+			Field one to {MAX_TEAM_SIZE} monsters against the bot.
 		</p>
 	</section>
 
@@ -88,25 +90,42 @@
 		<ul class="grid gap-3 sm:grid-cols-2">
 			{#each data.species as species (species.id)}
 				<li
-					class="flex items-center gap-3 rounded-lg border border-slate-700 bg-slate-900 p-3"
+					class="flex flex-col gap-2 rounded-lg border border-slate-700 bg-slate-900 p-3"
 					data-testid="species-{species.id}"
 				>
-					<MonsterSprite speciesId={species.id} class="h-14 w-14 shrink-0" />
-					<div class="min-w-0 flex-1">
-						<p class="font-medium">{species.name}</p>
-						<p class="text-xs text-slate-400">
-							HP {species.maxHitPoints} · ATK {species.attack} · DEF {species.defense} · SPD
-							{species.speed}
-						</p>
+					<div class="flex items-center gap-3">
+						<MonsterSprite speciesId={species.id} class="h-14 w-14 shrink-0" />
+						<div class="min-w-0 flex-1">
+							<p class="flex flex-wrap items-center gap-x-2 font-medium">
+								{species.name}
+								<ElementBadge element={species.element} />
+							</p>
+							<p class="text-xs text-slate-400">
+								HP {species.maxHitPoints} · ATK {species.attack} · DEF {species.defense} · SPD
+								{species.speed}
+							</p>
+						</div>
+						<button
+							class="rounded border border-amber-400 px-3 py-1 text-sm text-amber-300 disabled:opacity-40"
+							type="button"
+							disabled={full}
+							onclick={() => team.push(species.id)}
+						>
+							Add<span class="sr-only"> {species.name}</span>
+						</button>
 					</div>
-					<button
-						class="rounded border border-amber-400 px-3 py-1 text-sm text-amber-300 disabled:opacity-40"
-						type="button"
-						disabled={full}
-						onclick={() => team.push(species.id)}
-					>
-						Add<span class="sr-only"> {species.name}</span>
-					</button>
+					<!-- Under the stats at full width, so a phone needs no more than a line each. -->
+					<ul class="flex flex-col gap-0.5 text-xs" aria-label="Abilities of {species.name}">
+						{#each species.abilities as ability (ability.id)}
+							{@const cooldown = cooldownText(ability)}
+							<li>
+								<span class="font-medium text-slate-200">{ability.name}</span>
+								<span class="text-slate-400">
+									{summaryOf(ability)}{cooldown ? ` · ${cooldown}` : ''}
+								</span>
+							</li>
+						{/each}
+					</ul>
 				</li>
 			{/each}
 		</ul>

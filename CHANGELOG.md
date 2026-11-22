@@ -89,6 +89,20 @@ in [this file's history][full-changelog].
   `AddYakAndLynx`.
 - `ICatalogQueryService.ListSpeciesAsync`, for the bot's
   choice of team.
+- Frontend, battle view: the viewer picks a monster, one of
+  its abilities and a target. Each ability shows what it does
+  and when it is ready again; a guard or a heal needs no
+  target. A line above the button names the element
+  advantage before the move is sent. Monster cards carry an
+  element badge and the effects on them with the rounds left;
+  the log names abilities, element advantage, effects, heals
+  and burn damage (`abilities.ts`, `battle-log.ts`,
+  `AbilityPicker`, `ElementBadge`).
+- Frontend, team picker: each species with its element and
+  its abilities.
+- Drawings for Glacier Yak and Thorn Lynx.
+- Vitest for the ability and log wording; the Playwright
+  smoke test no longer assumes the bot's team or who wins.
 - Test helpers that play battles without knowing the numbers
   (`GrainBattleDriver`, `HttpBattleDriver`, `BattleRounds`,
   `BattleAssert`).

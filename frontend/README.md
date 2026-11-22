@@ -44,7 +44,8 @@ frontend's origin under `Cors:AllowedOrigins`.
   Never edited by hand.
 - `src/lib/arena/` — the hand-written layer over it: the client
   factory, strict types, the SignalR hub's messages, and the
-  battle logic (`battle.ts`, pure and unit-tested).
+  battle logic (`battle.ts`, `abilities.ts`, `battle-log.ts`,
+  pure and unit-tested).
 - `src/lib/components/` — shared components, among them the
   monsters as inline SVG.
 - `src/routes/` — the screens: arenas, team picker, live battle.

@@ -61,6 +61,36 @@
 		<circle cx="40" cy="30" r="3" fill="#65a30d" />
 		<rect x="26" y="16" width="3" height="4" fill="#bef264" />
 		<rect x="35" y="16" width="3" height="4" fill="#bef264" />
+	{:else if speciesId === 'glacier-yak'}
+		<rect x="14" y="46" width="8" height="12" rx="2" fill="#475569" />
+		<rect x="42" y="46" width="8" height="12" rx="2" fill="#475569" />
+		<ellipse cx="32" cy="38" rx="25" ry="15" fill="#94a3b8" />
+		<path
+			d="M7 38h50l-3 10l-4-4l-4 6l-4-5l-4 6l-4-5l-4 6l-4-5l-4 6l-4-5l-4 5l-4-4z"
+			fill="#cbd5e1"
+		/>
+		<path d="M47 29l3-7l3 7zM52 33l3-6l3 6z" fill="#7dd3fc" />
+		<path d="M20 18q-14 0-14-12q6 7 15 6zM44 18q14 0 14-12q-6 7-15 6z" fill="#f1f5f9" />
+		<rect x="19" y="10" width="26" height="26" rx="10" fill="#cbd5e1" />
+		<path d="M19 18q13-12 26 0v3q-13-7-26 0z" fill="#e0f2fe" />
+		<circle cx="26" cy="24" r="2.5" fill="#0f172a" />
+		<circle cx="38" cy="24" r="2.5" fill="#0f172a" />
+		<ellipse cx="32" cy="31" rx="8" ry="4.5" fill="#94a3b8" />
+		<circle cx="29" cy="31" r="1.2" fill="#0f172a" />
+		<circle cx="35" cy="31" r="1.2" fill="#0f172a" />
+	{:else if speciesId === 'thorn-lynx'}
+		<path d="M48 46q14-4 10-20q6 12 0 24q-4 4-10 2z" fill="#4d7c0f" />
+		<path d="M15 26l2-19l11 12zM49 26l-2-19l-11 12z" fill="#65a30d" />
+		<path d="M17 7l-2-5l4 3zM47 7l2-5l-4 3z" fill="#365314" />
+		<path d="M14 38l-7 5l8 1zM50 38l7 5l-8 1z" fill="#84cc16" />
+		<ellipse cx="32" cy="34" rx="19" ry="17" fill="#84cc16" />
+		<path d="M24 18l2-6l2 6zM31 17l1-6l1 6zM36 18l2-6l2 6z" fill="#365314" />
+		<path d="M23 40q9 11 18 0q-9 5-18 0z" fill="#ecfccb" />
+		<ellipse cx="25" cy="31" rx="3.5" ry="2.5" fill="#fde047" />
+		<ellipse cx="39" cy="31" rx="3.5" ry="2.5" fill="#fde047" />
+		<ellipse cx="25" cy="31" rx="1" ry="2.3" fill="#1c1917" />
+		<ellipse cx="39" cy="31" rx="1" ry="2.3" fill="#1c1917" />
+		<path d="M30 38h4l-2 2.5z" fill="#1c1917" />
 	{:else}
 		<path d="M12 40q0-28 20-28t20 28q0 14-20 14t-20-14z" fill="#64748b" />
 		<circle cx="25" cy="32" r="3" fill="#0f172a" />

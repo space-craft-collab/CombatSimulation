@@ -1,6 +1,13 @@
-import { applyRound, newerOf, relationOf, type Battle, type BattleEvent } from './battle.ts';
+import {
+	applyRound,
+	newerOf,
+	relationOf,
+	type Battle,
+	type BattleEvent,
+	type Move
+} from './battle.ts';
 import { connectToBattleHub, type BattleHub } from './battle-hub.ts';
-import { ArenaApiError, submitStrike } from './battles.ts';
+import { ArenaApiError, submitMove } from './battles.ts';
 
 /** What one round did, for the battle log. */
 export interface PlayedRound {
@@ -90,17 +97,21 @@ export class LiveBattle {
 
 	/**
 	 * Submits the visitor's move for the current round.
+	 *
+	 * @returns Whether the move was accepted; if not, `failure` says why.
 	 */
-	async strike(participantId: string, actorSlot: number, targetSlot: number): Promise<void> {
+	async act(participantId: string, move: Move): Promise<boolean> {
 		this.#submitting = true;
 		this.#failure = null;
 
 		try {
-			const after = await submitStrike(this.#battle.battleId, participantId, actorSlot, targetSlot);
+			const after = await submitMove(this.#battle.battleId, participantId, move);
 			this.#battle = newerOf(this.#battle, after);
+			return true;
 		} catch (error) {
 			this.#failure =
 				error instanceof ArenaApiError ? error.message : 'The move could not be sent.';
+			return false;
 		} finally {
 			this.#submitting = false;
 		}

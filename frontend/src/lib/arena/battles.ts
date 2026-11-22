@@ -1,6 +1,6 @@
 import type { BattleResponse } from '#lib/api/models/index.ts';
 import { createArenaApi } from './api.ts';
-import type { Battle, BattleStatus } from './battle.ts';
+import type { Battle, BattleStatus, Move } from './battle.ts';
 
 /** A request the API refused or could not answer. */
 export class ArenaApiError extends Error {
@@ -63,21 +63,16 @@ export async function findBattle(
 
 /**
  * Submits a participant's move for the current round: one of its
- * monsters strikes one of the opponent's.
+ * monsters uses one of its abilities on a target.
  *
  * @returns The battle after the move; against the bot the round is played by then.
  */
-export function submitStrike(
-	battleId: string,
-	participantId: string,
-	actorSlot: number,
-	targetSlot: number
-): Promise<Battle> {
+export function submitMove(battleId: string, participantId: string, move: Move): Promise<Battle> {
 	return call(async () =>
 		toBattle(
 			await createArenaApi()
 				.battles.byBattleId(battleId)
-				.actions.post({ participantId, actorSlot, targetSlot })
+				.actions.post({ participantId, ...move })
 		)
 	);
 }

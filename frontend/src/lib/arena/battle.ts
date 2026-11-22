@@ -81,6 +81,14 @@ export interface RoundEvent {
 	effect: AbilityEffect;
 }
 
+/** A side's move for one round: one monster, one of its abilities, one target. */
+export interface Move {
+	actorSlot: number;
+	/** The actor itself for an ability it uses on itself. */
+	targetSlot: number;
+	abilityId: string;
+}
+
 /** What one resolved round changed: the hub's `RoundResolved` message. */
 export interface BattleEvent {
 	battleId: string;
@@ -146,6 +154,25 @@ export function newerOf(current: Battle, candidate: Battle): Battle {
 
 function progressOf(battle: Battle): number {
 	return battle.status === 'Completed' ? Number.POSITIVE_INFINITY : battle.round;
+}
+
+/**
+ * The damage a monster took and the hit points it got back within
+ * one round, all events together: a hit and a burn add up.
+ */
+export function changeOf(
+	events: readonly RoundEvent[],
+	slot: number
+): { damage: number; healing: number } {
+	return events
+		.filter((event) => event.targetSlot === slot)
+		.reduce(
+			(total, event) => ({
+				damage: total.damage + event.damage,
+				healing: total.healing + event.healing
+			}),
+			{ damage: 0, healing: 0 }
+		);
 }
 
 /** Whether a monster can still act or be targeted. */

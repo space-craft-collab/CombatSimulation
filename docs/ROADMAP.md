@@ -124,13 +124,13 @@ mirrored the visitor's team.
 
 **Frontend**
 
-- [ ] Ability buttons with their cooldowns; element badges;
+- [x] Ability buttons with their cooldowns; element badges;
       status effects on the monster cards; the battle log
       names the ability, the element advantage and the
       effects
-- [ ] The team picker shows each species' element and
+- [x] The team picker shows each species' element and
       abilities
-- [ ] Drawings for the new species
+- [x] Drawings for the new species
 
 **Wrap-up**
 

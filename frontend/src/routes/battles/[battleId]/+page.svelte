@@ -2,14 +2,25 @@
 	import { untrack } from 'svelte';
 	import { resolve } from '$app/paths';
 	import {
+		STRIKE,
+		chooseAbility,
+		matchupHint,
+		moveOf,
+		needsTarget,
+		unknownAbility
+	} from '#lib/arena/abilities.ts';
+	import {
+		changeOf,
 		isStanding,
 		outcomeFor,
 		secondsUntil,
-		type Combatant,
-		type RoundEvent
+		type Combatant
 	} from '#lib/arena/battle.ts';
+	import { ownedName, sentenceOf, type LogNames } from '#lib/arena/battle-log.ts';
+	import { abilitiesById, type Ability, type Element } from '#lib/arena/catalog.ts';
 	import { LiveBattle } from '#lib/arena/live-battle.svelte.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
+	import AbilityPicker from '#lib/components/AbilityPicker.svelte';
 	import CombatantCard from '#lib/components/CombatantCard.svelte';
 	import type { PageProps } from './$types';
 
@@ -19,6 +30,7 @@
 	// another battle) starts over; the old one is let go below.
 	const live = $derived(new LiveBattle(data.battle));
 	const battle = $derived(live.battle);
+	const abilities = $derived(abilitiesById(data.catalog.species));
 
 	$effect(() => {
 		const followed = live;
@@ -53,9 +65,29 @@
 	// by the first one standing, so a move is always ready to send.
 	let pickedActor = $state<number | null>(null);
 	let pickedTarget = $state<number | null>(null);
+	// A tapped ability holds for the round it was tapped in only: once
+	// used it is on cooldown, and the next round starts on the default
+	// again instead of jumping back to it the moment it is ready.
+	let pickedAbility = $state<{ abilityId: string; round: number } | null>(null);
 
 	const actor = $derived(pick(home, pickedActor));
 	const target = $derived(pick(away, pickedTarget));
+	const ability = $derived.by(() => {
+		if (!actor) {
+			return undefined;
+		}
+
+		const picked = pickedAbility?.round === battle.round ? pickedAbility.abilityId : null;
+
+		// A monster the battle lists no abilities for still has the basic attack.
+		return abilityOf(chooseAbility(actor, picked) ?? STRIKE);
+	});
+	// Guard and heal are used on the actor itself: no target to pick.
+	const targeted = $derived(ability === undefined || needsTarget(ability));
+	const move = $derived(actor && ability ? moveOf(actor, ability, target) : null);
+	const hint = $derived(
+		ability && target && targeted ? matchupHint(ability, elementOf(target.speciesId)) : null
+	);
 
 	const inProgress = $derived(battle.status === 'InProgress');
 	// No move before the hub answers: the round's delta would be
@@ -70,14 +102,31 @@
 	);
 	const lastRound = $derived(live.rounds.at(-1));
 
+	const names: LogNames = {
+		monster: (slot) => {
+			const combatant = battle.combatants.find((entry) => entry.slot === slot);
+
+			return combatant ? ownedName(combatant, playerId, nameOf(combatant.speciesId)) : 'a monster';
+		},
+		ability: (id) => abilityOf(id).name
+	};
+
 	function pick(side: Combatant[], picked: number | null): Combatant | undefined {
 		const standing = side.filter(isStanding);
 
 		return standing.find((combatant) => combatant.slot === picked) ?? standing[0];
 	}
 
+	function abilityOf(id: string): Ability {
+		return abilities.get(id) ?? unknownAbility(id);
+	}
+
 	function nameOf(speciesId: string): string {
 		return data.catalog.species.find((species) => species.id === speciesId)?.name ?? speciesId;
+	}
+
+	function elementOf(speciesId: string): Element {
+		return data.catalog.species.find((species) => species.id === speciesId)?.element ?? 'Neutral';
 	}
 
 	function ownerOf(combatant: Combatant): string {
@@ -88,56 +137,19 @@
 		return combatant.isBot ? 'Bot' : combatant.participantId;
 	}
 
-	// "your Ember Fox", "the bot's Lava Crab", "ada's Frost Owl"
-	function describe(slot: number): string {
-		const combatant = battle.combatants.find((entry) => entry.slot === slot);
-
-		if (!combatant) {
-			return 'a monster';
-		}
-
-		const owner =
-			combatant.participantId === playerId
-				? 'your'
-				: combatant.isBot
-					? "the bot's"
-					: `${combatant.participantId}'s`;
-
-		return `${owner} ${nameOf(combatant.speciesId)}`;
+	function lastChangeOf(
+		slot: number
+	): { round: number; damage: number; healing: number } | undefined {
+		return lastRound && { round: lastRound.round, ...changeOf(lastRound.events, slot) };
 	}
 
-	// "Your Ember Fox hits the bot's Lava Crab for 6 and defeats it."
-	function sentence(happened: RoundEvent): string {
-		const actorName = describe(happened.actorSlot);
-		const subject = actorName.charAt(0).toUpperCase() + actorName.slice(1);
-		const outcome = happened.targetHitPoints === 0 ? ' and defeats it' : '';
-
-		if (happened.kind === 'Burn') {
-			return `${subject} burns for ${happened.damage}${outcome && ' and is defeated'}.`;
-		}
-
-		if (happened.effect === 'Heal') {
-			return `${subject} heals itself by ${happened.healing}.`;
-		}
-
-		if (happened.effect === 'Guard') {
-			return `${subject} guards itself.`;
-		}
-
-		return `${subject} hits ${describe(happened.targetSlot)} for ${happened.damage}${outcome}.`;
+	function pickAbility(abilityId: string) {
+		pickedAbility = { abilityId, round: battle.round };
 	}
 
-	function lastHitOf(slot: number): { round: number; damage: number } | undefined {
-		const strike = lastRound?.events.findLast(
-			(entry) => entry.targetSlot === slot && entry.damage > 0
-		);
-
-		return strike && lastRound ? { round: lastRound.round, damage: strike.damage } : undefined;
-	}
-
-	function strike() {
-		if (playerId && actor && target) {
-			void live.strike(playerId, actor.slot, target.slot);
+	function submit() {
+		if (playerId && move) {
+			void live.act(playerId, move);
 		}
 	}
 </script>
@@ -203,11 +215,13 @@
 
 	{#snippet side(
 		label: string,
+		testId: string,
 		combatants: Combatant[],
+		picking: boolean,
 		picked: Combatant | undefined,
 		onpick: (slot: number) => void
 	)}
-		<section aria-label={label}>
+		<section aria-label={label} data-testid={testId}>
 			<h2 class="mb-1 text-xs font-semibold tracking-widest text-slate-500 uppercase">{label}</h2>
 			<ul class="flex justify-center gap-2">
 				{#each combatants as combatant (combatant.slot)}
@@ -215,10 +229,11 @@
 						<CombatantCard
 							{combatant}
 							name={nameOf(combatant.speciesId)}
+							element={elementOf(combatant.speciesId)}
 							owner={ownerOf(combatant)}
-							selectable={canAct && isStanding(combatant)}
-							selected={canAct && picked?.slot === combatant.slot}
-							lastHit={lastHitOf(combatant.slot)}
+							selectable={picking && isStanding(combatant)}
+							selected={picking && picked?.slot === combatant.slot}
+							lastChange={lastChangeOf(combatant.slot)}
 							onselect={() => onpick(combatant.slot)}
 						/>
 					</li>
@@ -229,31 +244,69 @@
 
 	{@render side(
 		away[0] ? ownerOf(away[0]) : 'Opponent',
+		'away-side',
 		away,
+		canAct && targeted,
 		target,
 		(slot) => (pickedTarget = slot)
 	)}
 	{@render side(
 		home[0] ? ownerOf(home[0]) : 'Challenger',
+		'home-side',
 		home,
+		canAct,
 		actor,
 		(slot) => (pickedActor = slot)
 	)}
 
-	{#if canAct && actor && target}
+	{#if canAct && actor && ability && move}
+		<section aria-labelledby="abilities-heading">
+			<h2
+				id="abilities-heading"
+				class="mb-1 text-xs font-semibold tracking-widest text-slate-500 uppercase"
+			>
+				{nameOf(actor.speciesId)}'s abilities
+			</h2>
+			<AbilityPicker
+				abilities={actor.abilities.map((cooldown) => ({
+					ability: abilityOf(cooldown.abilityId),
+					cooldown
+				}))}
+				selected={ability.id}
+				onselect={pickAbility}
+			/>
+		</section>
+
 		<!-- Stays in reach while the log below grows. -->
 		<section class="sticky bottom-0 flex flex-col gap-2 bg-slate-950/95 py-3">
+			{#if hint}
+				<p
+					class={[
+						'text-center text-sm font-medium',
+						hint.effectiveness === 'Strong' ? 'text-emerald-300' : 'text-red-300'
+					]}
+					data-testid="matchup"
+				>
+					{ability.name} is {hint.text}.
+				</p>
+			{/if}
 			<button
-				class="rounded-lg bg-amber-500 px-4 py-3 text-lg font-semibold text-slate-950 disabled:opacity-40"
+				class="rounded-lg bg-amber-500 px-4 py-3 text-lg leading-snug font-semibold text-slate-950 disabled:opacity-40"
 				type="button"
 				disabled={live.submitting}
-				onclick={strike}
+				onclick={submit}
 				data-testid="strike"
 			>
-				{nameOf(actor.speciesId)} strikes {nameOf(target.speciesId)}
+				{#if targeted && target}
+					{nameOf(actor.speciesId)} uses {ability.name} on {nameOf(target.speciesId)}
+				{:else}
+					{nameOf(actor.speciesId)} uses {ability.name}
+				{/if}
 			</button>
 			<p class="text-center text-xs text-slate-400">
-				Tap a monster to change who strikes or who is struck.
+				{targeted
+					? 'Tap a monster to change who acts or whom it targets.'
+					: 'Tap one of your monsters to change who acts.'}
 			</p>
 			{#if live.failure}
 				<p class="text-sm text-red-400" role="alert">{live.failure}</p>
@@ -272,7 +325,7 @@
 						<span class="font-medium text-slate-300">Round {played.round}</span>
 						<ul class="mt-1 text-slate-400">
 							{#each played.events as happened, index (index)}
-								<li>{sentence(happened)}</li>
+								<li>{sentenceOf(happened, names)}</li>
 							{:else}
 								<li>No move was made.</li>
 							{/each}
