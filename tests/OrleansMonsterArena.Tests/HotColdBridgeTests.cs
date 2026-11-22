@@ -1,8 +1,6 @@
 using System.Net.Http.Json;
 using Azure.Data.Tables;
-using Battles.Features.GetBattle;
 using Battles.Features.GetBattleHistory;
-using Battles.Grains.Abstractions;
 using Players.Features.GetPlayerStats;
 using Xunit;
 
@@ -26,38 +24,36 @@ public sealed class HotColdBridgeTests(AzuriteFixture azurite, SqlServerFixture 
     // Orleans' default table for the Azure Table reminder service.
     private const string ReminderTable = "OrleansReminders";
 
-    private static readonly string[] FoxTeam = ["ember-fox"];
+    // Two monsters a side: one action per side fells at most one
+    // monster each, so the battle is still running after round 1.
+    private static readonly string[] Pair = ["ember-fox", "lava-crab"];
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task CompleteBattle_OnTableStorage_MovesBattleToColdStoreAndDeletesHotRows()
     {
-        // Arrange: mirrored foxes, 40 HP each and 10 per hit; the
-        // player wins the speed tie on the lower slot, in round 4.
+        // Arrange: one round against the bot puts the battle and its
+        // deadline into Table Storage.
         await using var factory = AppHostFixture.CreateFactory(
             sql.ConnectionStringFor("HotColdBridgeTests"), azurite.ConnectionString, TimeSpan.FromSeconds(15));
         using var client = factory.CreateClient();
+        var driver = new HttpBattleDriver(client);
         var player = $"player-{Guid.NewGuid():N}";
-        var battle = await StartAsync(client, player);
-        await StrikeAsync(client, battle.BattleId, player);
+        var battle = await driver.StartAgainstBotAsync(player, Pair);
+        await driver.StrikeAsync(battle.BattleId, player);
         Assert.NotEmpty(await RowsAsync(GrainStateTable, battle.BattleId));
         Assert.NotEmpty(await RowsAsync(ReminderTable, battle.BattleId));
 
         // Act
-        for (var round = 2; round <= 4; round++)
-        {
-            await StrikeAsync(client, battle.BattleId, player);
-        }
+        await driver.PlayToTheEndAsync(battle.BattleId);
 
-        // Assert: the cold store has the battle and the counted win.
-        var final = await client.GetFromJsonAsync<BattleResponse>(
-            new Uri($"/battles/{battle.BattleId}", UriKind.Relative), Cancellation);
-        Assert.NotNull(final);
-        Assert.Equal(BattleStatus.Completed, final.Status);
-        Assert.Equal(player, final.WinnerId);
+        // Assert: the cold store has the battle, and the player's stats
+        // count its result, whoever won.
+        var final = await driver.GetAsync(battle.BattleId);
+        var won = BattleAssert.Decided(final) == player;
         Assert.Equal(
-            new PlayerStatsResponse(player, 1, 0),
+            new PlayerStatsResponse(player, won ? 1 : 0, won ? 0 : 1),
             await client.GetFromJsonAsync<PlayerStatsResponse>(
                 new Uri($"/players/{player}", UriKind.Relative), Cancellation));
         var history = await client.GetFromJsonAsync<IReadOnlyList<BattleHistoryEntryResponse>>(
@@ -70,27 +66,6 @@ public sealed class HotColdBridgeTests(AzuriteFixture azurite, SqlServerFixture 
         // Assert: the turn-deadline reminder went with it, so nothing
         // wakes the cleared grain again.
         Assert.Empty(await RowsAsync(ReminderTable, battle.BattleId));
-    }
-
-    private static async Task<BattleResponse> StartAsync(HttpClient client, string player)
-    {
-        using var response = await client.PostAsJsonAsync(
-            TestArenas.VolcanoBattles,
-            new { playerId = player, monsterSpeciesIds = FoxTeam },
-            Cancellation);
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation)
-            ?? throw new InvalidOperationException("The start endpoint returned no battle.");
-    }
-
-    private static async Task StrikeAsync(HttpClient client, Guid battleId, string player)
-    {
-        using var response = await client.PostAsJsonAsync(
-            new Uri($"/battles/{battleId}/actions", UriKind.Relative),
-            new { participantId = player, actorSlot = 0, targetSlot = 1 },
-            Cancellation);
-        response.EnsureSuccessStatusCode();
     }
 
     // The rows of the battle grain and its monster grains in a table.

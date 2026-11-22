@@ -1,4 +1,5 @@
 using Catalog.Contracts;
+using Catalog.Infrastructure;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,8 +27,15 @@ public sealed class CatalogStoreTests(AppHostFixture host)
         // Act
         var species = await catalog.FindSpeciesAsync("lava-crab", Cancellation);
 
-        // Assert
-        Assert.Equal(new MonsterSpeciesDto("lava-crab", "Lava Crab", 60, 10, 8, 5), species);
+        // Assert: the stats the species was seeded with.
+        var seeded = SpeciesSeed.All.Single(entry => entry.Id == "lava-crab");
+        Assert.NotNull(species);
+        Assert.Equal(seeded.Id, species.Id);
+        Assert.Equal(seeded.Name, species.Name);
+        Assert.Equal(seeded.MaxHitPoints, species.MaxHitPoints);
+        Assert.Equal(seeded.Attack, species.Attack);
+        Assert.Equal(seeded.Defense, species.Defense);
+        Assert.Equal(seeded.Speed, species.Speed);
     }
 
     [Fact]

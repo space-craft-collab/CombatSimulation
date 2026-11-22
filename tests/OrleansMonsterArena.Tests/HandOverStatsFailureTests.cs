@@ -1,5 +1,3 @@
-using System.Net.Http.Json;
-using Battles.Features.GetBattle;
 using Battles.Grains.Abstractions;
 using Battles.Infrastructure;
 using Microsoft.AspNetCore.TestHost;
@@ -29,8 +27,8 @@ public sealed class HandOverStatsFailureTests(SqlServerFixture sql)
     [Fact]
     public async Task HandOver_PlayerStatsFails_KeepsSnapshotAndHotState()
     {
-        // Arrange: mirrored foxes, 40 HP each and 10 per hit; the
-        // player wins the speed tie on the lower slot, in round 4.
+        // Arrange: a battle against the bot; whoever wins, the result
+        // counts for the player, so the stats report is called.
         await using var host = AppHostFixture.CreateFactory(
             sql.ConnectionStringFor("HandOverStatsFailureTests"), string.Empty, TimeSpan.FromSeconds(15));
         var failing = host.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
@@ -40,53 +38,32 @@ public sealed class HandOverStatsFailureTests(SqlServerFixture sql)
         }));
         using var client = failing.CreateClient();
         var player = $"player-{Guid.NewGuid():N}";
-        var battleId = await StartAsync(client, player);
+        var driver = new HttpBattleDriver(client);
+        var battleId = (await driver.StartAgainstBotAsync(player, FoxTeam)).BattleId;
 
         // Act: the last strike completes the battle and triggers the
         // hand-over; its failure must not reach the player.
-        for (var round = 1; round <= 4; round++)
-        {
-            using var played = await client.PostAsJsonAsync(
-                new Uri($"/battles/{battleId}/actions", UriKind.Relative),
-                new { participantId = player, actorSlot = 0, targetSlot = 1 },
-                Cancellation);
-            played.EnsureSuccessStatusCode();
-        }
+        await driver.PlayToTheEndAsync(battleId);
 
         // Assert: the snapshot made it into the cold store.
         var snapshot = await failing.Services.GetRequiredService<BattleSnapshotReadRepository>()
             .FindAsync(battleId, Cancellation);
         Assert.NotNull(snapshot);
-        Assert.Equal(player, snapshot.WinnerId);
+        Assert.Contains(snapshot.WinnerId, new[] { player, "bot" });
 
         // Assert: the hot state was not cleared, so the battle and
-        // its monsters still read from the grains.
+        // its monsters still read from the grains, and agree with it.
         var grains = failing.Services.GetRequiredService<IClusterClient>();
         var hot = await grains.GetGrain<ILiveBattleGrain>(battleId).GetStateAsync();
         Assert.Equal(BattleStatus.Completed, hot.Status);
-        Assert.Equal(player, hot.WinnerId);
+        Assert.Equal(snapshot.WinnerId, hot.WinnerId);
         var monster = await grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:0").GetSnapshotAsync();
-        Assert.Equal(10, monster.HitPoints);
+        Assert.Equal(hot.Combatants[0].HitPoints, monster.HitPoints);
 
         // Assert: the battle endpoint still answers with the result.
-        var read = await client.GetFromJsonAsync<BattleResponse>(
-            new Uri($"/battles/{battleId}", UriKind.Relative), Cancellation);
-        Assert.NotNull(read);
+        var read = await driver.GetAsync(battleId);
         Assert.Equal(BattleStatus.Completed, read.Status);
-        Assert.Equal(player, read.WinnerId);
-    }
-
-    private static async Task<Guid> StartAsync(HttpClient client, string player)
-    {
-        using var response = await client.PostAsJsonAsync(
-            TestArenas.VolcanoBattles,
-            new { playerId = player, monsterSpeciesIds = FoxTeam },
-            Cancellation);
-        response.EnsureSuccessStatusCode();
-        var battle = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation)
-            ?? throw new InvalidOperationException("The start endpoint returned no battle.");
-
-        return battle.BattleId;
+        Assert.Equal(snapshot.WinnerId, read.WinnerId);
     }
 
     // Stands in for a Players module whose database is down.

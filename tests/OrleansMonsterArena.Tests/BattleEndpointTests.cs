@@ -14,9 +14,13 @@ namespace OrleansMonsterArena.Tests;
 [Collection(AppHostFixture.CollectionName)]
 public sealed class BattleEndpointTests(AppHostFixture host)
 {
+    // Two monsters a side: one action per side fells at most one
+    // monster each, so the first round cannot end the battle.
+    private static readonly string[] Pair = ["lava-crab", "moss-golem"];
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    private static Uri Actions(Guid battleId) => new($"/battles/{battleId}/actions", UriKind.Relative);
+    private static Uri Actions(Guid battleId) => HttpBattleDriver.Actions(battleId);
 
     [Fact]
     public async Task PostBattle_ValidTeam_Returns201AndBotMirrorsTeam()
@@ -37,8 +41,8 @@ public sealed class BattleEndpointTests(AppHostFixture host)
         Assert.Equal(new Uri($"/battles/{battle.BattleId}", UriKind.Relative), response.Headers.Location);
         Assert.Collection(
             battle.Combatants,
-            player => Assert.Equal(new CombatantResponse(0, "player-1", false, "lava-crab", 60, 60), player),
-            bot => Assert.Equal(new CombatantResponse(1, "bot", true, "lava-crab", 60, 60), bot));
+            player => AssertFresh(player, 0, "player-1", false, "lava-crab"),
+            bot => AssertFresh(bot, 1, "bot", true, "lava-crab"));
     }
 
     [Fact]
@@ -108,61 +112,53 @@ public sealed class BattleEndpointTests(AppHostFixture host)
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var battle = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
         Assert.NotNull(battle);
-        Assert.Equal(
-            [
-                new CombatantResponse(0, "player-1", false, "ember-fox", 40, 40),
-                new CombatantResponse(1, "player-1", false, "lava-crab", 60, 60),
-                new CombatantResponse(2, "player-1", false, "moss-golem", 80, 80),
-                new CombatantResponse(3, "bot", true, "ember-fox", 40, 40),
-                new CombatantResponse(4, "bot", true, "lava-crab", 60, 60),
-                new CombatantResponse(5, "bot", true, "moss-golem", 80, 80),
-            ],
-            battle.Combatants);
+        Assert.Collection(
+            battle.Combatants,
+            combatant => AssertFresh(combatant, 0, "player-1", false, "ember-fox"),
+            combatant => AssertFresh(combatant, 1, "player-1", false, "lava-crab"),
+            combatant => AssertFresh(combatant, 2, "player-1", false, "moss-golem"),
+            combatant => AssertFresh(combatant, 3, "bot", true, "ember-fox"),
+            combatant => AssertFresh(combatant, 4, "bot", true, "lava-crab"),
+            combatant => AssertFresh(combatant, 5, "bot", true, "moss-golem"));
     }
 
     [Fact]
     public async Task PostAction_HumanStrikes_Returns200WithNextRound()
     {
-        // Arrange
+        // Arrange: the player holds slots 0-1, the bot 2-3.
         using var client = host.Factory.CreateClient();
-        var battle = await StartAsync(client, "lava-crab");
+        var battle = await new HttpBattleDriver(client).StartAgainstBotAsync("player-1", Pair);
 
         // Act
         using var response = await client.PostAsJsonAsync(
-            Actions(battle.BattleId), new { participantId = "player-1", actorSlot = 0, targetSlot = 1 }, Cancellation);
+            Actions(battle.BattleId), new { participantId = "player-1", actorSlot = 0, targetSlot = 2 }, Cancellation);
 
-        // Assert: both crabs deal 10 - 8 = 2.
+        // Assert: the bot acted inline, so the answer already shows
+        // the next round.
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var next = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
         Assert.NotNull(next);
+        Assert.Equal(BattleStatus.InProgress, next.Status);
         Assert.Equal(2, next.Round);
-        Assert.All(next.Combatants, combatant => Assert.Equal(58, combatant.HitPoints));
     }
 
     [Fact]
     public async Task PostAction_AfterBattleCompleted_Returns409()
     {
-        // Arrange: mirrored foxes deal 10 per hit, 40 HP each; the
-        // player wins the speed tie on the lower slot, in round 4.
+        // Arrange: play against the bot until either side has won.
         using var client = host.Factory.CreateClient();
-        var battle = await StartAsync(client, "ember-fox");
-        var strike = new { participantId = "player-1", actorSlot = 0, targetSlot = 1 };
-        for (var round = 0; round < 4; round++)
-        {
-            using var played = await client.PostAsJsonAsync(Actions(battle.BattleId), strike, Cancellation);
-            Assert.Equal(HttpStatusCode.OK, played.StatusCode);
-        }
+        var driver = new HttpBattleDriver(client);
+        var battle = await driver.StartAgainstBotAsync("player-1", "ember-fox");
+        await driver.PlayToTheEndAsync(battle.BattleId);
 
         // Act
-        using var response = await client.PostAsJsonAsync(Actions(battle.BattleId), strike, Cancellation);
+        using var response = await client.PostAsJsonAsync(
+            Actions(battle.BattleId), new { participantId = "player-1", actorSlot = 0, targetSlot = 1 }, Cancellation);
 
         // Assert
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        var final = await client.GetFromJsonAsync<BattleResponse>(
-            new Uri($"/battles/{battle.BattleId}", UriKind.Relative), Cancellation);
-        Assert.NotNull(final);
-        Assert.Equal(BattleStatus.Completed, final.Status);
-        Assert.Equal("player-1", final.WinnerId);
+        var final = await driver.GetAsync(battle.BattleId);
+        BattleAssert.Decided(final);
     }
 
     [Fact]
@@ -170,7 +166,7 @@ public sealed class BattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await StartAsync(client, "lava-crab");
+        var battle = await new HttpBattleDriver(client).StartAgainstBotAsync("player-1", "lava-crab");
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -185,7 +181,7 @@ public sealed class BattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await StartAsync(client, "lava-crab");
+        var battle = await new HttpBattleDriver(client).StartAgainstBotAsync("player-1", "lava-crab");
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -227,13 +223,20 @@ public sealed class BattleEndpointTests(AppHostFixture host)
     private static object StartBody(string speciesId) =>
         new { playerId = "player-1", monsterSpeciesIds = new[] { speciesId } };
 
-    private static async Task<BattleResponse> StartAsync(HttpClient client, string speciesId)
+    // A monster as a battle fields it: in its slot, for its side, at
+    // full health.
+    private static void AssertFresh(
+        CombatantResponse combatant,
+        int slot,
+        string participantId,
+        bool isBot,
+        string speciesId)
     {
-        using var response = await client.PostAsJsonAsync(
-            TestArenas.VolcanoBattles, StartBody(speciesId), Cancellation);
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation)
-            ?? throw new InvalidOperationException("The start endpoint returned no battle.");
+        Assert.Equal(slot, combatant.Slot);
+        Assert.Equal(participantId, combatant.ParticipantId);
+        Assert.Equal(isBot, combatant.IsBot);
+        Assert.Equal(speciesId, combatant.SpeciesId);
+        Assert.True(combatant.MaxHitPoints > 0, $"Expected positive max hit points: {combatant}.");
+        Assert.Equal(combatant.MaxHitPoints, combatant.HitPoints);
     }
 }

@@ -90,13 +90,13 @@ public sealed class ExactIdsMigrationTests(SqlServerFixture sql)
         // Act
         await modules.MigrateModuleDatabasesAsync(Cancellation);
 
-        // Assert
+        // Assert: up to date, the Catalog holds every seeded species.
         await using var context = await CreateContextAsync<CatalogDbContext>(modules);
         Assert.Equal(
             ["glacier", "moss-grove", "volcano"],
             await context.Arenas.Select(arena => arena.Id).OrderBy(id => id).ToListAsync(Cancellation));
         Assert.Equal(
-            ["ember-fox", "frost-owl", "lava-crab", "moss-golem"],
+            SpeciesSeed.All.Select(species => species.Id).Order(StringComparer.Ordinal),
             await context.Species.Select(species => species.Id).OrderBy(id => id).ToListAsync(Cancellation));
 
         // Assert: both primary keys are back and compare exactly —

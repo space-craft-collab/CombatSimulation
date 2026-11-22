@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using Catalog.Features.ListSpecies;
+using Catalog.Infrastructure;
 using Xunit;
 
 namespace OrleansMonsterArena.Tests;
@@ -21,14 +22,13 @@ public sealed class SpeciesEndpointTests(AppHostFixture host)
         var species = await client.GetFromJsonAsync<List<SpeciesResponse>>(
             new Uri("/species", UriKind.Relative), TestContext.Current.CancellationToken);
 
-        // Assert
+        // Assert: every seeded species with the stats it was seeded
+        // with, ordered by name.
+        Assert.NotNull(species);
         Assert.Equal(
-            [
-                new SpeciesResponse("ember-fox", "Ember Fox", 40, 14, 4, 12),
-                new SpeciesResponse("frost-owl", "Frost Owl", 35, 12, 5, 14),
-                new SpeciesResponse("lava-crab", "Lava Crab", 60, 10, 8, 5),
-                new SpeciesResponse("moss-golem", "Moss Golem", 80, 8, 10, 3),
-            ],
-            species);
+            SpeciesSeed.All
+                .OrderBy(seeded => seeded.Name, StringComparer.Ordinal)
+                .Select(seeded => (seeded.Id, seeded.Name, seeded.MaxHitPoints, seeded.Attack, seeded.Defense, seeded.Speed)),
+            species.Select(listed => (listed.Id, listed.Name, listed.MaxHitPoints, listed.Attack, listed.Defense, listed.Speed)));
     }
 }

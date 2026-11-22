@@ -27,6 +27,10 @@ public sealed class HostRestartTests(AzuriteFixture azurite, SqlServerFixture sq
 
     private static readonly string[] FoxTeam = ["ember-fox"];
 
+    // Two monsters a side: one action per side fells at most one
+    // monster each, so the battle is still running after round 1.
+    private static readonly string[] Pair = ["lava-crab", "moss-golem"];
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -37,20 +41,23 @@ public sealed class HostRestartTests(AzuriteFixture azurite, SqlServerFixture sq
         await using (var first = CreateFactory())
         {
             using var client = first.CreateClient();
-            var battle = await StartAsync(client);
-            beforeRestart = await StrikeAsync(client, battle.BattleId);
+            var driver = new HttpBattleDriver(client);
+            var battle = await driver.StartAgainstBotAsync("player-1", Pair);
+            beforeRestart = await driver.StrikeAsync(battle.BattleId, "player-1");
         }
 
         // Act
         await using var second = CreateFactory();
         using var restartedClient = second.CreateClient();
-        var afterRestart = await GetAsync(restartedClient, beforeRestart.BattleId);
+        var afterRestart = await new HttpBattleDriver(restartedClient).GetAsync(beforeRestart.BattleId);
 
         // Assert: state and round come back from storage unchanged.
+        Assert.Equal(BattleStatus.InProgress, beforeRestart.Status);
+        Assert.Equal(2, beforeRestart.Round);
         Assert.Equal(BattleStatus.InProgress, afterRestart.Status);
-        Assert.Equal(2, afterRestart.Round);
+        Assert.Equal(beforeRestart.Round, afterRestart.Round);
         Assert.Equal(beforeRestart.TurnDeadline, afterRestart.TurnDeadline);
-        Assert.Equal(beforeRestart.Combatants, afterRestart.Combatants);
+        Assert.Equal(Monsters(beforeRestart), Monsters(afterRestart));
 
         // Assert: nobody acts in round 2, so the deadline reminder,
         // registered on the first host, abandons the battle on the
@@ -104,27 +111,12 @@ public sealed class HostRestartTests(AzuriteFixture azurite, SqlServerFixture sq
     private WebApplicationFactory<Program> CreateFactory() =>
         AppHostFixture.CreateFactory(sql.ConnectionStringFor("HostRestartTests"), azurite.ConnectionString, Deadline);
 
-    private static async Task<BattleResponse> StartAsync(HttpClient client)
-    {
-        using var response = await client.PostAsJsonAsync(
-            TestArenas.VolcanoBattles,
-            new { playerId = "player-1", monsterSpeciesIds = CrabTeam },
-            Cancellation);
-        response.EnsureSuccessStatusCode();
-
-        return await ReadBattleAsync(response);
-    }
-
-    private static async Task<BattleResponse> StrikeAsync(HttpClient client, Guid battleId)
-    {
-        using var response = await client.PostAsJsonAsync(
-            new Uri($"/battles/{battleId}/actions", UriKind.Relative),
-            new { participantId = "player-1", actorSlot = 0, targetSlot = 1 },
-            Cancellation);
-        response.EnsureSuccessStatusCode();
-
-        return await ReadBattleAsync(response);
-    }
+    // The monster slots as values, so the comparison does not depend
+    // on which members CombatantResponse has.
+    private static List<(int Slot, string ParticipantId, string SpeciesId, int HitPoints, int MaxHitPoints)> Monsters(
+        BattleResponse battle) =>
+        [.. battle.Combatants.Select(combatant => (
+            combatant.Slot, combatant.ParticipantId, combatant.SpeciesId, combatant.HitPoints, combatant.MaxHitPoints))];
 
     private static async Task<BattleResponse> GetAsync(HttpClient client, Guid battleId) =>
         await client.GetFromJsonAsync<BattleResponse>(

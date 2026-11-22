@@ -5,6 +5,7 @@ using Battles.Domain;
 using Battles.Features.GetBattle;
 using Battles.Grains.Abstractions;
 using Battles.Infrastructure;
+using Catalog.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Players.Features.GetPlayerStats;
 using Xunit;
@@ -24,9 +25,17 @@ public sealed class BattleHandOverTests(AppHostFixture host)
 {
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
 
+    // Three monsters against one: the bigger side wins, whatever the
+    // numbers.
+    private static readonly ImmutableArray<string> Three = ["moss-golem", "lava-crab", "ember-fox"];
+
+    private static readonly ImmutableArray<string> One = ["frost-owl"];
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private IGrainFactory Grains => host.Factory.Services.GetRequiredService<IClusterClient>();
+
+    private GrainBattleDriver Driver => new(host.Factory.Services);
 
     private BattleSnapshotReadRepository ColdStore =>
         host.Factory.Services.GetRequiredService<BattleSnapshotReadRepository>();
@@ -34,21 +43,28 @@ public sealed class BattleHandOverTests(AppHostFixture host)
     [Fact]
     public async Task HandOver_PlayerBeatsBot_StoresSnapshotCountsWinAndClearsHotState()
     {
-        // Arrange: Lava Crab beats Ember Fox in round 7.
+        // Arrange
         var player = NewPlayerId();
-        var battleId = await CreateAsync(new(player, false, ["lava-crab"]), new("bot", true, ["ember-fox"]));
+        var battleId = await CreateAsync(new(player, false, Three), new("bot", true, One));
 
         // Act
-        await PlayToTheEndAsync(battleId, player);
+        var final = await Driver.PlayToTheEndAsync(battleId);
 
-        // Assert
+        // Assert: the snapshot holds the result and every monster as
+        // the last round left it: the bot's one fell, one of the
+        // player's three still stands.
         var snapshot = await ColdStore.FindAsync(battleId, Cancellation);
         Assert.NotNull(snapshot);
         Assert.Equal(player, snapshot.WinnerId);
-        Assert.Equal(7, snapshot.Round);
-        Assert.Equal(
-            [new SnapshotCombatant(0, player, false, "lava-crab", 18, 60), new SnapshotCombatant(1, "bot", true, "ember-fox", 0, 40)],
-            snapshot.Combatants.OrderBy(combatant => combatant.Slot));
+        Assert.Equal(final.Round, snapshot.Round);
+        var combatants = snapshot.Combatants.OrderBy(combatant => combatant.Slot).ToList();
+        Assert.Equal([0, 1, 2, 3], combatants.Select(combatant => combatant.Slot));
+        Assert.Equal([player, player, player, "bot"], combatants.Select(combatant => combatant.ParticipantId));
+        Assert.Equal([false, false, false, true], combatants.Select(combatant => combatant.IsBot));
+        Assert.Equal(Three.Concat(One), combatants.Select(combatant => combatant.SpeciesId));
+        Assert.All(combatants, combatant => Assert.InRange(combatant.HitPoints, 0, combatant.MaxHitPoints));
+        Assert.Contains(combatants, combatant => !combatant.IsBot && combatant.HitPoints > 0);
+        Assert.Equal(0, combatants[3].HitPoints);
         Assert.Equal(new PlayerStatsResponse(player, 1, 0), await GetStatsAsync(player));
         Assert.Equal(BattleStatus.Created, (await Grains.GetGrain<ILiveBattleGrain>(battleId).GetStateAsync()).Status);
         await Assert.ThrowsAsync<InvalidOperationException>(
@@ -58,12 +74,12 @@ public sealed class BattleHandOverTests(AppHostFixture host)
     [Fact]
     public async Task HandOver_BotBeatsPlayer_CountsLossForPlayer()
     {
-        // Arrange: the same matchup the other way round.
+        // Arrange: now the bot fields the bigger side.
         var player = NewPlayerId();
-        var battleId = await CreateAsync(new(player, false, ["ember-fox"]), new("bot", true, ["lava-crab"]));
+        var battleId = await CreateAsync(new(player, false, One), new("bot", true, Three));
 
         // Act
-        await PlayToTheEndAsync(battleId, player);
+        await Driver.PlayToTheEndAsync(battleId);
 
         // Assert
         Assert.Equal("bot", (await ColdStore.FindAsync(battleId, Cancellation))?.WinnerId);
@@ -73,18 +89,13 @@ public sealed class BattleHandOverTests(AppHostFixture host)
     [Fact]
     public async Task HandOver_HumanVsHuman_CountsWinAndLoss()
     {
-        // Arrange: both act every round; the crab wins in round 7.
+        // Arrange: both act every round; the bigger side wins.
         var winner = NewPlayerId();
         var loser = NewPlayerId();
-        var battleId = await CreateAsync(new(winner, false, ["lava-crab"]), new(loser, false, ["ember-fox"]));
-        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
+        var battleId = await CreateAsync(new(winner, false, Three), new(loser, false, One));
 
         // Act
-        while ((await battle.GetStateAsync()).Status == BattleStatus.InProgress)
-        {
-            await battle.SubmitActionAsync(new BattleAction(winner, 0, 1, "strike"));
-            await battle.SubmitActionAsync(new BattleAction(loser, 1, 0, "strike"));
-        }
+        await Driver.PlayToTheEndAsync(battleId);
 
         // Assert
         Assert.Equal(new PlayerStatsResponse(winner, 1, 0), await GetStatsAsync(winner));
@@ -109,18 +120,18 @@ public sealed class BattleHandOverTests(AppHostFixture host)
     [Fact]
     public async Task HandOver_BotVsBot_StoresSnapshotAndCountsNobody()
     {
-        // Arrange
-        var crabBot = NewPlayerId();
-        var foxBot = NewPlayerId();
+        // Arrange: the bot with the bigger side wins.
+        var strongBot = NewPlayerId();
+        var weakBot = NewPlayerId();
 
         // Act
-        var battleId = await CreateAsync(new(crabBot, true, ["lava-crab"]), new(foxBot, true, ["ember-fox"]));
+        var battleId = await CreateAsync(new(strongBot, true, Three), new(weakBot, true, One));
         var snapshot = await WaitForSnapshotAsync(battleId);
 
         // Assert
-        Assert.Equal(crabBot, snapshot.WinnerId);
-        Assert.Equal(HttpStatusCode.NotFound, await GetStatsStatusAsync(crabBot));
-        Assert.Equal(HttpStatusCode.NotFound, await GetStatsStatusAsync(foxBot));
+        Assert.Equal(strongBot, snapshot.WinnerId);
+        Assert.Equal(HttpStatusCode.NotFound, await GetStatsStatusAsync(strongBot));
+        Assert.Equal(HttpStatusCode.NotFound, await GetStatsStatusAsync(weakBot));
     }
 
     [Fact]
@@ -129,7 +140,7 @@ public sealed class BattleHandOverTests(AppHostFixture host)
         // Arrange: a snapshot under the battle's id is stored already,
         // so the grain's insert fails on the primary key (ADR-0003).
         var player = NewPlayerId();
-        var battleId = await CreateAsync(new(player, false, ["lava-crab"]), new("bot", true, ["ember-fox"]));
+        var battleId = await CreateAsync(new(player, false, Three), new("bot", true, One));
         await host.Factory.Services.GetRequiredService<BattleSnapshotWriteRepository>().AddAsync(
             new BattleSnapshot
             {
@@ -143,14 +154,14 @@ public sealed class BattleHandOverTests(AppHostFixture host)
             Cancellation);
 
         // Act
-        await PlayToTheEndAsync(battleId, player);
+        await Driver.PlayToTheEndAsync(battleId);
 
         // Assert
         var state = await Grains.GetGrain<ILiveBattleGrain>(battleId).GetStateAsync();
         Assert.Equal(BattleStatus.Completed, state.Status);
         Assert.Equal(player, state.WinnerId);
-        var fox = await Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:1").GetSnapshotAsync();
-        Assert.True(fox.IsDefeated);
+        var owl = await Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:3").GetSnapshotAsync();
+        Assert.True(owl.IsDefeated);
         Assert.Equal(HttpStatusCode.NotFound, await GetStatsStatusAsync(player));
     }
 
@@ -159,8 +170,8 @@ public sealed class BattleHandOverTests(AppHostFixture host)
     {
         // Arrange
         var player = NewPlayerId();
-        var battleId = await CreateAsync(new(player, false, ["lava-crab"]), new("bot", true, ["ember-fox"]));
-        await PlayToTheEndAsync(battleId, player);
+        var battleId = await CreateAsync(new(player, false, Three), new("bot", true, One));
+        await Driver.PlayToTheEndAsync(battleId);
         using var client = host.Factory.CreateClient();
 
         // Act
@@ -172,7 +183,10 @@ public sealed class BattleHandOverTests(AppHostFixture host)
         Assert.Equal(BattleStatus.Completed, battle.Status);
         Assert.Equal(player, battle.WinnerId);
         Assert.Null(battle.TurnDeadline);
-        Assert.Equal([60, 40], battle.Combatants.Select(combatant => combatant.MaxHitPoints));
+        Assert.Equal(Three.Concat(One), battle.Combatants.Select(combatant => combatant.SpeciesId));
+        Assert.Equal(
+            battle.Combatants.Select(combatant => SpeciesSeed.All.Single(species => species.Id == combatant.SpeciesId).MaxHitPoints),
+            battle.Combatants.Select(combatant => combatant.MaxHitPoints));
     }
 
     private static string NewPlayerId() => $"player-{Guid.NewGuid():N}";
@@ -180,17 +194,6 @@ public sealed class BattleHandOverTests(AppHostFixture host)
     // A fresh arena per battle keeps the seeded arenas' lists clean.
     private Task<Guid> CreateAsync(ParticipantSetup first, ParticipantSetup second) =>
         Grains.GetGrain<IArenaGrain>($"test-{Guid.NewGuid()}").CreateBattleAsync(ImmutableArray.Create(first, second));
-
-    // Strikes with the player's one monster at the bot's one monster
-    // until the battle ended and the grain handed it over.
-    private async Task PlayToTheEndAsync(Guid battleId, string playerId)
-    {
-        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
-        for (var round = 0; round < 20 && (await battle.GetStateAsync()).Status == BattleStatus.InProgress; round++)
-        {
-            await battle.SubmitActionAsync(new BattleAction(playerId, 0, 1, "strike"));
-        }
-    }
 
     // Polls the cold store; deadlines and the bot loop end a battle
     // outside the test's own calls.

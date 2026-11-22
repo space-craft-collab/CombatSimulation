@@ -14,13 +14,28 @@ namespace OrleansMonsterArena.Tests;
 [Collection(AppHostFixture.CollectionName)]
 public sealed class BattleGrainTests(AppHostFixture host)
 {
-    // Human Lava Crab (60 HP, 10 ATK, 8 DEF) beats the bot's Ember Fox
-    // (40 HP, 14 ATK, 4 DEF): both deal 6 per hit, the fox falls in
-    // round 7.
+    // One human against one bot, for the tests that check which
+    // actions the grain accepts; none of them plays a round.
     private static readonly ImmutableArray<ParticipantSetup> OneVsOne =
     [
         new("player-1", false, ["lava-crab"]),
         new("bot-1", true, ["ember-fox"]),
+    ];
+
+    // Two monsters a side: one action per side fells at most one
+    // monster each, so the first round cannot end the battle.
+    private static readonly ImmutableArray<ParticipantSetup> PairVsBot =
+    [
+        new("player-1", false, ["lava-crab", "moss-golem"]),
+        new("bot-1", true, ["lava-crab", "moss-golem"]),
+    ];
+
+    // Three monsters against one: the bigger side wins, whatever the
+    // numbers.
+    private static readonly ImmutableArray<ParticipantSetup> ThreeVsBot =
+    [
+        new("player-1", false, ["moss-golem", "lava-crab", "ember-fox"]),
+        new("bot-1", true, ["frost-owl"]),
     ];
 
     // Two humans: a round stays open until both have acted.
@@ -30,33 +45,36 @@ public sealed class BattleGrainTests(AppHostFixture host)
         new("player-2", false, ["ember-fox"]),
     ];
 
-    // No human at all: the grain timer plays every round. Same
-    // matchup as OneVsOne, so the crab wins in round 7.
-    private static readonly ImmutableArray<ParticipantSetup> BotVsBot =
+    // Two humans with three monsters each: the first monster to fall
+    // leaves both sides standing, and a side that misses its turns
+    // survives the few strikes these tests deal.
+    private static readonly ImmutableArray<ParticipantSetup> ThreeVsThreeHumans =
     [
-        new("bot-1", true, ["lava-crab"]),
-        new("bot-2", true, ["ember-fox"]),
+        new("player-1", false, ["moss-golem", "lava-crab", "ember-fox"]),
+        new("player-2", false, ["frost-owl", "ember-fox", "lava-crab"]),
     ];
 
-    // A two-monster side: the bot's Ember Fox (14 ATK) picks the
-    // weakest opponent, the player's fox (40 HP, 4 DEF), and fells it
-    // in round 4 with 10 per hit. The Moss Golem (80 HP, 10 DEF)
-    // takes 4 per hit and deals 4, so it outlasts the bot's fox.
-    private static readonly ImmutableArray<ParticipantSetup> TwoVsOne =
+    // No human at all: the grain timer plays every round. Three
+    // monsters against one, so bot-1 wins.
+    private static readonly ImmutableArray<ParticipantSetup> BotVsBot =
     [
-        new("player-1", false, ["ember-fox", "moss-golem"]),
-        new("bot-1", true, ["ember-fox"]),
+        new("bot-1", true, ["moss-golem", "lava-crab", "ember-fox"]),
+        new("bot-2", true, ["frost-owl"]),
     ];
 
     private static readonly ParticipantSetup Host = new("player-1", false, ["lava-crab"]);
 
-    private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(10);
+    // A host and a bot with two monsters each, so round 1 cannot end
+    // the battle (see PairVsBot).
+    private static readonly ParticipantSetup HostWithPair = new("player-1", false, ["lava-crab", "moss-golem"]);
+
+    private static readonly ParticipantSetup BotWithPair = new("bot-1", true, ["lava-crab", "moss-golem"]);
 
     private IGrainFactory Grains => host.Factory.Services.GetRequiredService<IClusterClient>();
 
-    // Reads a battle from either store: a completed battle is handed
-    // over to the cold store and its grain cleared (ADR-0003).
-    private GetBattleService Battles => host.Factory.Services.GetRequiredService<GetBattleService>();
+    // Plays and reads battles; a completed battle is handed over to
+    // the cold store and its grain cleared (ADR-0003).
+    private GrainBattleDriver Driver => new(host.Factory.Services);
 
     // A fresh arena per test keeps the battle lists independent.
     private IArenaGrain NewArena() => Grains.GetGrain<IArenaGrain>($"test-{Guid.NewGuid()}");
@@ -84,16 +102,15 @@ public sealed class BattleGrainTests(AppHostFixture host)
     public async Task SubmitActionAsync_HumanActs_BotAnswersInSameRound()
     {
         // Arrange
-        var battleId = await NewArena().CreateBattleAsync(OneVsOne);
-        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
+        var battleId = await NewArena().CreateBattleAsync(PairVsBot);
 
         // Act
-        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
+        var state = await Driver.StrikeAsync(battleId, "player-1");
 
-        // Assert
-        Assert.Equal(2, (await battle.GetStateAsync()).Round);
-        var crab = await Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:0").GetSnapshotAsync();
-        Assert.Equal(54, crab.HitPoints);
+        // Assert: the round resolved as soon as the human acted, long
+        // before the turn deadline, so the bot decided inline.
+        Assert.Equal(BattleStatus.InProgress, state.Status);
+        Assert.Equal(2, state.Round);
     }
 
     [Fact]
@@ -101,73 +118,55 @@ public sealed class BattleGrainTests(AppHostFixture host)
     {
         // Arrange
         var arena = NewArena();
-        var battleId = await arena.CreateBattleAsync(OneVsOne);
-        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
+        var battleId = await arena.CreateBattleAsync(ThreeVsBot);
 
         // Act
-        for (var round = 0; round < 20 && (await battle.GetStateAsync()).Status == BattleStatus.InProgress; round++)
-        {
-            await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
-        }
+        var state = await Driver.PlayToTheEndAsync(battleId);
 
         // Assert
-        var state = await Battles.FindAsync(battleId, TestContext.Current.CancellationToken);
-        Assert.NotNull(state);
-        Assert.Equal(BattleStatus.Completed, state.Status);
-        Assert.Equal("player-1", state.WinnerId);
-        Assert.Equal(7, state.Round);
-        Assert.Equal(0, state.Combatants[1].HitPoints);
+        Assert.Equal("player-1", BattleAssert.Decided(state));
+        Assert.Equal(0, state.Combatants[3].HitPoints);
         Assert.Empty(await arena.GetBattlesAsync());
     }
 
     [Fact]
-    public async Task SubmitActionAsync_OneOfTwoMonstersFalls_BattleContinues()
+    public async Task SubmitActionAsync_FirstMonsterFalls_BattleContinues()
     {
         // Arrange
-        var battleId = await NewArena().CreateBattleAsync(TwoVsOne);
-        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
-        var golemStrikes = new BattleAction("player-1", 1, 2, "strike");
+        var battleId = await NewArena().CreateBattleAsync(ThreeVsThreeHumans);
 
-        // Act: the player's fox falls in round 4.
-        for (var round = 1; round <= 4; round++)
-        {
-            await battle.SubmitActionAsync(golemStrikes);
-        }
+        // Act: both sides strike every round until a monster is down.
+        var midway = await Driver.PlayUntilAsync(battleId, FirstMonsterDown);
 
         // Assert: one monster down does not end the battle.
-        var midway = await battle.GetStateAsync();
         Assert.Equal(BattleStatus.InProgress, midway.Status);
         Assert.Null(midway.WinnerId);
-        Assert.Equal(5, midway.Round);
-        Assert.Equal([0, 80, 24], midway.Combatants.Select(combatant => combatant.HitPoints));
+        Assert.True(midway.Round > 1, $"Expected the round to have advanced, but it is {midway.Round}.");
+        Assert.NotEmpty(BattleRounds.StandingOf(midway, "player-1"));
+        Assert.NotEmpty(BattleRounds.StandingOf(midway, "player-2"));
 
-        // Act: the golem needs six more hits on the bot's fox.
-        for (var round = 5; round <= 10; round++)
-        {
-            await battle.SubmitActionAsync(golemStrikes);
-        }
+        // Act
+        var final = await Driver.PlayToTheEndAsync(battleId);
 
         // Assert: the side with a monster left standing wins.
-        var final = await Battles.FindAsync(battleId, TestContext.Current.CancellationToken);
-        Assert.NotNull(final);
-        Assert.Equal(BattleStatus.Completed, final.Status);
-        Assert.Equal("player-1", final.WinnerId);
-        Assert.Equal([0, 56, 0], final.Combatants.Select(combatant => combatant.HitPoints));
+        BattleAssert.Decided(final);
     }
 
     [Fact]
     public async Task SubmitActionAsync_DefeatedActorSlot_ThrowsArgumentException()
     {
-        // Arrange: play until the player's fox in slot 0 has fallen.
-        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().CreateBattleAsync(TwoVsOne));
-        for (var round = 1; round <= 4; round++)
-        {
-            await battle.SubmitActionAsync(new BattleAction("player-1", 1, 2, "strike"));
-        }
+        // Arrange: play until a monster has fallen; its side is still
+        // in the fight and may act, but not with that monster.
+        var battleId = await NewArena().CreateBattleAsync(ThreeVsThreeHumans);
+        var midway = await Driver.PlayUntilAsync(battleId, FirstMonsterDown);
+        var fallen = midway.Combatants.First(combatant => combatant.HitPoints == 0);
+        var target = midway.Combatants.First(combatant =>
+            combatant.ParticipantId != fallen.ParticipantId && combatant.HitPoints > 0);
+        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
 
         // Act + Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => battle.SubmitActionAsync(new BattleAction("player-1", 0, 2, "strike")));
+            () => battle.SubmitActionAsync(new BattleAction(fallen.ParticipantId, fallen.Slot, target.Slot, "strike")));
     }
 
     [Fact]
@@ -307,14 +306,13 @@ public sealed class BattleGrainTests(AppHostFixture host)
     public async Task CreateBattleAsync_BotVsBot_PlaysToTheEndOnItsOwn()
     {
         // Arrange
-        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().CreateBattleAsync(BotVsBot));
+        var battleId = await NewArena().CreateBattleAsync(BotVsBot);
 
         // Act
-        var state = await WaitForAsync(battle, state => state.Status == BattleStatus.Completed);
+        var state = await Driver.WaitForAsync(battleId, state => state.Status == BattleStatus.Completed);
 
         // Assert
-        Assert.Equal("bot-1", state.WinnerId);
-        Assert.Equal(7, state.Round);
+        Assert.Equal("bot-1", BattleAssert.Decided(state));
         Assert.Null(state.TurnDeadline);
     }
 
@@ -336,19 +334,20 @@ public sealed class BattleGrainTests(AppHostFixture host)
     public async Task ReceiveReminder_OneHumanMissesDeadline_RoundResolvesWithoutThem()
     {
         // Arrange
-        var battleId = await NewArena().CreateBattleAsync(HumanVsHuman);
-        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
-        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
+        var battleId = await NewArena().CreateBattleAsync(ThreeVsThreeHumans);
+        await Driver.StrikeAsync(battleId, "player-1");
 
         // Act
-        var state = await WaitForAsync(battle, state => state.Round == 2);
+        var state = await Driver.WaitForAsync(battleId, state => state.Round == 2);
 
-        // Assert
+        // Assert: player-1's strike landed on player-2's first monster;
+        // player-2 never acted, so player-1's side is untouched.
         Assert.Equal(BattleStatus.InProgress, state.Status);
-        var crab = await Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:0").GetSnapshotAsync();
-        var fox = await Grains.GetGrain<IMonsterInstanceGrain>($"{battleId}:1").GetSnapshotAsync();
-        Assert.Equal(60, crab.HitPoints);
-        Assert.Equal(34, fox.HitPoints);
+        Assert.All(
+            state.Combatants.Where(combatant => combatant.ParticipantId == "player-1"),
+            combatant => Assert.Equal(combatant.MaxHitPoints, combatant.HitPoints));
+        var struck = state.Combatants[3];
+        Assert.True(struck.HitPoints < struck.MaxHitPoints, $"Expected slot 3 to have taken damage: {struck}.");
     }
 
     [Fact]
@@ -356,21 +355,25 @@ public sealed class BattleGrainTests(AppHostFixture host)
     {
         // Arrange: player-2 never acts, so every round has to end
         // on a deadline, and each tick has to arm the next one.
-        var battleId = await NewArena().CreateBattleAsync(HumanVsHuman);
-        var battle = Grains.GetGrain<ILiveBattleGrain>(battleId);
+        var battleId = await NewArena().CreateBattleAsync(ThreeVsThreeHumans);
 
         // Act
-        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
-        var second = await WaitForAsync(battle, state => state.Round == 2);
-        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
-        var third = await WaitForAsync(battle, state => state.Round == 3);
+        await Driver.StrikeAsync(battleId, "player-1");
+        var second = await Driver.WaitForAsync(battleId, state => state.Round == 2);
+        await Driver.StrikeAsync(battleId, "player-1");
+        var third = await Driver.WaitForAsync(battleId, state => state.Round == 3);
 
-        // Assert: the crab hit twice for 6, the fox never struck back.
+        // Assert: each of player-1's strikes landed, and player-2
+        // never struck back.
         Assert.Equal(BattleStatus.InProgress, third.Status);
         Assert.NotNull(second.TurnDeadline);
         Assert.NotNull(third.TurnDeadline);
         Assert.True(third.TurnDeadline > second.TurnDeadline);
-        Assert.Equal([60, 28], third.Combatants.Select(combatant => combatant.HitPoints));
+        Assert.All(
+            third.Combatants.Where(combatant => combatant.ParticipantId == "player-1"),
+            combatant => Assert.Equal(combatant.MaxHitPoints, combatant.HitPoints));
+        Assert.True(HitPointsOf(second, "player-2") < MaxHitPointsOf(second, "player-2"));
+        Assert.True(HitPointsOf(third, "player-2") < HitPointsOf(second, "player-2"));
     }
 
     [Fact]
@@ -378,10 +381,10 @@ public sealed class BattleGrainTests(AppHostFixture host)
     {
         // Arrange
         var arena = NewArena();
-        var battle = Grains.GetGrain<ILiveBattleGrain>(await arena.CreateBattleAsync(OneVsOne));
+        var battleId = await arena.CreateBattleAsync(OneVsOne);
 
         // Act
-        var state = await WaitForAsync(battle, state => state.Status == BattleStatus.Completed);
+        var state = await Driver.WaitForAsync(battleId, state => state.Status == BattleStatus.Completed);
 
         // Assert
         Assert.Null(state.WinnerId);
@@ -432,16 +435,16 @@ public sealed class BattleGrainTests(AppHostFixture host)
     public async Task JoinAsync_Bot_ActsInlineOnceTheHostActs()
     {
         // Arrange
-        var battle = Grains.GetGrain<ILiveBattleGrain>(await NewArena().OpenBattleAsync(Host));
-        await battle.JoinAsync(new ParticipantSetup("bot-1", true, ["lava-crab"]));
+        var battleId = await NewArena().OpenBattleAsync(HostWithPair);
+        await Grains.GetGrain<ILiveBattleGrain>(battleId).JoinAsync(BotWithPair);
 
         // Act
-        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, "strike"));
+        var state = await Driver.StrikeAsync(battleId, "player-1");
 
-        // Assert: both crabs deal 10 - 8 = 2.
-        var state = await battle.GetStateAsync();
+        // Assert: the round resolved as soon as the host acted, long
+        // before the turn deadline, so the bot decided inline.
+        Assert.Equal(BattleStatus.InProgress, state.Status);
         Assert.Equal(2, state.Round);
-        Assert.All(state.Combatants, combatant => Assert.Equal(58, combatant.HitPoints));
     }
 
     [Fact]
@@ -498,10 +501,10 @@ public sealed class BattleGrainTests(AppHostFixture host)
     {
         // Arrange
         var arena = NewArena();
-        var battle = Grains.GetGrain<ILiveBattleGrain>(await arena.OpenBattleAsync(Host));
+        var battleId = await arena.OpenBattleAsync(Host);
 
         // Act
-        var state = await WaitForAsync(battle, state => state.Status == BattleStatus.Completed);
+        var state = await Driver.WaitForAsync(battleId, state => state.Status == BattleStatus.Completed);
 
         // Assert
         Assert.Null(state.WinnerId);
@@ -538,26 +541,13 @@ public sealed class BattleGrainTests(AppHostFixture host)
         Assert.Equal(30, (await monster.GetSnapshotAsync()).HitPoints);
     }
 
-    // Polls the battle until the condition holds; the round loop
-    // runs on reminders and timers, outside the test's own calls.
-    private async Task<BattleResponse> WaitForAsync(ILiveBattleGrain battle, Func<BattleResponse, bool> condition)
-    {
-        var giveUp = DateTimeOffset.UtcNow + WaitLimit;
-        while (true)
-        {
-            var state = await Battles.FindAsync(battle.GetPrimaryKey(), TestContext.Current.CancellationToken)
-                ?? throw new InvalidOperationException("Neither store knows the battle.");
-            if (condition(state))
-            {
-                return state;
-            }
+    // The first monster of the battle has fallen.
+    private static bool FirstMonsterDown(BattleResponse battle) =>
+        battle.Combatants.Any(combatant => combatant.HitPoints == 0);
 
-            if (DateTimeOffset.UtcNow > giveUp)
-            {
-                Assert.Fail($"Battle state {state} did not reach the expected condition within {WaitLimit}.");
-            }
+    private static int HitPointsOf(BattleResponse battle, string participantId) =>
+        battle.Combatants.Where(combatant => combatant.ParticipantId == participantId).Sum(combatant => combatant.HitPoints);
 
-            await Task.Delay(TimeSpan.FromMilliseconds(50), TestContext.Current.CancellationToken);
-        }
-    }
+    private static int MaxHitPointsOf(BattleResponse battle, string participantId) =>
+        battle.Combatants.Where(combatant => combatant.ParticipantId == participantId).Sum(combatant => combatant.MaxHitPoints);
 }

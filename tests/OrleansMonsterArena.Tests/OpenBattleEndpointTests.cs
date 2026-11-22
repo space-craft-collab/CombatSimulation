@@ -28,14 +28,13 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var arena = TestArenas.VolcanoBattles;
 
         // Act
-        var battle = await OpenAsync(client, arena);
+        var battle = await OpenAsync(client);
 
         // Assert
         Assert.Equal(BattleStatus.WaitingForPlayers, battle.Status);
-        Assert.Equal(new CombatantResponse(0, "player-1", false, "lava-crab", 60, 60), Assert.Single(battle.Combatants));
+        AssertFresh(Assert.Single(battle.Combatants), 0, "player-1", false, "lava-crab");
     }
 
     [Fact]
@@ -44,7 +43,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
         // Arrange
         using var client = host.Factory.CreateClient();
         var arena = TestArenas.VolcanoBattles;
-        var battle = await OpenAsync(client, arena);
+        var battle = await OpenAsync(client);
 
         // Act
         var listed = await client.GetFromJsonAsync<List<BattleSummaryResponse>>(arena, Cancellation);
@@ -61,7 +60,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
+        var battle = await OpenAsync(client);
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -73,7 +72,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
         Assert.NotNull(started);
         Assert.Equal(BattleStatus.InProgress, started.Status);
         Assert.Equal(1, started.Round);
-        Assert.Equal(new CombatantResponse(1, "player-2", false, "ember-fox", 40, 40), started.Combatants[1]);
+        AssertFresh(started.Combatants[1], 1, "player-2", false, "ember-fox");
     }
 
     [Fact]
@@ -81,7 +80,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
+        var battle = await OpenAsync(client);
 
         // Act
         using var response = await client.PostAsync(Bot(battle.BattleId), null, Cancellation);
@@ -91,7 +90,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
         var started = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
         Assert.NotNull(started);
         Assert.Equal(BattleStatus.InProgress, started.Status);
-        Assert.Equal(new CombatantResponse(1, "bot", true, "lava-crab", 60, 60), started.Combatants[1]);
+        AssertFresh(started.Combatants[1], 1, "bot", true, "lava-crab");
     }
 
     [Fact]
@@ -99,7 +98,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
+        var battle = await OpenAsync(client);
         using var first = await client.PostAsync(Bot(battle.BattleId), null, Cancellation);
         first.EnsureSuccessStatusCode();
 
@@ -116,7 +115,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
+        var battle = await OpenAsync(client);
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -136,7 +135,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
+        var battle = await OpenAsync(client);
         var team = Enumerable.Repeat("ember-fox", teamSize).ToArray();
 
         // Act
@@ -156,7 +155,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
+        var battle = await OpenAsync(client);
         using var first = await client.PostAsync(Bot(battle.BattleId), null, Cancellation);
         first.EnsureSuccessStatusCode();
 
@@ -199,7 +198,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     {
         // Arrange
         using var client = host.Factory.CreateClient();
-        var battle = await OpenAsync(client, TestArenas.VolcanoBattles);
+        var battle = await OpenAsync(client);
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -214,13 +213,23 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     private static object TeamBody(string playerId, string speciesId) =>
         new { playerId, monsterSpeciesIds = new[] { speciesId } };
 
-    private static async Task<BattleResponse> OpenAsync(HttpClient client, Uri arena)
-    {
-        using var response = await client.PostAsJsonAsync(
-            arena, new { playerId = "player-1", monsterSpeciesIds = CrabTeam, opponent = "Human" }, Cancellation);
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    private static Task<BattleResponse> OpenAsync(HttpClient client) =>
+        new HttpBattleDriver(client).OpenAsync("player-1", CrabTeam);
 
-        return await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation)
-            ?? throw new InvalidOperationException("The start endpoint returned no battle.");
+    // A monster as a battle fields it: in its slot, for its side, at
+    // full health.
+    private static void AssertFresh(
+        CombatantResponse combatant,
+        int slot,
+        string participantId,
+        bool isBot,
+        string speciesId)
+    {
+        Assert.Equal(slot, combatant.Slot);
+        Assert.Equal(participantId, combatant.ParticipantId);
+        Assert.Equal(isBot, combatant.IsBot);
+        Assert.Equal(speciesId, combatant.SpeciesId);
+        Assert.True(combatant.MaxHitPoints > 0, $"Expected positive max hit points: {combatant}.");
+        Assert.Equal(combatant.MaxHitPoints, combatant.HitPoints);
     }
 }

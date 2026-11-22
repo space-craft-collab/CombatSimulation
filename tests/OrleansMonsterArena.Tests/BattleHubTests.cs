@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Threading.Channels;
 using Battles.Features.GetBattle;
 using Battles.Features.WatchBattle;
@@ -22,6 +21,15 @@ public sealed class BattleHubTests(AppHostFixture host)
 
     private static readonly string[] CrabTeam = ["lava-crab"];
 
+    // Two sturdy monsters: one action per side fells at most one
+    // monster each, so the first round cannot end the battle, and a
+    // single strike is unlikely to fell the monster the bot acts with.
+    private static readonly string[] GolemPair = ["moss-golem", "moss-golem"];
+
+    // Three monsters against one: the bigger side wins, whatever the
+    // numbers.
+    private static readonly string[] ThreeMonsters = ["moss-golem", "lava-crab", "ember-fox"];
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -29,7 +37,8 @@ public sealed class BattleHubTests(AppHostFixture host)
     {
         // Arrange
         await using var connection = await ConnectAsync();
-        var battle = await StartAsync("lava-crab");
+        using var client = host.Factory.CreateClient();
+        var battle = await new HttpBattleDriver(client).StartAgainstBotAsync("player-1", CrabTeam);
 
         // Act
         var watched = await connection.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
@@ -52,32 +61,38 @@ public sealed class BattleHubTests(AppHostFixture host)
     }
 
     [Fact]
-    public async Task RoundResolved_HumanStrikes_SendsDeltaWithBothStrikes()
+    public async Task RoundResolved_HumanStrikes_SendsDeltaWithBothSidesActions()
     {
-        // Arrange
+        // Arrange: the player holds slots 0-1, the bot 2-3.
         await using var connection = await ConnectAsync();
         var deltas = Collect(connection);
-        var battle = await StartAsync("lava-crab");
+        using var client = host.Factory.CreateClient();
+        var driver = new HttpBattleDriver(client);
+        var battle = await driver.StartAgainstBotAsync("player-1", GolemPair);
         await connection.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
+        var botSlots = battle.Combatants.Where(combatant => combatant.IsBot).Select(combatant => combatant.Slot).ToList();
+        var target = battle.Combatants[2];
 
         // Act
-        using var client = host.Factory.CreateClient();
-        using var response = await client.PostAsJsonAsync(
-            new Uri($"/battles/{battle.BattleId}/actions", UriKind.Relative),
-            new { participantId = "player-1", actorSlot = 0, targetSlot = 1 },
-            Cancellation);
-        response.EnsureSuccessStatusCode();
+        await driver.StrikeAsync(battle.BattleId, "player-1");
 
-        // Assert: mirrored crabs, equal speed, the lower slot strikes first.
+        // Assert
         var delta = await deltas.ReadAsync(Cancellation).AsTask().WaitAsync(WaitLimit, Cancellation);
         Assert.Equal(battle.BattleId, delta.BattleId);
         Assert.Equal(1, delta.Round);
         Assert.Equal(BattleStatus.InProgress, delta.Status);
         Assert.NotNull(delta.TurnDeadline);
-        Assert.Collection(
-            delta.Strikes,
-            first => Assert.Equal(new StrikeDto(0, 1, "strike", 2, 58), first),
-            second => Assert.Equal(new StrikeDto(1, 0, "strike", 2, 58), second));
+
+        // Assert: the human's strike, from its first monster at the
+        // bot's first, which was at full health.
+        var strike = Assert.Single(delta.Strikes, entry => entry.ActorSlot == 0);
+        Assert.Equal(target.Slot, strike.TargetSlot);
+        Assert.Equal("strike", strike.AbilityId);
+        Assert.True(strike.Damage > 0, $"Expected the strike to deal damage: {strike}.");
+        Assert.Equal(target.MaxHitPoints - strike.Damage, strike.TargetHitPoints);
+
+        // Assert: the bot acted in the same round.
+        Assert.Contains(delta.Strikes, entry => botSlots.Contains(entry.ActorSlot));
     }
 
     [Fact]
@@ -86,7 +101,8 @@ public sealed class BattleHubTests(AppHostFixture host)
         // Arrange
         await using var connection = await ConnectAsync();
         var deltas = Collect(connection);
-        var battle = await StartAsync("lava-crab");
+        using var client = host.Factory.CreateClient();
+        var battle = await new HttpBattleDriver(client).StartAgainstBotAsync("player-1", CrabTeam);
         await connection.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
 
         // Act
@@ -103,29 +119,35 @@ public sealed class BattleHubTests(AppHostFixture host)
     [Fact]
     public async Task RoundResolved_FinalRound_SendsCompletedDeltaWithWinner()
     {
-        // Arrange: mirrored foxes, 40 HP each and 10 per hit; the
-        // player wins the speed tie on the lower slot, in round 4.
+        // Arrange: two humans, three monsters against one, so player-1
+        // wins; both act every round.
         await using var connection = await ConnectAsync();
         var deltas = Collect(connection);
-        var battle = await StartAsync("ember-fox");
-        await connection.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
+        using var client = host.Factory.CreateClient();
+        var driver = new HttpBattleDriver(client);
+        var opened = await driver.OpenAsync("player-1", ThreeMonsters);
+        await connection.InvokeAsync<BattleResponse>("Watch", opened.BattleId, Cancellation);
+        await driver.JoinAsync(opened.BattleId, "player-2", "frost-owl");
 
         // Act
-        BattleEventDto? last = null;
-        for (var round = 1; round <= 4; round++)
+        var final = await driver.PlayToTheEndAsync(opened.BattleId);
+        var received = new List<BattleEventDto>();
+        do
         {
-            await StrikeAsync(battle.BattleId);
-            last = await deltas.ReadAsync(Cancellation).AsTask().WaitAsync(WaitLimit, Cancellation);
+            received.Add(await deltas.ReadAsync(Cancellation).AsTask().WaitAsync(WaitLimit, Cancellation));
         }
+        while (received[^1].Status != BattleStatus.Completed);
 
-        // Assert: the last delta still carries the result, although
-        // the grain clears its state right after the hand-over.
-        Assert.NotNull(last);
-        Assert.Equal(4, last.Round);
+        // Assert: one delta per round, the last one still carrying the
+        // result, although the grain clears its state right after the
+        // hand-over.
+        Assert.Equal(Enumerable.Range(1, final.Round), received.Select(delta => delta.Round));
+        Assert.All(received.SkipLast(1), delta => Assert.Equal(BattleStatus.InProgress, delta.Status));
+        var last = received[^1];
         Assert.Equal(BattleStatus.Completed, last.Status);
         Assert.Equal("player-1", last.WinnerId);
         Assert.Null(last.TurnDeadline);
-        Assert.Equal(new StrikeDto(0, 1, "strike", 10, 0), Assert.Single(last.Strikes));
+        Assert.Contains(last.Strikes, entry => entry.TargetSlot == 3 && entry.TargetHitPoints == 0);
     }
 
     [Fact]
@@ -136,13 +158,15 @@ public sealed class BattleHubTests(AppHostFixture host)
         await using var staying = await ConnectAsync();
         var missed = Collect(leaving);
         var received = Collect(staying);
-        var battle = await StartAsync("lava-crab");
+        using var client = host.Factory.CreateClient();
+        var driver = new HttpBattleDriver(client);
+        var battle = await driver.StartAgainstBotAsync("player-1", CrabTeam);
         await leaving.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
         await staying.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
 
         // Act
         await leaving.InvokeAsync("Unwatch", battle.BattleId, Cancellation);
-        await StrikeAsync(battle.BattleId);
+        await driver.StrikeAsync(battle.BattleId, "player-1");
 
         // Assert: once the remaining watcher has the delta, the one
         // that left would have had it too.
@@ -159,12 +183,7 @@ public sealed class BattleHubTests(AppHostFixture host)
         var started = new TaskCompletionSource<BattleResponse>();
         connection.On<BattleResponse>(BattleHub.BattleStartedMethod, battle => started.TrySetResult(battle));
         using var client = host.Factory.CreateClient();
-        using var opened = await client.PostAsJsonAsync(
-            TestArenas.VolcanoBattles,
-            new { playerId = "player-1", monsterSpeciesIds = CrabTeam, opponent = "Human" },
-            Cancellation);
-        var battle = await opened.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
-        Assert.NotNull(battle);
+        var battle = await new HttpBattleDriver(client).OpenAsync("player-1", CrabTeam);
         var watched = await connection.InvokeAsync<BattleResponse>("Watch", battle.BattleId, Cancellation);
         Assert.Equal(BattleStatus.WaitingForPlayers, watched.Status);
 
@@ -202,28 +221,5 @@ public sealed class BattleHubTests(AppHostFixture host)
         await connection.StartAsync(Cancellation);
 
         return connection;
-    }
-
-    private async Task StrikeAsync(Guid battleId)
-    {
-        using var client = host.Factory.CreateClient();
-        using var response = await client.PostAsJsonAsync(
-            new Uri($"/battles/{battleId}/actions", UriKind.Relative),
-            new { participantId = "player-1", actorSlot = 0, targetSlot = 1 },
-            Cancellation);
-        response.EnsureSuccessStatusCode();
-    }
-
-    private async Task<BattleResponse> StartAsync(string speciesId)
-    {
-        using var client = host.Factory.CreateClient();
-        using var response = await client.PostAsJsonAsync(
-            TestArenas.VolcanoBattles,
-            new { playerId = "player-1", monsterSpeciesIds = new[] { speciesId } },
-            Cancellation);
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation)
-            ?? throw new InvalidOperationException("The start endpoint returned no battle.");
     }
 }

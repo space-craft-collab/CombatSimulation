@@ -27,19 +27,19 @@ public sealed class BattleHistoryEndpointTests(AppHostFixture host)
         // Arrange
         var player = NewPlayerId();
         using var client = host.Factory.CreateClient();
-        var first = await PlayWonBattleAsync(client, player);
-        var second = await PlayWonBattleAsync(client, player);
-        await StartAsync(client, player);
+        var first = await PlayBattleAsync(client, player);
+        var second = await PlayBattleAsync(client, player);
+        await new HttpBattleDriver(client).StartAgainstBotAsync(player, FoxTeam);
 
         // Act
         var history = await GetHistoryAsync(client, player);
 
-        // Assert
-        Assert.Equal([second, first], history.Select(entry => entry.BattleId));
+        // Assert: the entry shows the battle as it ended, whoever won.
+        Assert.Equal([second.BattleId, first.BattleId], history.Select(entry => entry.BattleId));
         var latest = history[0];
         Assert.Equal(TestArenas.Volcano, latest.ArenaId);
-        Assert.Equal(player, latest.WinnerId);
-        Assert.Equal(4, latest.Round);
+        Assert.Equal(BattleAssert.Decided(second), latest.WinnerId);
+        Assert.Equal(second.Round, latest.Round);
         Assert.Equal([player, "bot"], latest.ParticipantIds);
     }
 
@@ -97,7 +97,7 @@ public sealed class BattleHistoryEndpointTests(AppHostFixture host)
         // Arrange: "PLAYER-…" is a different player than "player-…".
         var player = NewPlayerId();
         using var client = host.Factory.CreateClient();
-        await PlayWonBattleAsync(client, player);
+        await PlayBattleAsync(client, player);
 
         // Act
         var history = await GetHistoryAsync(client, player.ToUpperInvariant());
@@ -108,33 +108,14 @@ public sealed class BattleHistoryEndpointTests(AppHostFixture host)
 
     private static string NewPlayerId() => $"player-{Guid.NewGuid():N}";
 
-    private static async Task<BattleResponse> StartAsync(HttpClient client, string player)
+    // Plays a battle against the bot to the end; the result does not
+    // matter, only that the battle completed.
+    private static async Task<BattleResponse> PlayBattleAsync(HttpClient client, string player)
     {
-        using var response = await client.PostAsJsonAsync(
-            TestArenas.VolcanoBattles,
-            new { playerId = player, monsterSpeciesIds = FoxTeam },
-            Cancellation);
-        response.EnsureSuccessStatusCode();
+        var driver = new HttpBattleDriver(client);
+        var battle = await driver.StartAgainstBotAsync(player, FoxTeam);
 
-        return await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation)
-            ?? throw new InvalidOperationException("The start endpoint returned no battle.");
-    }
-
-    // Mirrored foxes deal 10 per hit, 40 HP each; the player wins the
-    // speed tie on the lower slot, in round 4.
-    private static async Task<Guid> PlayWonBattleAsync(HttpClient client, string player)
-    {
-        var battle = await StartAsync(client, player);
-        for (var round = 0; round < 4; round++)
-        {
-            using var played = await client.PostAsJsonAsync(
-                new Uri($"/battles/{battle.BattleId}/actions", UriKind.Relative),
-                new { participantId = player, actorSlot = 0, targetSlot = 1 },
-                Cancellation);
-            played.EnsureSuccessStatusCode();
-        }
-
-        return battle.BattleId;
+        return await driver.PlayToTheEndAsync(battle.BattleId);
     }
 
     private static async Task<IReadOnlyList<BattleHistoryEntryResponse>> GetHistoryAsync(
