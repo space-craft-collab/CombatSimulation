@@ -16,11 +16,6 @@ public sealed class BalanceReportTests
     /// </summary>
     private const string UpdateVariable = "UPDATE_BALANCE";
 
-    /// <summary>
-    /// Battles per matchup and seat order.
-    /// </summary>
-    private const int GamesPerSeat = 20;
-
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -30,7 +25,7 @@ public sealed class BalanceReportTests
         var path = RepositoryFiles.PathTo("docs", "balance.md");
 
         // Act
-        var fresh = BalanceReportWriter.Write(BalanceSimulation.Run(Roster.Seeded, GamesPerSeat));
+        var fresh = BalanceReportWriter.Write(SeededBalance.Report);
 
         if (Environment.GetEnvironmentVariable(UpdateVariable) == "1")
         {

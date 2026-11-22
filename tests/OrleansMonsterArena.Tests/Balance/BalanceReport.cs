@@ -16,6 +16,44 @@ internal sealed record BalanceReport(
     IReadOnlyList<AbilityUsage> AbilityUsage)
 {
     /// <summary>
+    /// The share of their one-on-one battles the first species won
+    /// against the second, 0 to 1.
+    /// </summary>
+    /// <param name="speciesId">The species whose wins are counted.</param>
+    /// <param name="opponentId">The species it fought.</param>
+    /// <returns>The win rate.</returns>
+    /// <exception cref="ArgumentException">The two never fought one on one.</exception>
+    public double DuelWinRate(string speciesId, string opponentId)
+    {
+        foreach (var duel in Duels)
+        {
+            if (duel.First[0] == speciesId && duel.Second[0] == opponentId)
+            {
+                return duel.FirstWinRate;
+            }
+
+            if (duel.First[0] == opponentId && duel.Second[0] == speciesId)
+            {
+                return (double)duel.SecondWins / duel.Battles;
+            }
+        }
+
+        throw new ArgumentException($"'{speciesId}' and '{opponentId}' never fought one on one.", nameof(opponentId));
+    }
+
+    /// <summary>
+    /// The average length of the battles of some matchups, in rounds.
+    /// </summary>
+    /// <param name="matchups">The matchups to count.</param>
+    /// <returns>The average length.</returns>
+    public static double AverageRounds(IReadOnlyList<MatchupResult> matchups)
+    {
+        ArgumentNullException.ThrowIfNull(matchups);
+
+        return (double)matchups.Sum(matchup => matchup.Rounds) / matchups.Sum(matchup => matchup.Battles);
+    }
+
+    /// <summary>
     /// The share of its battles a species won, 0 to 1, counted over
     /// every team it was part of. A species on both sides of a
     /// battle wins and loses it once.

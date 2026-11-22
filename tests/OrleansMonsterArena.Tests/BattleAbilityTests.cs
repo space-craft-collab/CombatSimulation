@@ -22,11 +22,21 @@ public sealed class BattleAbilityTests(AppHostFixture host)
     private const string Fox = "ember-fox";
     private const string Golem = "moss-golem";
 
-    // player-1's fox holds slot 0, player-2's golem slot 1.
-    private static readonly ImmutableArray<ParticipantSetup> FoxVsGolem =
+    private const string Yak = "glacier-yak";
+
+    // Two monsters a side, so nobody falls while a cooldown runs
+    // down, whatever the numbers are: the fox attacks from slot 0,
+    // its golem in slot 1 takes the opponent's strikes, and the
+    // opponent's golem and yak in slots 2 and 3 share the fox's hits.
+    private const int FoxSlot = 0;
+    private const int DecoySlot = 1;
+    private const int FirstTarget = 2;
+    private const int SecondTarget = 3;
+
+    private static readonly ImmutableArray<ParticipantSetup> FoxAndGolemVsGolemAndYak =
     [
-        new("player-1", false, [Fox]),
-        new("player-2", false, [Golem]),
+        new("player-1", false, [Fox, Golem]),
+        new("player-2", false, [Golem, Yak]),
     ];
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -43,7 +53,7 @@ public sealed class BattleAbilityTests(AppHostFixture host)
         var state = await (await StartAsync()).GetStateAsync();
 
         // Assert
-        var abilities = state.Combatants[0].Abilities;
+        var abilities = state.Combatants[FoxSlot].Abilities;
         Assert.Equal(fox.Abilities.Select(ability => ability.Id), abilities.Select(ability => ability.AbilityId));
         Assert.All(abilities, ability => Assert.Equal(0, ability.RoundsLeft));
     }
@@ -58,13 +68,13 @@ public sealed class BattleAbilityTests(AppHostFixture host)
         var blasted = await StartAsync();
 
         // Act
-        await PlayRoundAsync(struck, "strike");
-        await PlayRoundAsync(blasted, special.Id);
+        await PlayRoundAsync(struck, "strike", FirstTarget);
+        await PlayRoundAsync(blasted, special.Id, FirstTarget);
 
         // Assert
         var afterStrike = await struck.GetStateAsync();
         var afterSpecial = await blasted.GetStateAsync();
-        Assert.True(afterSpecial.Combatants[1].HitPoints < afterStrike.Combatants[1].HitPoints);
+        Assert.True(afterSpecial.Combatants[FirstTarget].HitPoints < afterStrike.Combatants[FirstTarget].HitPoints);
         Assert.Equal(special.Cooldown, CooldownOf(afterSpecial, special.Id));
         Assert.Equal(0, CooldownOf(afterSpecial, "strike"));
         Assert.Equal(0, CooldownOf(afterStrike, special.Id));
@@ -76,18 +86,18 @@ public sealed class BattleAbilityTests(AppHostFixture host)
         // Arrange
         var special = await SpecialAttackAsync(Fox);
         var battle = await StartAsync();
-        await PlayRoundAsync(battle, special.Id);
+        await PlayRoundAsync(battle, special.Id, FirstTarget);
 
         // Act + Assert: refused for as many rounds as the cooldown says...
         for (var round = 0; round < special.Cooldown; round++)
         {
             await Assert.ThrowsAsync<ArgumentException>(
-                () => battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, special.Id)));
-            await PlayRoundAsync(battle, "strike");
+                () => battle.SubmitActionAsync(new BattleAction("player-1", FoxSlot, SecondTarget, special.Id)));
+            await PlayRoundAsync(battle, "strike", SecondTarget);
         }
 
         // ...and accepted again right after.
-        await PlayRoundAsync(battle, special.Id);
+        await PlayRoundAsync(battle, special.Id, SecondTarget);
         Assert.Equal(special.Cooldown, CooldownOf(await battle.GetStateAsync(), special.Id));
     }
 
@@ -100,7 +110,7 @@ public sealed class BattleAbilityTests(AppHostFixture host)
 
         // Act + Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            () => battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, golemOnly.Id)));
+            () => battle.SubmitActionAsync(new BattleAction("player-1", FoxSlot, FirstTarget, golemOnly.Id)));
         Assert.Equal(1, (await battle.GetStateAsync()).Round);
     }
 
@@ -112,12 +122,12 @@ public sealed class BattleAbilityTests(AppHostFixture host)
         var battleId = (await StartAsync()).GetPrimaryKey();
         using var client = host.Factory.CreateClient();
         await Grains.GetGrain<ILiveBattleGrain>(battleId)
-            .SubmitActionAsync(new BattleAction("player-2", 1, 0, "strike"));
+            .SubmitActionAsync(new BattleAction("player-2", FirstTarget, DecoySlot, "strike"));
 
         // Act
         using var response = await client.PostAsJsonAsync(
             new Uri($"/battles/{battleId}/actions", UriKind.Relative),
-            new { participantId = "player-1", actorSlot = 0, targetSlot = 1, abilityId = special.Id },
+            new { participantId = "player-1", actorSlot = FoxSlot, targetSlot = FirstTarget, abilityId = special.Id },
             Cancellation);
 
         // Assert
@@ -125,7 +135,7 @@ public sealed class BattleAbilityTests(AppHostFixture host)
         var battle = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
         Assert.NotNull(battle);
         Assert.Equal(2, battle.Round);
-        var cooling = battle.Combatants[0].Abilities.Single(ability => ability.AbilityId == special.Id);
+        var cooling = battle.Combatants[FoxSlot].Abilities.Single(ability => ability.AbilityId == special.Id);
         Assert.Equal(special.Cooldown, cooling.RoundsLeft);
     }
 
@@ -135,13 +145,13 @@ public sealed class BattleAbilityTests(AppHostFixture host)
         // Arrange
         var special = await SpecialAttackAsync(Fox);
         var battle = await StartAsync();
-        await PlayRoundAsync(battle, special.Id);
+        await PlayRoundAsync(battle, special.Id, FirstTarget);
         using var client = host.Factory.CreateClient();
 
         // Act
         using var response = await client.PostAsJsonAsync(
             new Uri($"/battles/{battle.GetPrimaryKey()}/actions", UriKind.Relative),
-            new { participantId = "player-1", actorSlot = 0, targetSlot = 1, abilityId = special.Id },
+            new { participantId = "player-1", actorSlot = FoxSlot, targetSlot = FirstTarget, abilityId = special.Id },
             Cancellation);
 
         // Assert
@@ -152,19 +162,19 @@ public sealed class BattleAbilityTests(AppHostFixture host)
     {
         var arena = Grains.GetGrain<IArenaGrain>($"test-{Guid.NewGuid()}");
 
-        return Grains.GetGrain<ILiveBattleGrain>(await arena.CreateBattleAsync(FoxVsGolem));
+        return Grains.GetGrain<ILiveBattleGrain>(await arena.CreateBattleAsync(FoxAndGolemVsGolemAndYak));
     }
 
-    // One round: the fox uses the ability on the golem, the golem
-    // strikes back.
-    private static async Task PlayRoundAsync(ILiveBattleGrain battle, string foxAbilityId)
+    // One round: the fox uses the ability on the given opponent, and
+    // the opponent's golem strikes the fox's companion.
+    private static async Task PlayRoundAsync(ILiveBattleGrain battle, string foxAbilityId, int targetSlot)
     {
-        await battle.SubmitActionAsync(new BattleAction("player-1", 0, 1, foxAbilityId));
-        await battle.SubmitActionAsync(new BattleAction("player-2", 1, 0, "strike"));
+        await battle.SubmitActionAsync(new BattleAction("player-1", FoxSlot, targetSlot, foxAbilityId));
+        await battle.SubmitActionAsync(new BattleAction("player-2", FirstTarget, DecoySlot, "strike"));
     }
 
     private static int CooldownOf(BattleState state, string abilityId) =>
-        state.Combatants[0].Abilities.Single(ability => ability.AbilityId == abilityId).RoundsLeft;
+        state.Combatants[FoxSlot].Abilities.Single(ability => ability.AbilityId == abilityId).RoundsLeft;
 
     private async Task<MonsterSpeciesDto> SpeciesAsync(string speciesId) =>
         await host.Factory.Services.GetRequiredService<ICatalogQueryService>()

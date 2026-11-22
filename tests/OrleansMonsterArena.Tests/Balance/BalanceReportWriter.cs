@@ -62,9 +62,9 @@ internal static class BalanceReportWriter
 
         text.Append("\n## One on one\n\n");
         text.Append("Wins of the row species against the column species.\n\n");
-        AppendDuelTable(text, report, duel => Percent(duel.Rate));
+        AppendDuelTable(text, report, (duels, row, column) => Percent(duels.DuelWinRate(row, column)));
         text.Append("\nAverage length in rounds.\n\n");
-        AppendDuelTable(text, report, duel => duel.Matchup.AverageRounds.ToString("0.0", Invariant));
+        AppendDuelTable(text, report, (duels, row, column) => DuelOf(duels, row, column).AverageRounds.ToString("0.0", Invariant));
         AppendLengths(text, report.Duels);
 
         text.Append(Invariant, $"\n## Teams of {BalanceSimulation.TeamSize}\n");
@@ -84,7 +84,7 @@ internal static class BalanceReportWriter
     private static void AppendDuelTable(
         StringBuilder text,
         BalanceReport report,
-        Func<(MatchupResult Matchup, double Rate), string> cell)
+        Func<BalanceReport, string, string, string> cell)
     {
         text.Append("| |");
         foreach (var column in report.Roster)
@@ -101,40 +101,24 @@ internal static class BalanceReportWriter
             text.Append(Invariant, $"| **{row.Name}** |");
             foreach (var column in report.Roster)
             {
-                text.Append(Invariant, $" {(FindDuel(report, row.Id, column.Id) is { } duel ? cell(duel) : "–")} |");
+                text.Append(Invariant, $" {(row.Id == column.Id ? "–" : cell(report, row.Id, column.Id))} |");
             }
 
             text.Append('\n');
         }
     }
 
-    // A duel is stored once per pair; seen from the second species,
-    // the win rate is the second team's.
-    private static (MatchupResult Matchup, double Rate)? FindDuel(BalanceReport report, string rowId, string columnId)
-    {
-        foreach (var duel in report.Duels)
-        {
-            if (duel.First[0] == rowId && duel.Second[0] == columnId)
-            {
-                return (duel, duel.FirstWinRate);
-            }
-
-            if (duel.First[0] == columnId && duel.Second[0] == rowId)
-            {
-                return (duel, (double)duel.SecondWins / duel.Battles);
-            }
-        }
-
-        return null;
-    }
+    private static MatchupResult DuelOf(BalanceReport report, string rowId, string columnId) =>
+        report.Duels.Single(duel =>
+            (duel.First[0] == rowId && duel.Second[0] == columnId)
+            || (duel.First[0] == columnId && duel.Second[0] == rowId));
 
     private static void AppendLengths(StringBuilder text, IReadOnlyList<MatchupResult> matchups)
     {
         var battles = matchups.Sum(matchup => matchup.Battles);
-        var average = (double)matchups.Sum(matchup => matchup.Rounds) / battles;
 
         text.Append(Invariant, $"\n- Battles: {battles}\n");
-        text.Append(Invariant, $"- Average length: {average:0.0} rounds\n");
+        text.Append(Invariant, $"- Average length: {BalanceReport.AverageRounds(matchups):0.0} rounds\n");
         text.Append(Invariant, $"- Longest battle: {matchups.Max(matchup => matchup.Longest)} rounds\n");
         text.Append(Invariant, $"- Undecided after {BattleSimulator.RoundLimit} rounds: {matchups.Sum(matchup => matchup.Undecided)}\n");
     }

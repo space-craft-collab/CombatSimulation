@@ -24,6 +24,7 @@ internal static class Roster
             .Select(species => new RosterEntry(
                 species.Id,
                 species.Name,
+                species.Element,
                 [.. species.Abilities.Select(ability => ability.Id)],
                 (slot, participantId) => Fighter.Enter(slot, participantId, species))),
     ];

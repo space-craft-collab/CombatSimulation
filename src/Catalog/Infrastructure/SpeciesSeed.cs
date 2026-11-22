@@ -12,11 +12,11 @@ internal static class SpeciesSeed
 {
     public static IReadOnlyList<MonsterSpecies> All { get; } =
     [
-        new("ember-fox", "Ember Fox", Element.Fire, 40, 14, 4, 12),
-        new("lava-crab", "Lava Crab", Element.Fire, 60, 10, 8, 5),
-        new("frost-owl", "Frost Owl", Element.Frost, 35, 12, 5, 14),
-        new("moss-golem", "Moss Golem", Element.Nature, 80, 8, 10, 3),
-        new("glacier-yak", "Glacier Yak", Element.Frost, 70, 9, 9, 4),
-        new("thorn-lynx", "Thorn Lynx", Element.Nature, 44, 13, 5, 11),
+        new("ember-fox", "Ember Fox", Element.Fire, 44, 21, 4, 14),
+        new("lava-crab", "Lava Crab", Element.Fire, 56, 16, 7, 5),
+        new("frost-owl", "Frost Owl", Element.Frost, 39, 21, 7, 14),
+        new("moss-golem", "Moss Golem", Element.Nature, 68, 14, 8, 2),
+        new("glacier-yak", "Glacier Yak", Element.Frost, 62, 13, 8, 4),
+        new("thorn-lynx", "Thorn Lynx", Element.Nature, 43, 21, 3, 12),
     ];
 }

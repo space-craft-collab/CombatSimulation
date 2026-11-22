@@ -81,7 +81,7 @@ namespace Catalog.Infrastructure.Migrations
                             EffectValue = 0,
                             Element = "Fire",
                             Name = "Flame Dash",
-                            Power = 150
+                            Power = 160
                         },
                         new
                         {
@@ -92,7 +92,7 @@ namespace Catalog.Infrastructure.Migrations
                             EffectValue = 0,
                             Element = "Fire",
                             Name = "Magma Claw",
-                            Power = 140
+                            Power = 160
                         },
                         new
                         {
@@ -103,12 +103,12 @@ namespace Catalog.Infrastructure.Migrations
                             EffectValue = 0,
                             Element = "Frost",
                             Name = "Ice Shard",
-                            Power = 150
+                            Power = 160
                         },
                         new
                         {
                             Id = "root-slam",
-                            Cooldown = 3,
+                            Cooldown = 2,
                             Effect = "None",
                             EffectRounds = 0,
                             EffectValue = 0,
@@ -122,7 +122,7 @@ namespace Catalog.Infrastructure.Migrations
                             Cooldown = 3,
                             Effect = "Burn",
                             EffectRounds = 3,
-                            EffectValue = 4,
+                            EffectValue = 5,
                             Element = "Fire",
                             Name = "Ember Bite",
                             Power = 80
@@ -130,10 +130,10 @@ namespace Catalog.Infrastructure.Migrations
                         new
                         {
                             Id = "shell-up",
-                            Cooldown = 4,
+                            Cooldown = 3,
                             Effect = "Guard",
                             EffectRounds = 3,
-                            EffectValue = 50,
+                            EffectValue = 60,
                             Element = "Neutral",
                             Name = "Shell Up",
                             Power = 0
@@ -143,19 +143,19 @@ namespace Catalog.Infrastructure.Migrations
                             Id = "chill-wind",
                             Cooldown = 3,
                             Effect = "Slow",
-                            EffectRounds = 3,
-                            EffectValue = 50,
+                            EffectRounds = 2,
+                            EffectValue = 40,
                             Element = "Frost",
                             Name = "Chill Wind",
-                            Power = 80
+                            Power = 70
                         },
                         new
                         {
                             Id = "regrow",
-                            Cooldown = 4,
+                            Cooldown = 3,
                             Effect = "Heal",
                             EffectRounds = 0,
-                            EffectValue = 30,
+                            EffectValue = 20,
                             Element = "Nature",
                             Name = "Regrow",
                             Power = 0
@@ -163,21 +163,21 @@ namespace Catalog.Infrastructure.Migrations
                         new
                         {
                             Id = "avalanche",
-                            Cooldown = 3,
+                            Cooldown = 2,
                             Effect = "None",
                             EffectRounds = 0,
                             EffectValue = 0,
                             Element = "Frost",
                             Name = "Avalanche",
-                            Power = 160
+                            Power = 180
                         },
                         new
                         {
                             Id = "thick-hide",
-                            Cooldown = 5,
+                            Cooldown = 3,
                             Effect = "Guard",
                             EffectRounds = 4,
-                            EffectValue = 40,
+                            EffectValue = 30,
                             Element = "Neutral",
                             Name = "Thick Hide",
                             Power = 0
@@ -191,18 +191,18 @@ namespace Catalog.Infrastructure.Migrations
                             EffectValue = 0,
                             Element = "Nature",
                             Name = "Vine Whip",
-                            Power = 130
+                            Power = 140
                         },
                         new
                         {
                             Id = "pounce",
-                            Cooldown = 4,
+                            Cooldown = 3,
                             Effect = "None",
                             EffectRounds = 0,
                             EffectValue = 0,
                             Element = "Nature",
                             Name = "Pounce",
-                            Power = 200
+                            Power = 220
                         });
                 });
 
@@ -277,62 +277,62 @@ namespace Catalog.Infrastructure.Migrations
                         new
                         {
                             Id = "ember-fox",
-                            Attack = 14,
+                            Attack = 21,
                             Defense = 4,
                             Element = "Fire",
-                            MaxHitPoints = 40,
+                            MaxHitPoints = 44,
                             Name = "Ember Fox",
-                            Speed = 12
+                            Speed = 14
                         },
                         new
                         {
                             Id = "lava-crab",
-                            Attack = 10,
-                            Defense = 8,
+                            Attack = 16,
+                            Defense = 7,
                             Element = "Fire",
-                            MaxHitPoints = 60,
+                            MaxHitPoints = 56,
                             Name = "Lava Crab",
                             Speed = 5
                         },
                         new
                         {
                             Id = "frost-owl",
-                            Attack = 12,
-                            Defense = 5,
+                            Attack = 21,
+                            Defense = 7,
                             Element = "Frost",
-                            MaxHitPoints = 35,
+                            MaxHitPoints = 39,
                             Name = "Frost Owl",
                             Speed = 14
                         },
                         new
                         {
                             Id = "moss-golem",
-                            Attack = 8,
-                            Defense = 10,
+                            Attack = 14,
+                            Defense = 8,
                             Element = "Nature",
-                            MaxHitPoints = 80,
+                            MaxHitPoints = 68,
                             Name = "Moss Golem",
-                            Speed = 3
+                            Speed = 2
                         },
                         new
                         {
                             Id = "glacier-yak",
-                            Attack = 9,
-                            Defense = 9,
+                            Attack = 13,
+                            Defense = 8,
                             Element = "Frost",
-                            MaxHitPoints = 70,
+                            MaxHitPoints = 62,
                             Name = "Glacier Yak",
                             Speed = 4
                         },
                         new
                         {
                             Id = "thorn-lynx",
-                            Attack = 13,
-                            Defense = 5,
+                            Attack = 21,
+                            Defense = 3,
                             Element = "Nature",
-                            MaxHitPoints = 44,
+                            MaxHitPoints = 43,
                             Name = "Thorn Lynx",
-                            Speed = 11
+                            Speed = 12
                         });
                 });
 

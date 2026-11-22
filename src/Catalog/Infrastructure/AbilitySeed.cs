@@ -19,18 +19,18 @@ internal static class AbilitySeed
     public static IReadOnlyList<Ability> All { get; } =
     [
         new(Strike, "Strike", Element.Neutral, 100, 0),
-        new("flame-dash", "Flame Dash", Element.Fire, 150, 2),
-        new("magma-claw", "Magma Claw", Element.Fire, 140, 2),
-        new("ice-shard", "Ice Shard", Element.Frost, 150, 2),
-        new("root-slam", "Root Slam", Element.Nature, 150, 3),
-        new("ember-bite", "Ember Bite", Element.Fire, 80, 3, AbilityEffect.Burn, 4, 3),
-        new("shell-up", "Shell Up", Element.Neutral, 0, 4, AbilityEffect.Guard, 50, 3),
-        new("chill-wind", "Chill Wind", Element.Frost, 80, 3, AbilityEffect.Slow, 50, 3),
-        new("regrow", "Regrow", Element.Nature, 0, 4, AbilityEffect.Heal, 30),
-        new("avalanche", "Avalanche", Element.Frost, 160, 3),
-        new("thick-hide", "Thick Hide", Element.Neutral, 0, 5, AbilityEffect.Guard, 40, 4),
-        new("vine-whip", "Vine Whip", Element.Nature, 130, 1),
-        new("pounce", "Pounce", Element.Nature, 200, 4),
+        new("flame-dash", "Flame Dash", Element.Fire, 160, 2),
+        new("magma-claw", "Magma Claw", Element.Fire, 160, 2),
+        new("ice-shard", "Ice Shard", Element.Frost, 160, 2),
+        new("root-slam", "Root Slam", Element.Nature, 150, 2),
+        new("ember-bite", "Ember Bite", Element.Fire, 80, 3, AbilityEffect.Burn, 5, 3),
+        new("shell-up", "Shell Up", Element.Neutral, 0, 3, AbilityEffect.Guard, 60, 3),
+        new("chill-wind", "Chill Wind", Element.Frost, 70, 3, AbilityEffect.Slow, 40, 2),
+        new("regrow", "Regrow", Element.Nature, 0, 3, AbilityEffect.Heal, 20),
+        new("avalanche", "Avalanche", Element.Frost, 180, 2),
+        new("thick-hide", "Thick Hide", Element.Neutral, 0, 3, AbilityEffect.Guard, 30, 4),
+        new("vine-whip", "Vine Whip", Element.Nature, 140, 1),
+        new("pounce", "Pounce", Element.Nature, 220, 3),
     ];
 
     public static IReadOnlyList<SpeciesAbility> BySpecies { get; } =
