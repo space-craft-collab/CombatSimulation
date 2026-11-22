@@ -21,6 +21,7 @@
 	import { LiveBattle } from '#lib/arena/live-battle.svelte.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
 	import AbilityPicker from '#lib/components/AbilityPicker.svelte';
+	import ArenaBackdrop from '#lib/components/ArenaBackdrop.svelte';
 	import CombatantCard from '#lib/components/CombatantCard.svelte';
 	import type { PageProps } from './$types';
 
@@ -242,22 +243,28 @@
 		</section>
 	{/snippet}
 
-	{@render side(
-		away[0] ? ownerOf(away[0]) : 'Opponent',
-		'away-side',
-		away,
-		canAct && targeted,
-		target,
-		(slot) => (pickedTarget = slot)
-	)}
-	{@render side(
-		home[0] ? ownerOf(home[0]) : 'Challenger',
-		'home-side',
-		home,
-		canAct,
-		actor,
-		(slot) => (pickedActor = slot)
-	)}
+	<!-- The arena's picture, dimmed, behind both sides. -->
+	<div
+		class="relative isolate flex flex-col gap-4 overflow-hidden rounded-lg border border-slate-800 p-2 sm:p-4"
+	>
+		<ArenaBackdrop arenaId={battle.arenaId} shade="bg-slate-950/55" />
+		{@render side(
+			away[0] ? ownerOf(away[0]) : 'Opponent',
+			'away-side',
+			away,
+			canAct && targeted,
+			target,
+			(slot) => (pickedTarget = slot)
+		)}
+		{@render side(
+			home[0] ? ownerOf(home[0]) : 'Challenger',
+			'home-side',
+			home,
+			canAct,
+			actor,
+			(slot) => (pickedActor = slot)
+		)}
+	</div>
 
 	{#if canAct && actor && ability && move}
 		<section aria-labelledby="abilities-heading">

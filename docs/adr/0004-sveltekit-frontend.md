@@ -57,7 +57,12 @@ Settled at the start of Phase 4 (2026-11-21):
   `CONTRIBUTING.md`.
 - **API client: Kiota, with no fallback generator.**
 - **Styling: Tailwind CSS.** Monsters are drawn as inline
-  SVG; the repository carries no image assets.
+  SVG. Amended on 2026-11-22: each arena has a picture,
+  AI-generated (Nano Banana) and stored as WebP under
+  `frontend/src/lib/assets`. The pictures ship with the
+  frontend and are mapped by arena id; the API does not
+  serve them, and an arena without one stays plain.
+  Badges, health bars and icons stay SVG/CSS.
 - **Player identity until Phase 6:** a nickname the visitor
   types on the first visit, kept in `localStorage`. It is
   the client-chosen player id the API already takes, so

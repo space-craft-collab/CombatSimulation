@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { player } from '#lib/arena/player.svelte.ts';
+	import ArenaBackdrop from '#lib/components/ArenaBackdrop.svelte';
 	import NicknameForm from '#lib/components/NicknameForm.svelte';
 	import type { PageProps } from './$types';
 
@@ -38,14 +39,15 @@
 
 	<section>
 		<h2 class="mb-3 text-lg font-semibold">Choose an arena</h2>
-		<ul class="grid gap-3 sm:grid-cols-2">
+		<ul class="grid gap-3 sm:grid-cols-3">
 			{#each data.arenas as arena (arena.id)}
 				<li>
 					<a
-						class="block rounded-lg border border-slate-700 bg-slate-900 p-4 font-medium hover:border-amber-300"
+						class="group relative isolate flex aspect-16/7 items-end overflow-hidden rounded-lg border border-slate-700 bg-slate-900 p-4 text-lg font-semibold text-shadow-md hover:border-amber-300 sm:aspect-4/3"
 						href={resolve('/arenas/[arenaId]', { arenaId: arena.id })}
 						data-testid="arena"
 					>
+						<ArenaBackdrop arenaId={arena.id} zoom />
 						{arena.name}
 					</a>
 				</li>

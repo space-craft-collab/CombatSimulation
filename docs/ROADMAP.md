@@ -152,22 +152,23 @@ host through a Kiota-generated client
 **Look**
 
 - [x] Tailwind CSS; monsters as inline SVG, no image assets
-- [ ] Arena images, first: one per arena (volcano, glacier,
+- [x] Arena images, first: one per arena (volcano, glacier,
       moss grove), 16:9 WebP around 1600 px with a calm
       centre. Used as the tile on the start page, a banner
       on the team picker, and a dimmed backdrop behind the
-      battle view. Arenas differ only by name today
+      battle view (`ArenaBackdrop`). Arenas differed only
+      by name before
 - [ ] Monster portraits, once the arena images hold up:
       one per species, in the same style, WebP around
       512 px under `src/lib/assets`. `MonsterSprite` keeps
       `data-species`, the CSS for defeated monsters, and the
       SVG blob as the fallback for a species without a picture
-- [ ] Badges, health bars, icons and effects stay SVG/CSS.
+- [x] Badges, health bars, icons and effects stay SVG/CSS.
       Pictures are AI-generated (Nano Banana), and the
       README says so
-- [ ] **Decision:** amend
-      [ADR-0004](adr/0004-sveltekit-frontend.md), which still
-      says the repository carries no image assets
+- [x] **Decision:** amend
+      [ADR-0004](adr/0004-sveltekit-frontend.md): arena
+      pictures ship with the frontend, mapped by arena id
 - [x] Usable on a phone-width screen: the solo path was
       checked at 390 px; a battle of three against three
       fits one screen with the strike button in reach

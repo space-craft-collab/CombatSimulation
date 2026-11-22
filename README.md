@@ -134,6 +134,11 @@ See [`docs/adr/`](docs/adr/) for architecture decisions.
 
 See [`CLAUDE.md`](CLAUDE.md).
 
+## Artwork
+
+The arena pictures are AI-generated (Google Gemini,
+"Nano Banana"). The monsters are hand-drawn SVG.
+
 ## License
 
 [MIT](LICENSE)

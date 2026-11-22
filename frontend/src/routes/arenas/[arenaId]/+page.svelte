@@ -13,6 +13,7 @@
 		statCeilings,
 		storeTeam
 	} from '#lib/arena/team.ts';
+	import ArenaBackdrop from '#lib/components/ArenaBackdrop.svelte';
 	import ElementCycle from '#lib/components/ElementCycle.svelte';
 	import NicknameForm from '#lib/components/NicknameForm.svelte';
 	import SpeciesCard from '#lib/components/SpeciesCard.svelte';
@@ -81,8 +82,13 @@
 <div class="flex flex-col gap-6">
 	<section>
 		<a class="text-sm text-slate-400 underline" href={resolve('/')}>← All arenas</a>
-		<h1 class="mt-2 text-2xl font-bold">{data.arena.name}</h1>
-		<p class="mt-1 text-slate-300">
+		<div
+			class="relative isolate mt-2 flex aspect-16/5 min-h-28 items-end overflow-hidden rounded-lg border border-slate-800 bg-slate-900 p-4"
+		>
+			<ArenaBackdrop arenaId={data.arena.id} />
+			<h1 class="text-2xl font-bold text-shadow-md">{data.arena.name}</h1>
+		</div>
+		<p class="mt-3 text-slate-300">
 			Field one to {MAX_TEAM_SIZE} monsters against the bot. The same one may fight twice.
 		</p>
 	</section>

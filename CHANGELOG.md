@@ -144,6 +144,10 @@ Inserted while Phase 4 was under way; condensed on
   finished one from the cold store.
 - Monsters drawn as inline SVG; the layout is built for a
   phone-width screen first.
+- A picture per arena (AI-generated, WebP): the tiles on the
+  start page, a banner on the team picker and a dimmed
+  backdrop behind the battle (`ArenaBackdrop`,
+  `arenaImageOf`). An arena without a picture stays plain.
 - Frontend tests: Vitest for the battle logic and the nickname
   rules, and a Playwright smoke test in a container
   (`docker compose run --rm e2e`) that plays the solo path in
@@ -169,6 +173,8 @@ Inserted while Phase 4 was under way; condensed on
   containers only, Tailwind CSS with inline-SVG monsters, a
   nickname in `localStorage` as the player id until Phase 6,
   Vitest plus one Playwright smoke test.
+- ADR-0004 amended: arenas have pictures, which ship with
+  the frontend, so the repository now holds image assets.
 - ADR-0004 locks the adapter after the spike:
   **`adapter-node`**. The browser calls the API and the hub
   directly; the SvelteKit server reaches the API under an
