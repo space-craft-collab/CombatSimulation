@@ -7,6 +7,7 @@ using Battles.Features.SubmitAction;
 using Battles.Features.WatchBattle;
 using Battles.Grains;
 using Battles.Infrastructure;
+using Catalog.Contracts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -45,6 +46,9 @@ public static class BattlesModule
 
         // The slices reach grains through the co-hosted silo's
         // IGrainFactory; no Orleans type leaves this module (ADR-0005).
+        // The bot draws its team at random (a delegate seam, ADR-0010).
+        services.AddSingleton(provider => new BotOpponent(
+            provider.GetRequiredService<ICatalogQueryService>(), Random.Shared.Next));
         services.AddSingleton<StartBattleService>();
         services.AddSingleton<SubmitActionService>();
         services.AddSingleton<GetBattleService>();

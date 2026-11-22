@@ -10,18 +10,14 @@ namespace Battles.Features.StartBattle;
 /// </summary>
 /// <param name="grains">Reaches the arena and battle grains.</param>
 /// <param name="catalog">Knows which arenas exist.</param>
-internal sealed class StartBattleService(IGrainFactory grains, ICatalogQueryService catalog)
+/// <param name="bot">Fields the bot's team.</param>
+internal sealed class StartBattleService(IGrainFactory grains, ICatalogQueryService catalog, BotOpponent bot)
 {
     /// <summary>
-    /// The participant id of the bot opponent.
-    /// </summary>
-    public const string BotId = "bot";
-
-    /// <summary>
     /// Creates the battle on the arena and returns its first state.
-    /// Against the bot it starts at once, and the bot mirrors the
-    /// visitor's team, so every pick is a fair fight. Against a human
-    /// it waits for players until someone joins.
+    /// Against the bot it starts at once; the bot fields a team of
+    /// its own, as large as the visitor's. Against a human it waits
+    /// for players until someone joins.
     /// </summary>
     /// <returns>The battle's first state, or <see langword="null"/> if
     /// the arena does not exist in the Catalog.</returns>
@@ -41,19 +37,9 @@ internal sealed class StartBattleService(IGrainFactory grains, ICatalogQueryServ
         var battleId = request.Opponent switch
         {
             Opponent.Human => await arena.OpenBattleAsync(visitor),
-            _ => await arena.CreateBattleAsync([visitor, MirrorBot(visitor)]),
+            _ => await arena.CreateBattleAsync([visitor, await bot.FieldAsync(visitor.MonsterSpeciesIds.Length)]),
         };
 
         return BattleResponse.From(await grains.GetGrain<ILiveBattleGrain>(battleId).GetStateAsync());
-    }
-
-    /// <summary>
-    /// The bot opponent fielding the same team as the given side.
-    /// </summary>
-    public static ParticipantSetup MirrorBot(ParticipantSetup side)
-    {
-        ArgumentNullException.ThrowIfNull(side);
-
-        return new ParticipantSetup(BotId, true, side.MonsterSpeciesIds);
     }
 }

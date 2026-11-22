@@ -103,9 +103,9 @@ mirrored the visitor's team.
 
 **Bot**
 
-- [ ] The bot picks a team of its own instead of mirroring
+- [x] The bot picks a team of its own instead of mirroring
       the visitor's
-- [ ] It chooses abilities by a rule: finish a monster it can
+- [x] It chooses abilities by a rule: finish a monster it can
       fell, use the element advantage, heal when low
 
 **Balance**

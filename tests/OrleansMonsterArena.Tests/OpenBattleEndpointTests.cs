@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Battles.Features.GetBattle;
 using Battles.Features.ListBattles;
 using Battles.Grains.Abstractions;
+using Catalog.Infrastructure;
 using Xunit;
 
 namespace OrleansMonsterArena.Tests;
@@ -76,7 +77,7 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
     }
 
     [Fact]
-    public async Task PostBot_OpenBattle_Returns200AndBotMirrorsHost()
+    public async Task PostBot_OpenBattle_Returns200AndBotFieldsATeamOfTheHostsSize()
     {
         // Arrange
         using var client = host.Factory.CreateClient();
@@ -90,7 +91,8 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
         var started = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
         Assert.NotNull(started);
         Assert.Equal(BattleStatus.InProgress, started.Status);
-        AssertFresh(started.Combatants[1], 1, "bot", true, "lava-crab");
+        Assert.Equal(2, started.Combatants.Count);
+        AssertFresh(started.Combatants[1], 1, "bot", true, BotPick(0));
     }
 
     [Fact]
@@ -218,6 +220,12 @@ public sealed class OpenBattleEndpointTests(AppHostFixture host)
 
     // A monster as a battle fields it: in its slot, for its side, at
     // full health.
+    // The bot's team in the test hosts: it draws the first species
+    // left each time (AppHostFixture.FirstOfWhatIsLeft), so it fields
+    // the species in the order of their names.
+    private static string BotPick(int position) =>
+        SpeciesSeed.All.OrderBy(seeded => seeded.Name, StringComparer.Ordinal).ElementAt(position).Id;
+
     private static void AssertFresh(
         CombatantResponse combatant,
         int slot,

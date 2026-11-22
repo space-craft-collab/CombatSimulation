@@ -26,6 +26,10 @@ internal sealed class CatalogQueryService(
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<MonsterSpeciesDto>> ListSpeciesAsync(CancellationToken cancellationToken = default) =>
+        [.. (await species.ListAsync(cancellationToken)).Select(SpeciesDtoMapper.ToDto)];
+
+    /// <inheritdoc />
     public async Task<ArenaDto?> FindArenaAsync(
         string arenaId,
         CancellationToken cancellationToken = default)

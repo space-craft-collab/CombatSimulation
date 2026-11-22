@@ -12,7 +12,8 @@ namespace Battles.Features.JoinBattle;
 /// </summary>
 /// <param name="grains">Reaches the battle grains.</param>
 /// <param name="battles">Reads the battle from either store.</param>
-internal sealed class JoinBattleService(IGrainFactory grains, GetBattleService battles)
+/// <param name="bot">Fields the bot's team.</param>
+internal sealed class JoinBattleService(IGrainFactory grains, GetBattleService battles, BotOpponent bot)
 {
     /// <summary>
     /// Adds a human opponent and returns the battle's first state.
@@ -36,8 +37,8 @@ internal sealed class JoinBattleService(IGrainFactory grains, GetBattleService b
     }
 
     /// <summary>
-    /// Lets the bot take the open seat, mirroring the host's team, and
-    /// returns the battle's first state.
+    /// Lets the bot take the open seat with a team of its own, as
+    /// large as the host's, and returns the battle's first state.
     /// </summary>
     /// <returns>The battle, or <see langword="null"/> if it was never started.</returns>
     /// <exception cref="InvalidOperationException">The battle no longer waits for players.</exception>
@@ -48,14 +49,11 @@ internal sealed class JoinBattleService(IGrainFactory grains, GetBattleService b
             return null;
         }
 
-        var hostId = current.Combatants.Count > 0 ? current.Combatants[0].ParticipantId : null;
-        var host = new ParticipantSetup(
-            hostId ?? "",
-            false,
-            [.. current.Combatants
-                .Where(combatant => combatant.ParticipantId == hostId)
-                .Select(combatant => combatant.SpeciesId)]);
-        await grains.GetGrain<ILiveBattleGrain>(battleId).JoinAsync(StartBattleService.MirrorBot(host));
+        // A battle that waits for players has its host's monsters
+        // only. One that does not is refused by the grain below,
+        // whatever team the bot brings.
+        var teamSize = Math.Max(1, current.Combatants.Count(combatant => !combatant.IsBot));
+        await grains.GetGrain<ILiveBattleGrain>(battleId).JoinAsync(await bot.FieldAsync(teamSize));
 
         return await battles.FindAsync(battleId);
     }

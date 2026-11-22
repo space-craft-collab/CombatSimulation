@@ -86,19 +86,23 @@ public sealed class BattleHubTests(AppHostFixture host)
 
         // Assert: the human's strike, from its first monster at the
         // bot's first, which was at full health.
-        var strike = Assert.Single(delta.Events, entry => entry.ActorSlot == 0);
+        var strike = Assert.Single(
+            delta.Events, entry => entry.Kind == RoundEventKind.Ability && entry.ActorSlot == 0);
         Assert.Equal(target.Slot, strike.TargetSlot);
         Assert.Equal("strike", strike.AbilityId);
         Assert.True(strike.Damage > 0, $"Expected the strike to deal damage: {strike}.");
         Assert.Equal(target.MaxHitPoints - strike.Damage, strike.TargetHitPoints);
-        Assert.Equal(RoundEventKind.Ability, strike.Kind);
 
-        // ...and the state after the round, which agrees with the event.
+        // ...and the state after the round, which agrees with the
+        // last thing that happened to the target.
         Assert.Equal(battle.Combatants.Count, delta.Combatants.Count);
-        Assert.Equal(strike.TargetHitPoints, delta.Combatants[target.Slot].HitPoints);
+        Assert.Equal(
+            delta.Events.Last(entry => entry.TargetSlot == target.Slot).TargetHitPoints,
+            delta.Combatants[target.Slot].HitPoints);
 
         // Assert: the bot acted in the same round.
-        Assert.Contains(delta.Events, entry => botSlots.Contains(entry.ActorSlot));
+        Assert.Contains(
+            delta.Events, entry => entry.Kind == RoundEventKind.Ability && botSlots.Contains(entry.ActorSlot));
     }
 
     [Fact]

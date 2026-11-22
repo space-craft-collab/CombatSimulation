@@ -14,6 +14,13 @@ public interface ICatalogQueryService
     Task<MonsterSpeciesDto?> FindSpeciesAsync(string speciesId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Lists every monster species, ordered by display name.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the lookup.</param>
+    /// <returns>All species.</returns>
+    Task<IReadOnlyList<MonsterSpeciesDto>> ListSpeciesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Looks up an arena by id.
     /// </summary>
     /// <param name="arenaId">The arena id.</param>

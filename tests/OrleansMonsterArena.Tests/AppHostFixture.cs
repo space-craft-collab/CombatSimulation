@@ -1,5 +1,9 @@
+using Battles.Features.StartBattle;
+using Catalog.Contracts;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Shared.Infrastructure.Persistence;
 using Xunit;
 
@@ -41,7 +45,8 @@ public sealed class AppHostFixture(SqlServerFixture sql) : IAsyncDisposable
         CreateFactory(sql.ConnectionStringFor("AppHostTests"), string.Empty, TurnDeadline);
 
     /// <summary>
-    /// Builds a test host with the round loop sped up.
+    /// Builds a test host with the round loop sped up and a bot that
+    /// draws its team without chance (<see cref="FirstOfWhatIsLeft"/>).
     /// </summary>
     /// <param name="sql">The cold-path SQL Server connection string.</param>
     /// <param name="tableStorage">The Table Storage connection string;
@@ -56,7 +61,19 @@ public sealed class AppHostFixture(SqlServerFixture sql) : IAsyncDisposable
                 .UseSetting("Cors:AllowedOrigins:0", FrontendOrigin)
                 .UseSetting("Battles:Timing:TurnDeadline", deadline.ToString())
                 .UseSetting("Battles:Timing:JoinDeadline", deadline.ToString())
-                .UseSetting("Battles:Timing:BotRoundInterval", "00:00:00.020"));
+                .UseSetting("Battles:Timing:BotRoundInterval", "00:00:00.020")
+                .ConfigureTestServices(services => services.AddSingleton(provider => new BotOpponent(
+                    provider.GetRequiredService<ICatalogQueryService>(), FirstOfWhatIsLeft))));
+
+    /// <summary>
+    /// The bot's draw in the test hosts: always the first species
+    /// left, so against a visitor's team of <c>n</c> the bot fields
+    /// the first <c>n</c> species by name and no test depends on
+    /// chance.
+    /// </summary>
+    /// <param name="bound">The number of species left to draw from.</param>
+    /// <returns>Always 0.</returns>
+    public static int FirstOfWhatIsLeft(int bound) => 0;
 
     /// <summary>
     /// Shuts the host — and with it the silo — back down.

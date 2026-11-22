@@ -23,12 +23,12 @@ Share of its battles a species won.
 
 | Species | One on one | In a team |
 |---|---:|---:|
-| Ember Fox | 42 % | 45 % |
-| Frost Owl | 17 % | 43 % |
-| Glacier Yak | 60 % | 52 % |
-| Lava Crab | 74 % | 53 % |
-| Moss Golem | 68 % | 61 % |
-| Thorn Lynx | 40 % | 47 % |
+| Ember Fox | 56 % | 38 % |
+| Frost Owl | 2 % | 33 % |
+| Glacier Yak | 60 % | 37 % |
+| Lava Crab | 57 % | 35 % |
+| Moss Golem | 85 % | 49 % |
+| Thorn Lynx | 40 % | 38 % |
 
 ## One on one
 
@@ -36,35 +36,35 @@ Wins of the row species against the column species.
 
 | | Ember Fox | Frost Owl | Glacier Yak | Lava Crab | Moss Golem | Thorn Lynx |
 |---|---:|---:|---:|---:|---:|---:|
-| **Ember Fox** | – | 18 % | 0 % | 0 % | 93 % | 100 % |
-| **Frost Owl** | 83 % | – | 0 % | 0 % | 0 % | 0 % |
+| **Ember Fox** | – | 90 % | 0 % | 13 % | 75 % | 100 % |
+| **Frost Owl** | 10 % | – | 0 % | 0 % | 0 % | 0 % |
 | **Glacier Yak** | 100 % | 100 % | – | 100 % | 0 % | 0 % |
-| **Lava Crab** | 100 % | 100 % | 0 % | – | 68 % | 100 % |
-| **Moss Golem** | 8 % | 100 % | 100 % | 33 % | – | 100 % |
+| **Lava Crab** | 88 % | 100 % | 0 % | – | 0 % | 100 % |
+| **Moss Golem** | 25 % | 100 % | 100 % | 100 % | – | 100 % |
 | **Thorn Lynx** | 0 % | 100 % | 100 % | 0 % | 0 % | – |
 
 Average length in rounds.
 
 | | Ember Fox | Frost Owl | Glacier Yak | Lava Crab | Moss Golem | Thorn Lynx |
 |---|---:|---:|---:|---:|---:|---:|
-| **Ember Fox** | – | 3.8 | 5.2 | 5.4 | 7.4 | 3.1 |
-| **Frost Owl** | 3.8 | – | 5.5 | 5.2 | 5.6 | 2.0 |
-| **Glacier Yak** | 5.2 | 5.5 | – | 10.1 | 15.1 | 6.2 |
-| **Lava Crab** | 5.4 | 5.2 | 10.1 | – | 15.5 | 5.5 |
-| **Moss Golem** | 7.4 | 5.6 | 15.1 | 15.5 | – | 8.5 |
-| **Thorn Lynx** | 3.1 | 2.0 | 6.2 | 5.5 | 8.5 | – |
+| **Ember Fox** | – | 3.1 | 5.2 | 5.4 | 7.0 | 3.1 |
+| **Frost Owl** | 3.1 | – | 5.5 | 5.9 | 5.6 | 2.0 |
+| **Glacier Yak** | 5.2 | 5.5 | – | 13.3 | 18.6 | 6.9 |
+| **Lava Crab** | 5.4 | 5.9 | 13.3 | – | 23.7 | 5.5 |
+| **Moss Golem** | 7.0 | 5.6 | 18.6 | 23.7 | – | 9.0 |
+| **Thorn Lynx** | 3.1 | 2.0 | 6.9 | 5.5 | 9.0 | – |
 
 - Battles: 600
-- Average length: 6.9 rounds
-- Longest battle: 20 rounds
+- Average length: 8.0 rounds
+- Longest battle: 26 rounds
 - Undecided after 100 rounds: 0
 
 ## Teams of 3
 
 - Battles: 7600
-- Average length: 25.5 rounds
-- Longest battle: 69 rounds
-- Undecided after 100 rounds: 0
+- Average length: 42.8 rounds
+- Longest battle: 100 rounds
+- Undecided after 100 rounds: 1779
 
 ## Ability use
 
@@ -73,21 +73,21 @@ ability at least once, over all battles above.
 
 | Species | Ability | Used in |
 |---|---|---:|
-| Ember Fox | `strike` | 97 % |
-| Ember Fox | `flame-dash` | 100 % |
-| Ember Fox | `ember-bite` | 47 % |
-| Frost Owl | `strike` | 37 % |
-| Frost Owl | `ice-shard` | 41 % |
-| Frost Owl | `chill-wind` | 24 % |
+| Ember Fox | `strike` | 74 % |
+| Ember Fox | `flame-dash` | 77 % |
+| Ember Fox | `ember-bite` | 87 % |
+| Frost Owl | `strike` | 44 % |
+| Frost Owl | `ice-shard` | 78 % |
+| Frost Owl | `chill-wind` | 45 % |
 | Glacier Yak | `strike` | 98 % |
-| Glacier Yak | `avalanche` | 95 % |
-| Glacier Yak | `thick-hide` | 51 % |
-| Lava Crab | `strike` | 99 % |
+| Glacier Yak | `avalanche` | 100 % |
+| Glacier Yak | `thick-hide` | 86 % |
+| Lava Crab | `strike` | 96 % |
 | Lava Crab | `magma-claw` | 97 % |
-| Lava Crab | `shell-up` | 35 % |
-| Moss Golem | `strike` | 97 % |
-| Moss Golem | `root-slam` | 97 % |
-| Moss Golem | `regrow` | 70 % |
-| Thorn Lynx | `strike` | 86 % |
-| Thorn Lynx | `vine-whip` | 72 % |
-| Thorn Lynx | `pounce` | 96 % |
+| Lava Crab | `shell-up` | 79 % |
+| Moss Golem | `strike` | 98 % |
+| Moss Golem | `root-slam` | 99 % |
+| Moss Golem | `regrow` | 96 % |
+| Thorn Lynx | `strike` | 50 % |
+| Thorn Lynx | `vine-whip` | 55 % |
+| Thorn Lynx | `pounce` | 89 % |

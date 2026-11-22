@@ -87,6 +87,8 @@ in [this file's history][full-changelog].
   monster: Glacier Yak (Frost; Avalanche, Thick Hide) and
   Thorn Lynx (Nature; Vine Whip, Pounce); migration
   `AddYakAndLynx`.
+- `ICatalogQueryService.ListSpeciesAsync`, for the bot's
+  choice of team.
 - Test helpers that play battles without knowing the numbers
   (`GrainBattleDriver`, `HttpBattleDriver`, `BattleRounds`,
   `BattleAssert`).
@@ -103,8 +105,6 @@ in [this file's history][full-changelog].
   ability's power and the element scale it, in whole-number
   arithmetic. Lava Crab against Moss Golem went from 60
   rounds to 15, teams of three from 79 on average to 28.
-- The bot uses the hardest-hitting attack its strongest
-  monster has ready, instead of always `strike`.
 - `POST /battles/{id}/actions` checks `abilityId` against
   the acting monster's abilities; before, `strike` was the
   only id it knew.
@@ -116,6 +116,19 @@ in [this file's history][full-changelog].
   cooldowns and effects from there instead of working them
   out again. The frontend does so and words the new events
   in its log.
+- The bot fields a team of its own, as large as the
+  visitor's, drawn at random without repeats from the
+  Catalog's species (`BotTeam`, `BotOpponent`), instead of
+  mirroring the visitor's team. The draw is a delegate
+  (ADR-0010); the test hosts replace it with one that takes
+  no chances.
+- The bot rates every legal move and makes the best one
+  (`BotStrategy`): the share of an opponent it removes,
+  weighted by that opponent's attack, double for a finishing
+  blow, with a burn's later damage and a useful slow counted
+  in; a heal by what it gives back to a monster that is low;
+  a guard by what it is likely to spare. It replaces "the
+  strongest monster hits the weakest opponent".
 - The battle tests no longer pin hit points, round counts or
   the bot's moves: they play to a condition, use three
   monsters against one where a winner must be known, and

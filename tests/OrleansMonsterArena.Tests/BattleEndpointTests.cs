@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Battles.Features.GetBattle;
 using Battles.Grains.Abstractions;
+using Catalog.Infrastructure;
 using Xunit;
 
 namespace OrleansMonsterArena.Tests;
@@ -23,7 +24,7 @@ public sealed class BattleEndpointTests(AppHostFixture host)
     private static Uri Actions(Guid battleId) => HttpBattleDriver.Actions(battleId);
 
     [Fact]
-    public async Task PostBattle_ValidTeam_Returns201AndBotMirrorsTeam()
+    public async Task PostBattle_ValidTeam_Returns201AndBotFieldsOneMonsterToo()
     {
         // Arrange
         using var client = host.Factory.CreateClient();
@@ -42,7 +43,7 @@ public sealed class BattleEndpointTests(AppHostFixture host)
         Assert.Collection(
             battle.Combatants,
             player => AssertFresh(player, 0, "player-1", false, "lava-crab"),
-            bot => AssertFresh(bot, 1, "bot", true, "lava-crab"));
+            bot => AssertFresh(bot, 1, "bot", true, BotPick(0)));
     }
 
     [Fact]
@@ -97,7 +98,7 @@ public sealed class BattleEndpointTests(AppHostFixture host)
     }
 
     [Fact]
-    public async Task PostBattle_ThreeMonsters_BotSlotsFollowPlayerSlots()
+    public async Task PostBattle_ThreeMonsters_BotFieldsThreeOfItsOwnInTheFollowingSlots()
     {
         // Arrange
         using var client = host.Factory.CreateClient();
@@ -107,8 +108,8 @@ public sealed class BattleEndpointTests(AppHostFixture host)
         using var response = await client.PostAsJsonAsync(
             TestArenas.VolcanoBattles, new { playerId = "player-1", monsterSpeciesIds = team }, Cancellation);
 
-        // Assert: the player takes slots 0-2 in pick order, the
-        // mirroring bot slots 3-5.
+        // Assert: the player takes slots 0-2 in pick order, the bot
+        // slots 3-5 with three different species of its own choice.
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var battle = await response.Content.ReadFromJsonAsync<BattleResponse>(Cancellation);
         Assert.NotNull(battle);
@@ -117,9 +118,9 @@ public sealed class BattleEndpointTests(AppHostFixture host)
             combatant => AssertFresh(combatant, 0, "player-1", false, "ember-fox"),
             combatant => AssertFresh(combatant, 1, "player-1", false, "lava-crab"),
             combatant => AssertFresh(combatant, 2, "player-1", false, "moss-golem"),
-            combatant => AssertFresh(combatant, 3, "bot", true, "ember-fox"),
-            combatant => AssertFresh(combatant, 4, "bot", true, "lava-crab"),
-            combatant => AssertFresh(combatant, 5, "bot", true, "moss-golem"));
+            combatant => AssertFresh(combatant, 3, "bot", true, BotPick(0)),
+            combatant => AssertFresh(combatant, 4, "bot", true, BotPick(1)),
+            combatant => AssertFresh(combatant, 5, "bot", true, BotPick(2)));
     }
 
     [Fact]
@@ -225,6 +226,12 @@ public sealed class BattleEndpointTests(AppHostFixture host)
 
     // A monster as a battle fields it: in its slot, for its side, at
     // full health.
+    // The bot's team in the test hosts: it draws the first species
+    // left each time (AppHostFixture.FirstOfWhatIsLeft), so it fields
+    // the species in the order of their names.
+    private static string BotPick(int position) =>
+        SpeciesSeed.All.OrderBy(seeded => seeded.Name, StringComparer.Ordinal).ElementAt(position).Id;
+
     private static void AssertFresh(
         CombatantResponse combatant,
         int slot,

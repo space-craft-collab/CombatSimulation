@@ -56,9 +56,9 @@ internal sealed record StartBattleRequest
         {
             errors[nameof(PlayerId)] = ["A player id is required."];
         }
-        else if (playerId == StartBattleService.BotId)
+        else if (playerId == BotOpponent.BotId)
         {
-            errors[nameof(PlayerId)] = [$"'{StartBattleService.BotId}' is reserved for the bot."];
+            errors[nameof(PlayerId)] = [$"'{BotOpponent.BotId}' is reserved for the bot."];
         }
         else if (playerId.Length > PlayerIds.MaxLength)
         {
