@@ -18,6 +18,8 @@ internal sealed class MonsterSpeciesConfiguration : IEntityTypeConfiguration<Mon
         builder.HasKey(species => species.Id);
         builder.Property(species => species.Id).HasMaxLength(64).UseCollation(IdCollation.Ordinal);
         builder.Property(species => species.Name).HasMaxLength(100);
+        // Stored by name, so the table reads without the enum at hand.
+        builder.Property(species => species.Element).HasConversion<string>().HasMaxLength(16);
         builder.HasData(SpeciesSeed.All);
     }
 }

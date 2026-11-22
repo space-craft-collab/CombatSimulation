@@ -98,8 +98,8 @@ readable, so these values are **frozen**:
   types: never renumber, never reuse. A new member
   takes the next free number; a removed member's
   number stays retired (leave a comment).
-- **Enum values** stored in state (`BattleStatus`)
-  carry explicit numbers. Never renumber; add new
+- **Enum values** stored in state (`BattleStatus`,
+  `Element`) carry explicit numbers. Never renumber; add new
   members at the end with the next number.
 - **`[Alias("...")]`** on every serializable type
   keeps its identity independent of the CLR name, so

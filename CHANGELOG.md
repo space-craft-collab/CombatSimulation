@@ -41,6 +41,20 @@ in [this file's history][full-changelog].
   at 79 rounds on average, with 40 of 240 battles still
   undecided after 100 rounds.
 
+- Elements: `Element` (Fire, Frost, Nature, Neutral) in
+  `Catalog.Contracts`, a column on `catalog.Species`
+  (migration `AddElements`), in `GET /species` and on every
+  combatant of a battle. `ElementChart` holds the triangle
+  Fire > Nature > Frost > Fire.
+- [ADR-0012](docs/adr/0012-combat-rules.md), `Proposed`: the
+  combat rules of Phase 4.5.
+- `GrainStateSerializationTests`: the battle's stored state
+  goes through the Orleans serializer without a silo.
+
+- Test helpers that play battles without knowing the numbers
+  (`GrainBattleDriver`, `HttpBattleDriver`, `BattleRounds`,
+  `BattleAssert`).
+
 #### Changed
 - The rules of a round left `LiveBattleGrain` for
   `RoundResolver` in `Battles/Domain`: fighters and actions
@@ -48,6 +62,16 @@ in [this file's history][full-changelog].
   or storage in reach. The grain applies each hit to its
   monster grain as before. Same rules, now unit-tested
   without a silo.
+- Damage rule: defense scales a hit down by
+  `10 / (10 + defense)` instead of being subtracted, the
+  ability's power and the element scale it, in whole-number
+  arithmetic. Lava Crab against Moss Golem went from 60
+  rounds to 15, teams of three from 79 on average to 28.
+- The battle tests no longer pin hit points, round counts or
+  the bot's moves: they play to a condition, use three
+  monsters against one where a winner must be known, and
+  assert relations ("took damage", "fell"). The Catalog tests
+  compare against the seed.
 
 ### Phase 4 — Frontend (paused)
 

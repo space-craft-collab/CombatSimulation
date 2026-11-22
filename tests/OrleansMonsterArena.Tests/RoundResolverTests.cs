@@ -37,8 +37,8 @@ public sealed class RoundResolverTests
         // Act
         var result = RoundResolver.Resolve(fighters, [Strike("a", 0, 1), Strike("b", 1, 0)]);
 
-        // Assert
-        Assert.Equal(34, result.Fighters[0].HitPoints);
+        // Assert: defense 4 lets 10 of 14 through, and 7 of 10.
+        Assert.Equal(33, result.Fighters[0].HitPoints);
         Assert.Equal(30, result.Fighters[1].HitPoints);
         Assert.Equal(2, result.Events.Count);
     }

@@ -1,4 +1,5 @@
 using Battles.Grains.Abstractions;
+using Catalog.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -34,6 +35,30 @@ public sealed class StoredFormatTests(AppHostFixture host)
     {
         // Arrange / Act
         var count = Enum.GetValues<BattleStatus>().Length;
+
+        // Assert: a new member needs its own InlineData row above.
+        Assert.Equal(4, count);
+    }
+
+    [Theory]
+    [InlineData(Element.Neutral, 0)]
+    [InlineData(Element.Fire, 1)]
+    [InlineData(Element.Frost, 2)]
+    [InlineData(Element.Nature, 3)]
+    public void Element_StoredValue_StaysFrozen(Element element, int expected)
+    {
+        // Arrange / Act
+        var actual = (int)element;
+
+        // Assert
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void Element_Members_HaveNoUnpinnedAdditions()
+    {
+        // Arrange / Act
+        var count = Enum.GetValues<Element>().Length;
 
         // Assert: a new member needs its own InlineData row above.
         Assert.Equal(4, count);

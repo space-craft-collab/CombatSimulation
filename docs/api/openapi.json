@@ -581,6 +581,15 @@
           }
         }
       },
+      "Element": {
+        "enum": [
+          "Neutral",
+          "Fire",
+          "Frost",
+          "Nature"
+        ],
+        "description": "The element of a species or of an ability. Fire beats Nature,\nNature beats Frost, Frost beats Fire; Element.Neutral has\nneither an advantage nor a weakness. The numbers are stored in\ngrain state and must not change."
+      },
       "HttpValidationProblemDetails": {
         "type": "object",
         "properties": {
@@ -711,6 +720,7 @@
         "required": [
           "id",
           "name",
+          "element",
           "maxHitPoints",
           "attack",
           "defense",
@@ -723,6 +733,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "element": {
+            "$ref": "#/components/schemas/Element"
           },
           "maxHitPoints": {
             "type": "integer",

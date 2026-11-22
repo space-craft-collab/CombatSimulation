@@ -27,6 +27,7 @@ internal sealed class CatalogQueryService(
             : new MonsterSpeciesDto(
                 found.Id,
                 found.Name,
+                found.Element,
                 found.MaxHitPoints,
                 found.Attack,
                 found.Defense,

@@ -69,6 +69,11 @@ namespace Catalog.Infrastructure.Migrations
                     b.Property<int>("Defense")
                         .HasColumnType("int");
 
+                    b.Property<string>("Element")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<int>("MaxHitPoints")
                         .HasColumnType("int");
 
@@ -90,6 +95,7 @@ namespace Catalog.Infrastructure.Migrations
                             Id = "ember-fox",
                             Attack = 14,
                             Defense = 4,
+                            Element = "Fire",
                             MaxHitPoints = 40,
                             Name = "Ember Fox",
                             Speed = 12
@@ -99,6 +105,7 @@ namespace Catalog.Infrastructure.Migrations
                             Id = "lava-crab",
                             Attack = 10,
                             Defense = 8,
+                            Element = "Fire",
                             MaxHitPoints = 60,
                             Name = "Lava Crab",
                             Speed = 5
@@ -108,6 +115,7 @@ namespace Catalog.Infrastructure.Migrations
                             Id = "frost-owl",
                             Attack = 12,
                             Defense = 5,
+                            Element = "Frost",
                             MaxHitPoints = 35,
                             Name = "Frost Owl",
                             Speed = 14
@@ -117,6 +125,7 @@ namespace Catalog.Infrastructure.Migrations
                             Id = "moss-golem",
                             Attack = 8,
                             Defense = 10,
+                            Element = "Nature",
                             MaxHitPoints = 80,
                             Name = "Moss Golem",
                             Speed = 3

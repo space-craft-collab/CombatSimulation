@@ -24,6 +24,7 @@ internal static class Roster
                 {
                     Slot = slot,
                     ParticipantId = participantId,
+                    Element = species.Element,
                     Attack = species.Attack,
                     Defense = species.Defense,
                     Speed = species.Speed,

@@ -5,6 +5,7 @@ namespace Catalog.Contracts;
 /// </summary>
 /// <param name="Id">The species id, e.g. <c>"ember-fox"</c>.</param>
 /// <param name="Name">The display name.</param>
+/// <param name="Element">The species' element.</param>
 /// <param name="MaxHitPoints">Hit points at full health.</param>
 /// <param name="Attack">Offensive strength.</param>
 /// <param name="Defense">Damage reduction.</param>
@@ -12,6 +13,7 @@ namespace Catalog.Contracts;
 public sealed record MonsterSpeciesDto(
     string Id,
     string Name,
+    Element Element,
     int MaxHitPoints,
     int Attack,
     int Defense,

@@ -1,3 +1,5 @@
+using Catalog.Contracts;
+
 namespace Battles.Domain;
 
 /// <summary>
@@ -15,6 +17,11 @@ internal sealed record Fighter
     /// The side fielding the monster.
     /// </summary>
     public required string ParticipantId { get; init; }
+
+    /// <summary>
+    /// The monster's element.
+    /// </summary>
+    public Element Element { get; init; }
 
     /// <summary>
     /// Offensive strength.

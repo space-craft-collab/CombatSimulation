@@ -23,10 +23,10 @@ Share of its battles a species won.
 
 | Species | One on one | In a team |
 |---|---:|---:|
-| Ember Fox | 33 % | 36 % |
-| Frost Owl | 0 % | 34 % |
-| Lava Crab | 67 % | 42 % |
-| Moss Golem | 100 % | 54 % |
+| Ember Fox | 33 % | 44 % |
+| Frost Owl | 0 % | 43 % |
+| Lava Crab | 67 % | 56 % |
+| Moss Golem | 100 % | 58 % |
 
 ## One on one
 
@@ -43,22 +43,22 @@ Average length in rounds.
 
 | | Ember Fox | Frost Owl | Lava Crab | Moss Golem |
 |---|---:|---:|---:|---:|
-| **Ember Fox** | – | 4.0 | 7.0 | 10.0 |
-| **Frost Owl** | 4.0 | – | 7.0 | 12.0 |
-| **Lava Crab** | 7.0 | 7.0 | – | 60.0 |
-| **Moss Golem** | 10.0 | 12.0 | 60.0 | – |
+| **Ember Fox** | – | 4.0 | 6.0 | 7.0 |
+| **Frost Owl** | 4.0 | – | 5.0 | 7.0 |
+| **Lava Crab** | 6.0 | 5.0 | – | 15.0 |
+| **Moss Golem** | 7.0 | 7.0 | 15.0 | – |
 
 - Battles: 240
-- Average length: 16.7 rounds
-- Longest battle: 60 rounds
+- Average length: 7.3 rounds
+- Longest battle: 15 rounds
 - Undecided after 100 rounds: 0
 
 ## Teams of 3
 
 - Battles: 240
-- Average length: 79.3 rounds
-- Longest battle: 100 rounds
-- Undecided after 100 rounds: 40
+- Average length: 28.0 rounds
+- Longest battle: 36 rounds
+- Undecided after 100 rounds: 0
 
 ## Ability use
 
@@ -68,6 +68,6 @@ ability at least once, over all battles above.
 | Species | Ability | Used in |
 |---|---|---:|
 | Ember Fox | `strike` | 100 % |
-| Frost Owl | `strike` | 69 % |
+| Frost Owl | `strike` | 68 % |
 | Lava Crab | `strike` | 100 % |
 | Moss Golem | `strike` | 100 % |

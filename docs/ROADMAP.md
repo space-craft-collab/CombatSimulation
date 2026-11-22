@@ -83,11 +83,13 @@ mirrored the visitor's team.
       events and the new state out. No new behaviour; the
       grain keeps the state, the deadlines and the monster
       grains
-- [ ] Elements on the species (Fire > Nature > Frost > Fire:
+- [x] Elements on the species (Fire > Nature > Frost > Fire:
       ×1.5 with the advantage, ×0.75 against it) and a damage
       rule in which defense scales damage down instead of
       being subtracted, so no matchup ends at one damage per
       hit
+      (the triangle is in place; it starts to matter with the
+      first elemental ability)
 - [ ] Abilities as Catalog data, three per species: the
       basic `strike`, an elemental attack and a utility.
       Cooldowns per monster; an action is checked for

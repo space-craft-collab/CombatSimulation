@@ -378,6 +378,7 @@ export function deserializeIntoSpeciesResponse(speciesResponse: Partial<SpeciesR
     return {
         "attack": n => { speciesResponse.attack = n.getNumberValue(); },
         "defense": n => { speciesResponse.defense = n.getNumberValue(); },
+        "element": n => { speciesResponse.element = n.getEnumValue<Element>(ElementObject); },
         "id": n => { speciesResponse.id = n.getStringValue(); },
         "maxHitPoints": n => { speciesResponse.maxHitPoints = n.getNumberValue(); },
         "name": n => { speciesResponse.name = n.getStringValue(); },
@@ -411,6 +412,7 @@ export function deserializeIntoSubmitActionRequest(submitActionRequest: Partial<
         "targetSlot": n => { submitActionRequest.targetSlot = n.getNumberValue(); },
     }
 }
+export type Element = (typeof ElementObject)[keyof typeof ElementObject];
 export interface HttpValidationProblemDetails extends AdditionalDataHolder, ApiError, Parsable {
     /**
      * The detail property
@@ -647,6 +649,7 @@ export function serializeSpeciesResponse(writer: SerializationWriter, speciesRes
     if (!speciesResponse || isSerializingDerivedType) { return; }
     writer.writeNumberValue("attack", speciesResponse.attack);
     writer.writeNumberValue("defense", speciesResponse.defense);
+    writer.writeEnumValue<Element>("element", speciesResponse.element);
     writer.writeStringValue("id", speciesResponse.id);
     writer.writeNumberValue("maxHitPoints", speciesResponse.maxHitPoints);
     writer.writeStringValue("name", speciesResponse.name);
@@ -691,6 +694,10 @@ export interface SpeciesResponse extends AdditionalDataHolder, Parsable {
      * The defense property
      */
     defense?: number | null;
+    /**
+     * The element of a species or of an ability. Fire beats Nature,Nature beats Frost, Frost beats Fire; Element.Neutral hasneither an advantage nor a weakness. The numbers are stored ingrain state and must not change.
+     */
+    element?: Element | null;
     /**
      * The id property
      */
@@ -748,6 +755,15 @@ export const BattleStatusObject = {
     WaitingForPlayers: "WaitingForPlayers",
     InProgress: "InProgress",
     Completed: "Completed",
+} as const;
+/**
+ * The element of a species or of an ability. Fire beats Nature,Nature beats Frost, Frost beats Fire; Element.Neutral hasneither an advantage nor a weakness. The numbers are stored ingrain state and must not change.
+ */
+export const ElementObject = {
+    Neutral: "Neutral",
+    Fire: "Fire",
+    Frost: "Frost",
+    Nature: "Nature",
 } as const;
 export const OpponentObject = {
     Bot: "Bot",

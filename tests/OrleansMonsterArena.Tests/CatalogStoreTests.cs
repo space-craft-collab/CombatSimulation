@@ -32,6 +32,7 @@ public sealed class CatalogStoreTests(AppHostFixture host)
         Assert.NotNull(species);
         Assert.Equal(seeded.Id, species.Id);
         Assert.Equal(seeded.Name, species.Name);
+        Assert.Equal(seeded.Element, species.Element);
         Assert.Equal(seeded.MaxHitPoints, species.MaxHitPoints);
         Assert.Equal(seeded.Attack, species.Attack);
         Assert.Equal(seeded.Defense, species.Defense);

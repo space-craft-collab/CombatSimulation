@@ -1,3 +1,5 @@
+using Catalog.Contracts;
+
 namespace Battles.Grains;
 
 /// <summary>
@@ -36,6 +38,11 @@ internal sealed class Combatant
 
     [Id(8)]
     public required int MaxHitPoints { get; init; }
+
+    // Not required: a battle stored before elements existed reads as
+    // Neutral.
+    [Id(9)]
+    public Element Element { get; init; }
 
     public bool IsDefeated => HitPoints <= 0;
 }

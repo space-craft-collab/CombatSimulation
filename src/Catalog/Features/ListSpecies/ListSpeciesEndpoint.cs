@@ -29,6 +29,7 @@ internal static class ListSpeciesEndpoint
             [.. (await species.ListAsync(cancellationToken)).Select(found => new SpeciesResponse(
                 found.Id,
                 found.Name,
+                found.Element,
                 found.MaxHitPoints,
                 found.Attack,
                 found.Defense,

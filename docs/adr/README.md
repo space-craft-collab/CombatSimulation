@@ -20,6 +20,7 @@ new entries.
 | 0009 | [Per-module internal structure: vertical slices](0009-module-internal-structure.md) | Accepted |
 | 0010 | [Function-delegate test seams instead of test-only interfaces](0010-delegate-test-seams.md) | Accepted |
 | 0011 | [Require SQL Server for the cold path, in tests too](0011-sql-server-required.md) | Accepted |
+| 0012 | [Combat rules: abilities with cooldowns, no dice](0012-combat-rules.md) | Proposed |
 
 ## Diagrams
 

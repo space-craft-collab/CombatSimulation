@@ -281,6 +281,7 @@ internal sealed class LiveBattleGrain(
                 IsBot = participant.IsBot,
                 SpeciesId = monster.Id,
                 MaxHitPoints = monster.MaxHitPoints,
+                Element = monster.Element,
             });
             initializations.Add(Monster(slot).InitializeAsync(new MonsterStats(
                 monster.Id, monster.MaxHitPoints, monster.Attack, monster.Defense, monster.Speed)));
@@ -353,6 +354,7 @@ internal sealed class LiveBattleGrain(
         {
             Slot = combatant.Slot,
             ParticipantId = combatant.ParticipantId,
+            Element = combatant.Element,
             Attack = combatant.Attack,
             Defense = combatant.Defense,
             Speed = combatant.Speed,

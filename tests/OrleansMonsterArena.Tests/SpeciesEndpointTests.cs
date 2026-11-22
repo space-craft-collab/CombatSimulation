@@ -22,13 +22,13 @@ public sealed class SpeciesEndpointTests(AppHostFixture host)
         var species = await client.GetFromJsonAsync<List<SpeciesResponse>>(
             new Uri("/species", UriKind.Relative), TestContext.Current.CancellationToken);
 
-        // Assert: every seeded species with the stats it was seeded
-        // with, ordered by name.
+        // Assert: every seeded species with the element and stats it
+        // was seeded with, ordered by name.
         Assert.NotNull(species);
         Assert.Equal(
             SpeciesSeed.All
                 .OrderBy(seeded => seeded.Name, StringComparer.Ordinal)
-                .Select(seeded => (seeded.Id, seeded.Name, seeded.MaxHitPoints, seeded.Attack, seeded.Defense, seeded.Speed)),
-            species.Select(listed => (listed.Id, listed.Name, listed.MaxHitPoints, listed.Attack, listed.Defense, listed.Speed)));
+                .Select(seeded => (seeded.Id, seeded.Name, seeded.Element, seeded.MaxHitPoints, seeded.Attack, seeded.Defense, seeded.Speed)),
+            species.Select(listed => (listed.Id, listed.Name, listed.Element, listed.MaxHitPoints, listed.Attack, listed.Defense, listed.Speed)));
     }
 }
