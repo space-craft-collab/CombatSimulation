@@ -47,7 +47,9 @@ the [`CHANGELOG`](../CHANGELOG.md); their checklists are in
 - **Phase 6 — Auth & accounts**
   JWT bearer auth + ASP.NET Core Identity (cold-path EF store),
   player accounts, protected SvelteKit routes
-  ([ADR-0004](adr/0004-sveltekit-frontend.md)).
+  ([ADR-0004](adr/0004-sveltekit-frontend.md)). No login wall:
+  guest play (nickname, vs bot) keeps working without an
+  account; accounts add to it, they never gate it.
 - **Phase 7 — Observability**
   OTEL (wired since Phase 1) → Grafana stack
   (Alloy/Tempo/Loki/Prometheus); retire NLog.
