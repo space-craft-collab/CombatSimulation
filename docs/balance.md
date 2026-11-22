@@ -77,11 +77,11 @@ ability at least once, over all battles above.
 | Ember Fox | `flame-dash` | 77 % |
 | Ember Fox | `ember-bite` | 87 % |
 | Frost Owl | `strike` | 44 % |
-| Frost Owl | `ice-shard` | 78 % |
-| Frost Owl | `chill-wind` | 45 % |
+| Frost Owl | `ice-shard` | 79 % |
+| Frost Owl | `chill-wind` | 46 % |
 | Glacier Yak | `strike` | 98 % |
 | Glacier Yak | `avalanche` | 100 % |
-| Glacier Yak | `thick-hide` | 86 % |
+| Glacier Yak | `thick-hide` | 87 % |
 | Lava Crab | `strike` | 96 % |
 | Lava Crab | `magma-claw` | 97 % |
 | Lava Crab | `shell-up` | 79 % |
@@ -89,5 +89,5 @@ ability at least once, over all battles above.
 | Moss Golem | `root-slam` | 99 % |
 | Moss Golem | `regrow` | 96 % |
 | Thorn Lynx | `strike` | 50 % |
-| Thorn Lynx | `vine-whip` | 55 % |
+| Thorn Lynx | `vine-whip` | 54 % |
 | Thorn Lynx | `pounce` | 89 % |

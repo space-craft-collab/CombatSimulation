@@ -21,7 +21,7 @@ export interface AbilityResponse extends AdditionalDataHolder, Parsable {
      */
     cooldown?: number | null;
     /**
-     * What an ability does besides dealing damage. The numbers arestored in grain state and must not change.
+     * What an ability does besides dealing damage. A battle copiesits monsters' abilities into its grain state, so the numbers arestored format and must not change (CONTRIBUTING.md); the Catalogstores the names in SQL, so a rename needs a migration.
      */
     effect?: AbilityEffect | null;
     /**
@@ -948,7 +948,7 @@ export interface SubmitActionRequest extends AdditionalDataHolder, Parsable {
     targetSlot?: number | null;
 }
 /**
- * What an ability does besides dealing damage. The numbers arestored in grain state and must not change.
+ * What an ability does besides dealing damage. A battle copiesits monsters' abilities into its grain state, so the numbers arestored format and must not change (CONTRIBUTING.md); the Catalogstores the names in SQL, so a rename needs a migration.
  */
 export const AbilityEffectObject = {
     None: "None",

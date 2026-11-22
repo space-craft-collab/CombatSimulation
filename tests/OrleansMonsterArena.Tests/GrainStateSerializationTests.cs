@@ -1,4 +1,5 @@
 using Battles;
+using Battles.Domain;
 using Battles.Grains;
 using Battles.Grains.Abstractions;
 using Catalog.Contracts;
@@ -84,5 +85,45 @@ public sealed class GrainStateSerializationTests
         Assert.Equal(Element.Fire, ability.Element);
         Assert.Equal(AbilityEffect.Burn, ability.Effect);
         Assert.Equal((150, 2, 4, 3, 1), (ability.Power, ability.Cooldown, ability.EffectValue, ability.EffectRounds, ability.CooldownLeft));
+    }
+
+    [Fact]
+    public void Deserialize_CombatantStoredBeforeAbilities_ReadsAsAMonsterWithTheBasicAttack()
+    {
+        // Arrange: the serializer knows members by their [Id] only,
+        // so the old shape's bytes are what an old battle left behind.
+        using var services = new ServiceCollection()
+            .AddSerializer(serializer => serializer
+                .AddAssembly(typeof(BattlesModule).Assembly)
+                .AddAssembly(typeof(BattleState).Assembly)
+                .AddAssembly(typeof(CombatantBeforeAbilities).Assembly))
+            .BuildServiceProvider();
+        var serializer = services.GetRequiredService<Serializer>();
+        var stored = serializer.SerializeToArray(new CombatantBeforeAbilities
+        {
+            Slot = 1,
+            ParticipantId = "bot",
+            Attack = 10,
+            Defense = 8,
+            Speed = 5,
+            HitPoints = 42,
+            IsBot = true,
+            SpeciesId = "lava-crab",
+            MaxHitPoints = 60,
+        });
+
+        // Act
+        var combatant = serializer.Deserialize<Combatant>(stored);
+
+        // Assert: what was stored is there, what was not reads as
+        // "nothing yet", and the rules give the monster its strike.
+        Assert.NotNull(combatant);
+        Assert.Equal((1, "bot", 42, 60), (combatant.Slot, combatant.ParticipantId, combatant.HitPoints, combatant.MaxHitPoints));
+        Assert.Equal(Element.Neutral, combatant.Element);
+        Assert.Empty(combatant.Abilities);
+        Assert.Empty(combatant.Effects);
+        var fighter = combatant.ToFighter();
+        Assert.Equal(AbilitySpec.StrikeId, Assert.Single(fighter.Abilities).Spec.Id);
+        Assert.Empty(fighter.Effects);
     }
 }

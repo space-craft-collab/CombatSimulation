@@ -437,7 +437,7 @@
           "Slow",
           "Heal"
         ],
-        "description": "What an ability does besides dealing damage. The numbers are\nstored in grain state and must not change."
+        "description": "What an ability does besides dealing damage. A battle copies\nits monsters' abilities into its grain state, so the numbers are\nstored format and must not change (CONTRIBUTING.md); the Catalog\nstores the names in SQL, so a rename needs a migration."
       },
       "AbilityResponse": {
         "required": [

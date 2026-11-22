@@ -89,8 +89,10 @@ internal static class BotStrategy
         var rating = share * target.Attack;
         if (ability.Effect == AbilityEffect.Slow && !target.Has(AbilityEffect.Slow))
         {
+            // A tie in speed goes to the lower slot.
             var slowed = target.Speed * (100 - ability.EffectValue) / 100;
-            if (own.Any(fighter => fighter.EffectiveSpeed < target.EffectiveSpeed && fighter.EffectiveSpeed >= slowed))
+            if (own.Any(fighter => !ActsBefore(fighter.EffectiveSpeed, fighter.Slot, target.EffectiveSpeed, target.Slot)
+                && ActsBefore(fighter.EffectiveSpeed, fighter.Slot, slowed, target.Slot)))
             {
                 rating += Outrun * target.Attack;
             }
@@ -120,13 +122,19 @@ internal static class BotStrategy
             return 0;
         }
 
-        var hardestHit = opponents.Max(opponent => opponent.Abilities
-            .Where(ready => ready.IsReady && !ready.Spec.TargetsSelf)
-            .Max(ready => HitOf(opponent, actor, ready.Spec)));
+        var hardestHit = opponents
+            .SelectMany(opponent => opponent.Abilities
+                .Where(ready => ready.IsReady && !ready.Spec.TargetsSelf)
+                .Select(ready => HitOf(opponent, actor, ready.Spec)))
+            .DefaultIfEmpty(0)
+            .Max();
         var spared = hardestHit * ability.EffectValue / 100.0 * (ability.EffectRounds - 1) / own.Count;
 
         return Math.Min(1, spared / actor.HitPoints) * actor.Attack;
     }
+
+    private static bool ActsBefore(int speed, int slot, int otherSpeed, int otherSlot) =>
+        speed > otherSpeed || (speed == otherSpeed && slot < otherSlot);
 
     private static int HitOf(Fighter actor, Fighter target, AbilitySpec ability) =>
         DamageRule.Calculate(

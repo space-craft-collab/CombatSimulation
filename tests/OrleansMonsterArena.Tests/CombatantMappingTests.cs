@@ -51,12 +51,12 @@ public sealed class CombatantMappingTests
     }
 
     [Fact]
-    public void Take_FighterAfterARound_TakesOverCooldownsAndEffects()
+    public void Take_FighterAfterARound_TakesOverHitPointsCooldownsAndEffects()
     {
         // Arrange
         var fighter = Fighter.Enter(0, "player-1", Species);
         var combatant = Combatant.From(fighter, isBot: false, Species);
-        var after = fighter
+        var after = (fighter with { HitPoints = 17 })
             .WithCooldown("ember-bite", 3)
             .With(new ActiveEffect(AbilityEffect.Burn, 4, 2))
             .With(new ActiveEffect(AbilityEffect.Guard, 50, 1));

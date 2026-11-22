@@ -2,7 +2,9 @@ namespace Battles.Grains.Abstractions;
 
 /// <summary>
 /// One monster in play, keyed by <c>"{BattleId}:{Slot}"</c>
-/// (ADR-0007). Lives only as long as its battle.
+/// (ADR-0007): the record of its hit points. The combat rules decide
+/// them, the battle tells the monster after every round. Lives only
+/// as long as its battle.
 /// </summary>
 public interface IMonsterInstanceGrain : IGrainWithStringKey
 {
@@ -14,19 +16,14 @@ public interface IMonsterInstanceGrain : IGrainWithStringKey
     Task InitializeAsync(MonsterStats stats);
 
     /// <summary>
-    /// Reduces the monster's hit points.
+    /// Tells the monster where it stands after a round. The value is
+    /// absolute, not a change, so telling it twice does no harm: a
+    /// battle that failed in the middle of a round simply says it
+    /// again (ADR-0012).
     /// </summary>
-    /// <param name="amount">The damage to apply; must not be negative.</param>
-    /// <returns>The monster's state after the damage.</returns>
-    Task<MonsterSnapshot> ApplyDamageAsync(int amount);
-
-    /// <summary>
-    /// Gives the monster hit points back, up to full health. A
-    /// defeated monster stays defeated.
-    /// </summary>
-    /// <param name="amount">The hit points to restore; must not be negative.</param>
-    /// <returns>The monster's state after the healing.</returns>
-    Task<MonsterSnapshot> RestoreAsync(int amount);
+    /// <param name="hitPoints">The monster's hit points, from 0 (defeated) to its full health.</param>
+    /// <returns>The monster's state afterwards.</returns>
+    Task<MonsterSnapshot> SetHitPointsAsync(int hitPoints);
 
     /// <summary>
     /// Returns the monster's current state.

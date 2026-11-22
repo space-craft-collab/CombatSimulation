@@ -60,17 +60,17 @@ internal sealed class LiveBattleGrain(
 
     private IGrainTimer? _botLoop;
 
+    // Set when a round failed after some monster grains were already
+    // told their new hit points; the next round tells all of them.
+    private bool _monstersInDoubt;
+
     private LiveBattleState Battle => state.State;
 
     /// <inheritdoc />
     public override Task OnActivateAsync(CancellationToken cancellationToken)
     {
-        // Timers die with their activation, unlike reminders; re-arm a
-        // bot-only battle that was still running.
-        if (Battle.Status == BattleStatus.InProgress && HumanSidesStanding().Count == 0)
-        {
-            StartBotLoop();
-        }
+        // Timers die with their activation, unlike reminders.
+        ResumeBotLoop();
 
         return base.OnActivateAsync(cancellationToken);
     }
@@ -201,6 +201,9 @@ internal sealed class LiveBattleGrain(
         await PlayRoundAsync();
     }
 
+    // The abilities are taken as the combat rules see them, so a
+    // battle stored before abilities existed shows the basic attack
+    // its monsters fight with.
     private BattleState Snapshot() =>
         new(
             this.GetPrimaryKey(),
@@ -216,8 +219,8 @@ internal sealed class LiveBattleGrain(
                 combatant.SpeciesId,
                 combatant.HitPoints,
                 combatant.MaxHitPoints,
-                [.. combatant.Abilities.Select(ability =>
-                    new AbilityCooldown(ability.AbilityId, ability.CooldownLeft))],
+                [.. combatant.ToFighter().Abilities.Select(ability =>
+                    new AbilityCooldown(ability.Spec.Id, ability.CooldownLeft))],
                 [.. combatant.Effects.Select(ToSnapshot)]))]);
 
     // Only effects that last are stored on a combatant; a heal is
@@ -353,13 +356,34 @@ internal sealed class LiveBattleGrain(
     /// result and only then tells the watchers, so no client sees a
     /// round that is not stored yet. A round that ends the battle
     /// hands it over to the cold store in the same grain turn.
+    /// If anything fails before the round is stored, the grain falls
+    /// back to the state it last stored, so the round can be played
+    /// again from where it stood: the caller's own action is not
+    /// stored yet and may be sent again.
     /// </summary>
     private async Task PlayRoundAsync()
     {
         var round = Battle.Round;
-        var roundEvents = await ResolveRoundAsync();
-        await ScheduleNextRoundAsync();
-        await state.WriteStateAsync();
+        List<RoundEventDto> roundEvents;
+        try
+        {
+            roundEvents = await ResolveRoundAsync();
+            await ScheduleNextRoundAsync();
+            await state.WriteStateAsync();
+            _monstersInDoubt = false;
+        }
+        catch
+        {
+            // Some monster grains may already stand where the failed
+            // round put them; the next round tells every one of them
+            // again.
+            _monstersInDoubt = true;
+            StopBotLoop();
+            await state.ReadStateAsync();
+            ResumeBotLoop();
+            throw;
+        }
+
         await PublishAsync(round, roundEvents);
 
         if (Battle.Status == BattleStatus.Completed)
@@ -469,39 +493,21 @@ internal sealed class LiveBattleGrain(
             BattleResponse.From(Snapshot()).Combatants));
 
     /// <summary>
-    /// Lets the combat rules resolve the pending actions, then
-    /// applies each change in hit points to its monster grain, which
-    /// stays their authority, and takes over cooldowns and effects.
+    /// Lets the combat rules resolve the pending actions, tells each
+    /// monster grain whose monster changed where it stands now, and
+    /// takes the round over into the battle's own state. The monster
+    /// grains come first and get absolute hit points: if one of the
+    /// writes fails, nothing of the round is in the battle's state
+    /// yet, and telling a monster the same value again is harmless.
     /// </summary>
     /// <returns>What happened, in resolution order.</returns>
     private async Task<List<RoundEventDto>> ResolveRoundAsync()
     {
         var result = RoundResolver.Resolve(Fighters(), [.. Battle.PendingActions.Values.Select(ToRoundAction)]);
 
-        var roundEvents = new List<RoundEventDto>();
-        foreach (var roundEvent in result.Events)
-        {
-            var target = Battle.Combatants[roundEvent.TargetSlot];
-            if (roundEvent.Damage > 0)
-            {
-                target.HitPoints = (await Monster(target.Slot).ApplyDamageAsync(roundEvent.Damage)).HitPoints;
-            }
-            else if (roundEvent.Healing > 0)
-            {
-                target.HitPoints = (await Monster(target.Slot).RestoreAsync(roundEvent.Healing)).HitPoints;
-            }
-
-            roundEvents.Add(new RoundEventDto(
-                roundEvent.Kind,
-                roundEvent.ActorSlot,
-                roundEvent.TargetSlot,
-                roundEvent.AbilityId,
-                roundEvent.Damage,
-                roundEvent.Healing,
-                target.HitPoints,
-                roundEvent.Effectiveness,
-                roundEvent.Effect));
-        }
+        await Task.WhenAll(result.Fighters
+            .Where(after => _monstersInDoubt || after.HitPoints != Battle.Combatants[after.Slot].HitPoints)
+            .Select(after => Monster(after.Slot).SetHitPointsAsync(after.HitPoints)));
 
         foreach (var after in result.Fighters)
         {
@@ -521,7 +527,19 @@ internal sealed class LiveBattleGrain(
             Battle.Round++;
         }
 
-        return roundEvents;
+        return
+        [
+            .. result.Events.Select(roundEvent => new RoundEventDto(
+                roundEvent.Kind,
+                roundEvent.ActorSlot,
+                roundEvent.TargetSlot,
+                roundEvent.AbilityId,
+                roundEvent.Damage,
+                roundEvent.Healing,
+                roundEvent.TargetHitPoints,
+                roundEvent.Effectiveness,
+                roundEvent.Effect)),
+        ];
     }
 
     /// <summary>
@@ -584,6 +602,15 @@ internal sealed class LiveBattleGrain(
         _botLoop ??= this.RegisterGrainTimer(
             PlayBotRoundAsync,
             new GrainTimerCreationOptions(interval, interval) { KeepAlive = true });
+    }
+
+    // Re-arms the loop of a bot-only battle that is still running.
+    private void ResumeBotLoop()
+    {
+        if (Battle.Status == BattleStatus.InProgress && HumanSidesStanding().Count == 0)
+        {
+            StartBotLoop();
+        }
     }
 
     private void StopBotLoop()

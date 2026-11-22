@@ -4,7 +4,7 @@ using Orleans.Runtime;
 namespace Battles.Grains;
 
 /// <summary>
-/// Implementation of <see cref="IMonsterInstanceGrain"/>: owns one
+/// Implementation of <see cref="IMonsterInstanceGrain"/>: keeps one
 /// monster's hit points for the length of a battle.
 /// </summary>
 /// <param name="state">The monster's persistent state.</param>
@@ -33,28 +33,14 @@ internal sealed class MonsterInstanceGrain(
     }
 
     /// <inheritdoc />
-    public async Task<MonsterSnapshot> ApplyDamageAsync(int amount)
+    public async Task<MonsterSnapshot> SetHitPointsAsync(int hitPoints)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(amount);
+        ArgumentOutOfRangeException.ThrowIfNegative(hitPoints);
         var stats = RequireStats();
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(hitPoints, stats.MaxHitPoints);
 
-        state.State.HitPoints = Math.Max(0, state.State.HitPoints - amount);
+        state.State.HitPoints = hitPoints;
         await state.WriteStateAsync();
-
-        return new MonsterSnapshot(stats.SpeciesId, state.State.HitPoints, stats.MaxHitPoints);
-    }
-
-    /// <inheritdoc />
-    public async Task<MonsterSnapshot> RestoreAsync(int amount)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(amount);
-        var stats = RequireStats();
-
-        if (state.State.HitPoints > 0)
-        {
-            state.State.HitPoints = Math.Min(stats.MaxHitPoints, state.State.HitPoints + amount);
-            await state.WriteStateAsync();
-        }
 
         return new MonsterSnapshot(stats.SpeciesId, state.State.HitPoints, stats.MaxHitPoints);
     }

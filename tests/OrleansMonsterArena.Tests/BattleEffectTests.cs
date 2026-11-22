@@ -8,8 +8,8 @@ namespace OrleansMonsterArena.Tests;
 
 /// <summary>
 /// Status effects in a running battle (ADR-0012), through the
-/// grains: the battle stores them, shows them, and applies every
-/// change in hit points to the monster grains. Two humans fight, so
+/// grains: the battle stores them, shows them, and tells the monster
+/// grains where their monsters stand after every round. Two humans fight, so
 /// the test decides every move; the abilities are found in the
 /// Catalog by their effect, so the tests hold when the seed is
 /// retuned.
@@ -119,47 +119,6 @@ public sealed class BattleEffectTests(AppHostFixture host)
         var monster = await Grains.GetGrain<IMonsterInstanceGrain>($"{battle.GetPrimaryKey()}:0").GetSnapshotAsync();
         Assert.Equal(struck.Combatants[0].HitPoints, monster.HitPoints);
         Assert.Equal(heal.Cooldown - 1, struck.Combatants[0].Abilities.Single(ability => ability.AbilityId == heal.Id).RoundsLeft);
-    }
-
-    [Fact]
-    public async Task RestoreAsync_MoreThanMissing_StopsAtFullHealth()
-    {
-        // Arrange
-        var monster = Grains.GetGrain<IMonsterInstanceGrain>($"{Guid.NewGuid()}:0");
-        await monster.InitializeAsync(new MonsterStats("ember-fox", 40, 14, 4, 12));
-        await monster.ApplyDamageAsync(10);
-
-        // Act
-        var snapshot = await monster.RestoreAsync(25);
-
-        // Assert
-        Assert.Equal(40, snapshot.HitPoints);
-    }
-
-    [Fact]
-    public async Task RestoreAsync_DefeatedMonster_StaysDefeated()
-    {
-        // Arrange
-        var monster = Grains.GetGrain<IMonsterInstanceGrain>($"{Guid.NewGuid()}:0");
-        await monster.InitializeAsync(new MonsterStats("ember-fox", 40, 14, 4, 12));
-        await monster.ApplyDamageAsync(40);
-
-        // Act
-        var snapshot = await monster.RestoreAsync(10);
-
-        // Assert
-        Assert.True(snapshot.IsDefeated);
-    }
-
-    [Fact]
-    public async Task RestoreAsync_NegativeAmount_ThrowsArgumentOutOfRangeException()
-    {
-        // Arrange
-        var monster = Grains.GetGrain<IMonsterInstanceGrain>($"{Guid.NewGuid()}:0");
-        await monster.InitializeAsync(new MonsterStats("ember-fox", 40, 14, 4, 12));
-
-        // Act + Assert
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => monster.RestoreAsync(-1));
     }
 
     // player-1's monster holds slot 0, player-2's slot 1.

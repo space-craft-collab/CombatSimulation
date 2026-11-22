@@ -1,8 +1,10 @@
 namespace Catalog.Contracts;
 
 /// <summary>
-/// What an ability does besides dealing damage. The numbers are
-/// stored in grain state and must not change.
+/// What an ability does besides dealing damage. A battle copies
+/// its monsters' abilities into its grain state, so the numbers are
+/// stored format and must not change (CONTRIBUTING.md); the Catalog
+/// stores the names in SQL, so a rename needs a migration.
 /// </summary>
 public enum AbilityEffect
 {

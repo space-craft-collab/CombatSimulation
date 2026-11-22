@@ -513,18 +513,58 @@ public sealed class BattleGrainTests(AppHostFixture host)
     }
 
     [Fact]
-    public async Task ApplyDamageAsync_MoreThanHitPoints_ClampsAtZeroAndDefeats()
+    public async Task SetHitPointsAsync_Zero_DefeatsTheMonster()
     {
         // Arrange
         var monster = Grains.GetGrain<IMonsterInstanceGrain>($"{Guid.NewGuid()}:0");
         await monster.InitializeAsync(new MonsterStats("ember-fox", 40, 14, 4, 12));
 
         // Act
-        var snapshot = await monster.ApplyDamageAsync(100);
+        var snapshot = await monster.SetHitPointsAsync(0);
 
         // Assert
         Assert.Equal(0, snapshot.HitPoints);
         Assert.True(snapshot.IsDefeated);
+    }
+
+    [Fact]
+    public async Task SetHitPointsAsync_SameValueTwice_LeavesTheMonsterThere()
+    {
+        // Arrange: a battle that failed in mid-round says it again.
+        var monster = Grains.GetGrain<IMonsterInstanceGrain>($"{Guid.NewGuid()}:0");
+        await monster.InitializeAsync(new MonsterStats("ember-fox", 40, 14, 4, 12));
+
+        // Act
+        await monster.SetHitPointsAsync(25);
+        var snapshot = await monster.SetHitPointsAsync(25);
+
+        // Assert
+        Assert.Equal(25, snapshot.HitPoints);
+        Assert.Equal(25, (await monster.GetSnapshotAsync()).HitPoints);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(41)]
+    public async Task SetHitPointsAsync_OutsideZeroToFullHealth_ThrowsArgumentOutOfRangeException(int hitPoints)
+    {
+        // Arrange
+        var monster = Grains.GetGrain<IMonsterInstanceGrain>($"{Guid.NewGuid()}:0");
+        await monster.InitializeAsync(new MonsterStats("ember-fox", 40, 14, 4, 12));
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => monster.SetHitPointsAsync(hitPoints));
+        Assert.Equal(40, (await monster.GetSnapshotAsync()).HitPoints);
+    }
+
+    [Fact]
+    public async Task SetHitPointsAsync_BeforeInitialization_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var monster = Grains.GetGrain<IMonsterInstanceGrain>($"{Guid.NewGuid()}:0");
+
+        // Act + Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => monster.SetHitPointsAsync(10));
     }
 
     [Fact]
@@ -534,7 +574,7 @@ public sealed class BattleGrainTests(AppHostFixture host)
         var monster = Grains.GetGrain<IMonsterInstanceGrain>($"{Guid.NewGuid()}:0");
         var stats = new MonsterStats("ember-fox", 40, 14, 4, 12);
         await monster.InitializeAsync(stats);
-        await monster.ApplyDamageAsync(10);
+        await monster.SetHitPointsAsync(30);
 
         // Act + Assert: a second initialization must not heal it.
         await Assert.ThrowsAsync<InvalidOperationException>(() => monster.InitializeAsync(stats));

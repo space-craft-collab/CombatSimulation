@@ -310,6 +310,71 @@ public sealed class BotStrategyTests
     }
 
     [Fact]
+    public void Decide_SlowWouldLetItsMonsterActFirst_UsesTheSlowingAbility()
+    {
+        // Arrange: speed 12 at half is 6, below the bot's 10.
+        var freeze = new AbilitySpec("freeze", Element.Neutral, 100, 2, AbilityEffect.Slow, 50, 2);
+        Fighter[] fighters =
+        [
+            Monsters.Create(0, "player-1", speed: 12),
+            Monsters.Create(1, "bot-1", speed: 10, abilities: freeze),
+        ];
+
+        // Act
+        var move = BotStrategy.Decide("bot-1", fighters);
+
+        // Assert
+        Assert.Equal(new BotMove(1, 0, "freeze"), move);
+    }
+
+    [Fact]
+    public void Decide_SlowWouldOnlyTieWithALowerSlot_GainsNothingAndUsesTheBasicAttack()
+    {
+        // Arrange: speed 10 at half is 5, the bot's own speed; the
+        // tie goes to the opponent's lower slot.
+        var freeze = new AbilitySpec("freeze", Element.Neutral, 100, 2, AbilityEffect.Slow, 50, 2);
+        Fighter[] fighters =
+        [
+            Monsters.Create(0, "player-1", speed: 10),
+            Monsters.Create(1, "bot-1", speed: 5, abilities: freeze),
+        ];
+
+        // Act
+        var move = BotStrategy.Decide("bot-1", fighters);
+
+        // Assert
+        Assert.Equal(new BotMove(1, 0, "strike"), move);
+    }
+
+    [Fact]
+    public void Decide_NoOpponentHasAnAttackReady_StillRatesAGuard()
+    {
+        // Arrange: nothing to spare, so the guard is worth nothing.
+        var onlyMove = new AbilitySpec("slam", Element.Neutral, 150, 2);
+        Fighter[] fighters =
+        [
+            new Fighter
+            {
+                Slot = 0,
+                ParticipantId = "player-1",
+                Attack = 10,
+                Defense = 0,
+                Speed = 10,
+                MaxHitPoints = 40,
+                HitPoints = 40,
+                Abilities = [new FighterAbility(onlyMove, 2)],
+            },
+            Monsters.Create(1, "bot-1", abilities: Shield),
+        ];
+
+        // Act
+        var move = BotStrategy.Decide("bot-1", fighters);
+
+        // Assert
+        Assert.Equal(new BotMove(1, 0, "strike"), move);
+    }
+
+    [Fact]
     public void Decide_NoStandingOwnMonster_ThrowsInvalidOperationException()
     {
         // Arrange

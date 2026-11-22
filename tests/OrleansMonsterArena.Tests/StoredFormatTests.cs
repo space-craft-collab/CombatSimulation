@@ -64,6 +64,31 @@ public sealed class StoredFormatTests(AppHostFixture host)
         Assert.Equal(4, count);
     }
 
+    [Theory]
+    [InlineData(AbilityEffect.None, 0)]
+    [InlineData(AbilityEffect.Burn, 1)]
+    [InlineData(AbilityEffect.Guard, 2)]
+    [InlineData(AbilityEffect.Slow, 3)]
+    [InlineData(AbilityEffect.Heal, 4)]
+    public void AbilityEffect_StoredValue_StaysFrozen(AbilityEffect effect, int expected)
+    {
+        // Arrange / Act
+        var actual = (int)effect;
+
+        // Assert
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void AbilityEffect_Members_HaveNoUnpinnedAdditions()
+    {
+        // Arrange / Act
+        var count = Enum.GetValues<AbilityEffect>().Length;
+
+        // Assert: a new member needs its own InlineData row above.
+        Assert.Equal(5, count);
+    }
+
     [Fact]
     public void GetGrainId_EachGrain_KeepsFrozenGrainType()
     {

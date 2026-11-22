@@ -5,9 +5,9 @@ namespace Battles.Grains;
 
 /// <summary>
 /// One monster slot as the battle stores it: owner, combat stats,
-/// abilities, effects and a mirror of its hit points. The monster grain stays
-/// the authority on hit points; the battle copies them from each
-/// snapshot so the rules can run without extra grain calls.
+/// abilities, effects and hit points: everything the combat rules
+/// need, so a round is played without a grain call. After the round
+/// each monster grain is told where its monster stands.
 /// </summary>
 [GenerateSerializer]
 [Alias("battles.Combatant")]
@@ -102,12 +102,13 @@ internal sealed class Combatant
     }
 
     /// <summary>
-    /// Takes over what a round changed besides the hit points, which
-    /// come from the monster grain.
+    /// Takes over what a round changed: hit points, cooldowns and
+    /// effects.
     /// </summary>
     /// <param name="after">The monster after the round.</param>
     public void Take(Fighter after)
     {
+        HitPoints = after.HitPoints;
         foreach (var ability in Abilities)
         {
             ability.CooldownLeft = after.Find(ability.AbilityId)?.CooldownLeft ?? 0;
