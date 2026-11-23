@@ -46,4 +46,6 @@ services:
       - .:/app
     environment:
       E2E_BASE_URL: http://localhost:5173
+      # Set on CI only; playwright.config.ts retries and annotates there.
+      CI: ${CI:-}
     command: npx playwright test

@@ -26,6 +26,12 @@ docker compose run --rm frontend npm test
 docker compose run --rm e2e               # Playwright; needs the dev server and the AppHost
 ```
 
+`../scripts/play-start.sh` starts the dev server and the AppHost,
+with SQL Server and Azurite behind it. The CI job `e2e` runs the
+tests the same way: that script, then `docker compose run --rm e2e`.
+On CI a failed test is retried once (and reported as flaky if the
+retry passes); its trace lands in `test-results/`.
+
 ## Configuration
 
 | Variable           | Meaning                                                                  |

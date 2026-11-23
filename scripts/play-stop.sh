@@ -9,7 +9,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 project=oma-play
-state_dir="${XDG_RUNTIME_DIR:-/tmp}/oma-play"
+# Must match play-start.sh, OMA_PLAY_DIR included.
+state_dir="${OMA_PLAY_DIR:-${XDG_RUNTIME_DIR:-/tmp}/oma-play}"
 pid_file="$state_dir/apphost.pid"
 
 down_args=()

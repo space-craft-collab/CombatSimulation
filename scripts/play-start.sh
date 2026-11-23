@@ -7,7 +7,9 @@
 # infrastructure runs as a compose project of its own ("oma-play",
 # with its own volumes), and the AppHost gets its settings from
 # environment variables. Set MSSQL_SA_PASSWORD to use another
-# password than the one from .env.example.
+# password than the one from .env.example, and OMA_PLAY_DIR for
+# another place than $XDG_RUNTIME_DIR/oma-play for the AppHost's
+# pid file and log (CI collects the log from there).
 #
 # The AppHost binds the same silo ports as the tests that boot the
 # host, so stop it before running those.
@@ -16,7 +18,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 project=oma-play
-state_dir="${XDG_RUNTIME_DIR:-/tmp}/oma-play"
+state_dir="${OMA_PLAY_DIR:-${XDG_RUNTIME_DIR:-/tmp}/oma-play}"
 pid_file="$state_dir/apphost.pid"
 log_file="$state_dir/apphost.log"
 api_url=http://localhost:5000
