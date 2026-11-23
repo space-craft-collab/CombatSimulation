@@ -96,10 +96,6 @@ Deferred by the finished phases and still open.
 
 **No phase yet**
 
-- The `frontend` and `e2e` jobs as required checks on `main`,
-  decided in Phase 4. The ruleset still requires only
-  `build-test` and `integration`; `e2e` is added once it has
-  run green on `main`.
 - Monster portraits: one per species in the style of the
   arena pictures, with the inline SVG as the fallback.
   Deferred: the drawings hold up for now.

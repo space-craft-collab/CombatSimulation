@@ -201,8 +201,8 @@ bot's in [ADR-0013](docs/adr/0013-bot-difficulty.md).
 - npm packages: exact versions, a week's cooldown, no install
   scripts, a malware check before every install.
 - Monster portraits deferred; the monsters stay inline SVG.
-- `frontend` and `e2e` to become required checks on `main`;
-  the ruleset is not changed yet.
+- `frontend` and `e2e` are required checks on `main`, next
+  to `build-test` and `integration` (2026-11-23).
 
 ### Phase 3 — Persistence (hot/cold) ✅
 

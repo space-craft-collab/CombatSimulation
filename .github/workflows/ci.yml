@@ -84,8 +84,8 @@ jobs:
           fi
 
   # Testcontainers suites (Docker is preinstalled on the runner).
-  # Runs only after build-test passes. Both jobs are required
-  # checks on main.
+  # Runs only after build-test passes. All four jobs of this
+  # file are required checks on main.
   integration:
     needs: build-test
     runs-on: ubuntu-latest
