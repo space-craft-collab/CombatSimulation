@@ -9,13 +9,18 @@ A public showcase repo demonstrating the actor model and
 distributed-systems patterns inside a **modular monolith**
 backend, with a **SvelteKit** frontend.
 
+<img src="docs/images/battle.webp" width="640"
+  alt="A battle in the Volcano arena: three monsters against the bot's three, a few rounds in">
+
 ## Status
 
-Phase 4 — Frontend (in progress). Phase 4.5 — Combat
-depth is done: six species in three elements, three
-abilities each with cooldowns, status effects, and a
-bot that fields a team of its own. A simulator plays
-the bot against itself and writes
+Phases 0–4 are done; Phase 5 (scale-out) is next. In
+the browser a visitor picks a nickname, an arena and a
+team, fights the bot or waits for a human, and finds
+their record on a dashboard. Six species in three
+elements, three abilities each with cooldowns, status
+effects, and a bot that fields a team of its own. A
+simulator plays the bot against itself and writes
 [`docs/balance.md`](docs/balance.md); tests hold the
 numbers inside their guard rails
 ([ADR-0012](docs/adr/0012-combat-rules.md)). Live
@@ -53,11 +58,12 @@ docker compose up
 ```
 
 There a visitor picks a nickname, an arena and a team
-of up to three monsters and fights the bot, round by
-round, live over SignalR. Waiting for a human
-opponent and the player dashboard follow.
+of up to three monsters and fights the bot (Normal or
+Easy) or another player, round by round, live over
+SignalR. A dashboard per player shows the record
+and the last battles.
 
-A battle against the bot is already playable over HTTP:
+The same game is playable over HTTP:
 
 ```bash
 # Pick an arena
@@ -79,6 +85,10 @@ curl -X POST localhost:5000/battles/<battleId>/actions \
 
 # Read the state
 curl localhost:5000/battles/<battleId>
+
+# Your record and last battles, once a battle is decided
+curl localhost:5000/players/me
+curl localhost:5000/players/me/battles
 ```
 
 Or wait for a human opponent:
@@ -109,9 +119,9 @@ receive a `RoundResolved` delta after every round.
 - Modular monolith: `Catalog`, `Battles`, `Players`
 - Hot path: Orleans + Azure Table Storage
 - Cold path: EF Core + Azure SQL
-- Frontend (Phase 4, in progress): SvelteKit + Svelte 5 runes,
-  a Node server of its own (`adapter-node`); the browser
-  calls the API and the SignalR hub directly
+- Frontend: SvelteKit + Svelte 5 runes, a Node server of
+  its own (`adapter-node`); the browser calls the API and
+  the SignalR hub directly
 
 See [`docs/adr/`](docs/adr/) for architecture decisions.
 
@@ -126,7 +136,7 @@ See [`docs/adr/`](docs/adr/) for architecture decisions.
 | Logging | NLog |
 | Frontend | SvelteKit + TypeScript |
 | OpenAPI client | Kiota |
-| Tests | xUnit v3 + Testcontainers |
+| Tests | xUnit v3 + Testcontainers; Vitest + Playwright |
 | Hosting | Azure Container Apps |
 | CI/CD | GitHub Actions |
 

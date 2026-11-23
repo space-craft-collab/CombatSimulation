@@ -1,6 +1,6 @@
 # ADR-0004: SvelteKit + Svelte 5 for the frontend
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-23)
 - **Date:** 2026-05-16
 - **Deciders:** aha (solo maintainer)
 
@@ -55,14 +55,21 @@ Settled at the start of Phase 4 (2026-11-21):
   script, and the lockfile is checked for known malware
   before anything is installed. The steps are in
   `CONTRIBUTING.md`.
-- **API client: Kiota, with no fallback generator.**
+- **API client: Kiota, with no fallback generator.** The
+  generated client is committed, because Kiota is a `dotnet`
+  tool and the Node image has no .NET SDK; CI generates it
+  again and fails when the two differ.
 - **Styling: Tailwind CSS.** Monsters are drawn as inline
-  SVG. Amended on 2026-11-22: each arena has a picture,
+  SVG, and the layout is built for a phone-width screen
+  first. Amended on 2026-11-22: each arena has a picture,
   AI-generated (Nano Banana) and stored as WebP under
   `frontend/src/lib/assets`. The pictures ship with the
   frontend and are mapped by arena id; the API does not
   serve them, and an arena without one stays plain.
-  Badges, health bars and icons stay SVG/CSS.
+  Badges, health bars and icons stay SVG/CSS. A portrait
+  per species was planned to follow and deferred on
+  2026-11-23: the inline-SVG monsters hold up next to the
+  arena pictures.
 - **Player identity until Phase 6:** a nickname the visitor
   types on the first visit, kept in `localStorage`. It is
   the client-chosen player id the API already takes, so
@@ -70,12 +77,32 @@ Settled at the start of Phase 4 (2026-11-21):
 - **Tests:** Vitest for logic, and one Playwright smoke test
   that plays a battle against the bot.
 
+Settled while the frontend was built (2026-11-23):
+
+- **A nickname is part of an address.** The dashboard lives
+  at `/players/{nickname}`, as the API's
+  `GET /players/{playerId}` does. The API's routing leaves an
+  escaped slash escaped, and browsers resolve a segment of
+  `.` or `..` away, so the frontend refuses those nicknames
+  when one is chosen. The API still takes them.
+- **An arena's open battles are polled.** The hub pushes
+  only to the watchers of one battle, so the team picker
+  reads the list again every few seconds while the page is
+  visible. A waiting host needs no polling: `BattleStarted`
+  on the hub moves them into the battle.
+- **Playwright covers each path, in CI too.** The smoke test
+  grew into tests for every path a visitor takes: a battle
+  against the bot, two players in an open battle, the
+  dashboard. They run against the whole app, no mocked API,
+  started as a developer starts it (`scripts/play-start.sh`),
+  locally and in the CI job `e2e`.
+
 ## Consequences
 
 - **Positive:**
   - Smallest bundle of the three options.
   - Runes give a clean reactive model for the SignalR stream
-    that powers `LiveBattleView`.
+    that powers the live battle (`LiveBattle`).
   - Demonstrates polyglot stack experience on the CV — useful
     contrast against the .NET backend.
 - **Negative:**
@@ -105,7 +132,7 @@ Settled at the start of Phase 4 (2026-11-21):
     organisation behind it. Verbose output is hidden behind
     a thin hand-written wrapper instead.
   - Kiota covers the HTTP API only. The SignalR hub's
-    messages (`BattleEventDto`, `StrikeDto`) are typed by
+    messages (`RoundResolved`, `BattleStarted`) are typed by
     hand in the frontend.
 
 ## Spike result
