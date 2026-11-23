@@ -169,9 +169,6 @@ jobs:
         working-directory: frontend
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      # Where play-start.sh keeps the AppHost's log, for the failure
-      # steps below.
-      OMA_PLAY_DIR: ${{ runner.temp }}/oma-play
     steps:
       - uses: actions/checkout@v7
 
@@ -185,6 +182,12 @@ jobs:
         run: |
           echo "FRONTEND_UID=$(id -u)" >> "$GITHUB_ENV"
           echo "FRONTEND_GID=$(id -g)" >> "$GITHUB_ENV"
+
+      # Where play-start.sh keeps the AppHost's log, for the failure
+      # steps below. Set in a step: a job's env cannot read the
+      # runner context.
+      - name: State directory
+        run: echo "OMA_PLAY_DIR=$RUNNER_TEMP/oma-play" >> "$GITHUB_ENV"
 
       # A step of its own, so the time a cold runner spends on the
       # images shows apart from the start and the tests. The root
