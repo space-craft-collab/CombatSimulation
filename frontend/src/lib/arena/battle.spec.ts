@@ -3,11 +3,13 @@ import {
 	DIFFICULTIES,
 	applyRound,
 	changeOf,
+	clockOf,
 	newerOf,
 	outcomeFor,
 	parseDifficulty,
 	relationOf,
 	secondsUntil,
+	sidesOf,
 	type Battle,
 	type BattleEvent,
 	type Combatant,
@@ -249,6 +251,36 @@ describe('outcomeFor', () => {
 
 	it('is abandoned when a completed battle has no winner', () => {
 		expect(outcomeFor(battle({ status: 'Completed' }), PLAYER)).toBe('abandoned');
+	});
+
+	it('is unjoined when an open battle completed with its host alone', () => {
+		const expired = battle({ status: 'Completed', round: 0, combatants: [monster(0, PLAYER, 30)] });
+
+		expect(outcomeFor(expired, PLAYER)).toBe('unjoined');
+	});
+});
+
+describe('sidesOf', () => {
+	it('names each side once, in the order of its first slot', () => {
+		const combatants = [monster(0, 'bob', 30), monster(1, 'bob', 30), monster(2, PLAYER, 30)];
+
+		expect(sidesOf(battle({ combatants }))).toEqual(['bob', PLAYER]);
+	});
+
+	it('has the host alone while an open battle waits', () => {
+		expect(sidesOf(battle({ combatants: [monster(0, PLAYER, 30)] }))).toEqual([PLAYER]);
+	});
+});
+
+describe('clockOf', () => {
+	it.each([
+		[300, '5:00'],
+		[61, '1:01'],
+		[9, '0:09'],
+		[0, '0:00'],
+		[-3, '0:00']
+	])('shows %i seconds as %s', (seconds, clock) => {
+		expect(clockOf(seconds)).toBe(clock);
 	});
 });
 

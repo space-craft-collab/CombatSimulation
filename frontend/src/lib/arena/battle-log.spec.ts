@@ -24,6 +24,17 @@ function event(overrides: Partial<RoundEvent> = {}): RoundEvent {
 }
 
 describe('sentenceOf', () => {
+	it("leaves a player's nickname as it is at the start of a sentence", () => {
+		const names: LogNames = {
+			...NAMES,
+			monster: (slot) => (slot === 0 ? "bob's Frost Owl" : 'your Ember Fox')
+		};
+
+		expect(sentenceOf(event(), names)).toBe(
+			"bob's Frost Owl hits your Ember Fox with Strike for 10."
+		);
+	});
+
 	it('tells a plain hit', () => {
 		expect(sentenceOf(event(), NAMES)).toBe(
 			"Your Ember Fox hits the bot's Moss Golem with Strike for 10."

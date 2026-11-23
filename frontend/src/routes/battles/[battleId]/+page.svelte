@@ -11,19 +11,23 @@
 	} from '#lib/arena/abilities.ts';
 	import {
 		changeOf,
+		clockOf,
 		isStanding,
-		outcomeFor,
 		secondsUntil,
-		type Combatant
+		type Combatant,
+		type Difficulty
 	} from '#lib/arena/battle.ts';
 	import { ownedName, sentenceOf, type LogNames } from '#lib/arena/battle-log.ts';
 	import { abilitiesById, type Ability, type Element } from '#lib/arena/catalog.ts';
 	import { LiveBattle } from '#lib/arena/live-battle.svelte.ts';
+	import { inviteQuery } from '#lib/arena/lobby.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
 	import { pickerQuery } from '#lib/arena/team.ts';
+	import { verdictOf } from '#lib/arena/verdict.ts';
 	import AbilityPicker from '#lib/components/AbilityPicker.svelte';
 	import ArenaBackdrop from '#lib/components/ArenaBackdrop.svelte';
 	import CombatantCard from '#lib/components/CombatantCard.svelte';
+	import DifficultyChoice from '#lib/components/DifficultyChoice.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -92,13 +96,18 @@
 	);
 
 	const inProgress = $derived(battle.status === 'InProgress');
+	const waiting = $derived(battle.status === 'WaitingForPlayers');
 	// No move before the hub answers: the round's delta would be
 	// missed. Without a connection the HTTP response still shows it.
+	// Once the move is in, the round waits for the other side.
 	const canAct = $derived(
-		player.loaded && playerId !== null && inProgress && live.feed !== 'connecting'
+		player.loaded && playerId !== null && inProgress && live.feed !== 'connecting' && !live.moved
 	);
-	const outcome = $derived(playerId ? outcomeFor(battle, playerId) : 'undecided');
+	const verdict = $derived(verdictOf(battle, playerId));
+	// While the battle waits for players, its deadline is the join deadline.
 	const secondsLeft = $derived(secondsUntil(battle.turnDeadline, now));
+	// The bot the host may bring in instead of waiting.
+	let botDifficulty = $state<Difficulty>('Normal');
 	const arenaName = $derived(
 		data.catalog.arenas.find((arena) => arena.id === battle.arenaId)?.name ?? battle.arenaId
 	);
@@ -166,6 +175,10 @@
 			void live.act(playerId, move);
 		}
 	}
+
+	function seatBot() {
+		void live.seatBot(botDifficulty);
+	}
 </script>
 
 <svelte:head>
@@ -185,45 +198,91 @@
 			{/if}
 		</h1>
 		<p class="text-slate-300">
-			<span data-testid="round">Round {battle.round}</span>
-			{#if canAct && secondsLeft !== null}
+			{#if waiting}
+				<span data-testid="round">Open battle</span>
+			{:else if battle.round > 0}
+				<span data-testid="round">Round {battle.round}</span>
+			{/if}
+			{#if (canAct || live.moved) && secondsLeft !== null}
 				<span class="text-slate-500">·</span>
 				<span class={secondsLeft <= 10 ? 'text-red-400' : ''} data-testid="countdown">
-					{secondsLeft}s to move
+					{secondsLeft}s {canAct ? 'to move' : 'left'}
 				</span>
 			{/if}
 		</p>
 	</section>
 
-	{#if live.feed === 'offline' && inProgress}
+	{#if live.feed === 'offline' && (inProgress || waiting)}
 		<p class="rounded border border-amber-500 p-3 text-sm text-amber-300" role="status">
 			The live connection is down. Reload the page to catch up.
 		</p>
 	{/if}
 
-	{#if battle.status === 'Completed'}
+	{#if waiting && player.loaded}
+		<section
+			class="flex flex-col gap-3 rounded-lg border border-slate-700 bg-slate-900 p-4"
+			data-testid="waiting"
+		>
+			{#if playerId}
+				<div>
+					<h2 class="text-xl font-bold">Waiting for an opponent</h2>
+					<p class="mt-1 text-sm text-slate-400">
+						Players who open {arenaName} see your battle and can join it; you can also send them this
+						page's address.
+						{#if secondsLeft !== null && secondsLeft > 0}
+							It stays open for another
+							<span class="text-slate-200 tabular-nums" data-testid="join-countdown"
+								>{clockOf(secondsLeft)}</span
+							>.
+						{:else if secondsLeft === 0}
+							Its time is up; it closes in a moment.
+						{/if}
+					</p>
+				</div>
+				<!-- Offered at once, not after a while (ADR-0007). -->
+				<div class="flex flex-col gap-2 border-t border-slate-800 pt-3" data-testid="bot-offer">
+					<p class="font-medium">Rather not wait? Play the bot instead.</p>
+					<DifficultyChoice bind:value={botDifficulty} disabled={live.submitting} />
+					<button
+						class="rounded-lg bg-amber-500 px-4 py-3 text-lg font-semibold text-slate-950 enabled:cursor-pointer disabled:opacity-40"
+						type="button"
+						disabled={live.submitting}
+						onclick={seatBot}
+						data-testid="bot-instead"
+					>
+						{live.submitting ? 'Bringing in the bot…' : 'Fight the bot instead'}
+					</button>
+					{#if live.failure}
+						<p class="text-sm text-red-400" role="alert">{live.failure}</p>
+					{/if}
+				</div>
+			{:else}
+				<div>
+					<h2 class="text-xl font-bold">{homeId} is waiting for an opponent</h2>
+					<p class="mt-1 text-sm text-slate-400">Pick a team in {arenaName} to take them on.</p>
+				</div>
+				<!-- The path comes from resolve(); the rule only cannot see past the query appended to it. -->
+				<!-- eslint-disable svelte/no-navigation-without-resolve -->
+				<a
+					class="rounded-lg bg-amber-500 px-4 py-3 text-center text-lg font-semibold text-slate-950"
+					href={resolve('/arenas/[arenaId]', { arenaId: battle.arenaId }) +
+						inviteQuery(battle.battleId)}
+					data-testid="join-link"
+				>
+					Pick a team and join
+				</a>
+				<!-- eslint-enable svelte/no-navigation-without-resolve -->
+			{/if}
+		</section>
+	{/if}
+
+	{#if verdict}
 		<section
 			class="rounded-lg border border-slate-700 bg-slate-900 p-4 text-center"
 			data-testid="battle-result"
 		>
-			<h2 class="text-xl font-bold">
-				{#if outcome === 'won'}
-					You won!
-				{:else if outcome === 'lost'}
-					The bot won.
-				{:else if battle.winnerId === null}
-					The battle was abandoned.
-				{:else}
-					{battle.winnerId} won.
-				{/if}
-			</h2>
-			<p class="mt-1 text-sm text-slate-400">
-				{#if battle.winnerId === null}
-					Nobody moved before the deadline.
-				{:else}
-					Decided in round {battle.round}.
-				{/if}
-			</p>
+			<h2 class="text-xl font-bold">{verdict.title}</h2>
+			<p class="mt-1 text-sm text-slate-400">{verdict.detail}</p>
 			<p class="mt-4 flex flex-wrap justify-center gap-3">
 				<!-- The path comes from resolve(); the rule only cannot see past the query appended to it. -->
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
@@ -258,6 +317,13 @@
 							lastChange={lastChangeOf(combatant.slot)}
 							onselect={() => onpick(combatant.slot)}
 						/>
+					</li>
+				{:else}
+					<!-- The seat of an open battle, while nobody has taken it. -->
+					<li
+						class="grid min-h-28 max-w-40 flex-1 place-items-center rounded-lg border border-dashed border-slate-600 bg-slate-950/40 p-2 text-center text-sm text-slate-300"
+					>
+						{waiting ? 'Waiting for an opponent…' : 'Nobody joined.'}
 					</li>
 				{/each}
 			</ul>
@@ -336,6 +402,19 @@
 			{#if live.failure}
 				<p class="text-sm text-red-400" role="alert">{live.failure}</p>
 			{/if}
+		</section>
+	{:else if live.moved}
+		<!-- Against a human, the round waits for the other side's move. -->
+		<section
+			class="sticky bottom-0 flex flex-col gap-1 bg-slate-950/95 py-3 text-center"
+			role="status"
+			data-testid="waiting-for-move"
+		>
+			<p class="text-lg font-semibold">Your move is in.</p>
+			<p class="text-sm text-slate-400">
+				Waiting for {away[0] ? ownerOf(away[0]) : 'your opponent'}. The round is played once they
+				move{secondsLeft !== null ? `, or in ${secondsLeft}s` : ''}.
+			</p>
 		</section>
 	{:else if player.loaded && playerId === null && inProgress}
 		<p class="text-center text-sm text-slate-400">You are watching this battle.</p>

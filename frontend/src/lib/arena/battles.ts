@@ -1,6 +1,7 @@
 import type { BattleResponse } from '#lib/api/models/index.ts';
 import { createArenaApi } from './api.ts';
 import type { Battle, BattleStatus, Difficulty, Move } from './battle.ts';
+import { openBattlesOf, type OpenBattle } from './lobby.ts';
 
 /** A request the API refused or could not answer. */
 export class ArenaApiError extends Error {
@@ -36,6 +37,100 @@ export function startBattleAgainstBot(
 			await createArenaApi()
 				.arenas.byArenaId(arenaId)
 				.battles.post({ playerId, monsterSpeciesIds: speciesIds, opponent: 'Bot', difficulty })
+		)
+	);
+}
+
+/**
+ * Opens a battle that waits for a human opponent (ADR-0007). It is
+ * listed by its arena until someone joins, the bot takes the open
+ * seat, or its join deadline passes.
+ *
+ * @param arenaId The arena to fight on.
+ * @param playerId The visitor's nickname.
+ * @param speciesIds The team, in slot order.
+ * @returns The battle, waiting for players.
+ */
+export function openBattle(
+	arenaId: string,
+	playerId: string,
+	speciesIds: string[]
+): Promise<Battle> {
+	return call(async () =>
+		toBattle(
+			await createArenaApi()
+				.arenas.byArenaId(arenaId)
+				.battles.post({ playerId, monsterSpeciesIds: speciesIds, opponent: 'Human' })
+		)
+	);
+}
+
+/**
+ * Reads the battles of an arena that wait for a second player.
+ *
+ * @param fetch The fetch of the calling `load` function, if any.
+ */
+export function listOpenBattles(
+	arenaId: string,
+	fetch: typeof globalThis.fetch = globalThis.fetch
+): Promise<OpenBattle[]> {
+	return call(async () => {
+		const summaries = (await createArenaApi(fetch).arenas.byArenaId(arenaId).battles.get()) ?? [];
+
+		// Kiota types every property as optional; an entry without
+		// its id or state is skipped.
+		return openBattlesOf(
+			summaries.flatMap((summary) =>
+				summary.battleId && summary.status
+					? [
+							{
+								battleId: summary.battleId,
+								status: summary.status satisfies BattleStatus,
+								participantIds: summary.participantIds ?? []
+							}
+						]
+					: []
+			)
+		);
+	});
+}
+
+/**
+ * Joins an open battle as its second player; the battle starts.
+ *
+ * @param playerId The visitor's nickname; it must not be the host's.
+ * @param speciesIds The team, in slot order.
+ * @returns The battle's first state. A battle that no longer waits
+ * is refused with status 409.
+ */
+export function joinBattle(
+	battleId: string,
+	playerId: string,
+	speciesIds: string[]
+): Promise<Battle> {
+	return call(async () =>
+		toBattle(
+			await createArenaApi()
+				.battles.byBattleId(battleId)
+				.participants.post({ playerId, monsterSpeciesIds: speciesIds })
+		)
+	);
+}
+
+/**
+ * Seats the bot in an open battle ("play vs bot instead"); the
+ * battle starts.
+ *
+ * @param difficulty How hard the bot is; Easy weakens its monsters.
+ * @returns The battle's first state. A battle that no longer waits
+ * is refused with status 409.
+ */
+export function seatBot(battleId: string, difficulty: Difficulty = 'Normal'): Promise<Battle> {
+	return call(async () =>
+		toBattle(
+			await createArenaApi()
+				.battles.byBattleId(battleId)
+				.bot.post({ queryParameters: { difficulty } })
 		)
 	);
 }

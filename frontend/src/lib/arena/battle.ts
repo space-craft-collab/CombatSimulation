@@ -188,21 +188,32 @@ export function changeOf(
 		);
 }
 
+/** The sides of a battle, in the order of their first slot. */
+export function sidesOf(battle: Battle): string[] {
+	return [...new Set(battle.combatants.map((combatant) => combatant.participantId))];
+}
+
 /** Whether a monster can still act or be targeted. */
 export function isStanding(combatant: Combatant): boolean {
 	return combatant.hitPoints > 0;
 }
 
 /** How a battle ended, seen by one participant. */
-export type Outcome = 'undecided' | 'won' | 'lost' | 'abandoned';
+export type Outcome = 'undecided' | 'won' | 'lost' | 'abandoned' | 'unjoined';
 
 /**
- * How the battle ended for `participantId`. A completed battle
- * without a winner was abandoned: no human moved before a deadline.
+ * How the battle ended for `participantId`. A completed battle with
+ * one side only was opened and never joined before its join
+ * deadline; one without a winner was abandoned: no human moved
+ * before a turn deadline.
  */
 export function outcomeFor(battle: Battle, participantId: string): Outcome {
 	if (battle.status !== 'Completed') {
 		return 'undecided';
+	}
+
+	if (sidesOf(battle).length < 2) {
+		return 'unjoined';
 	}
 
 	if (battle.winnerId === null) {
@@ -219,4 +230,11 @@ export function secondsUntil(deadline: string | null, now: number): number | nul
 	}
 
 	return Math.max(0, Math.ceil((Date.parse(deadline) - now) / 1000));
+}
+
+/** Whole seconds as a clock, `m:ss`: what is left of a join deadline. */
+export function clockOf(seconds: number): string {
+	const whole = Math.max(0, Math.floor(seconds));
+
+	return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
 }

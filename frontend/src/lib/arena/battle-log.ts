@@ -89,6 +89,10 @@ function effectivenessNote(event: RoundEvent): string {
 	}
 }
 
+// Only the words the log itself puts first are capitalized: a
+// nickname is shown as its player wrote it, "bob's Frost Owl".
 function capitalized(text: string): string {
-	return text.charAt(0).toUpperCase() + text.slice(1);
+	return /^(your |the bot's |a monster)/.test(text)
+		? text.charAt(0).toUpperCase() + text.slice(1)
+		: text;
 }
