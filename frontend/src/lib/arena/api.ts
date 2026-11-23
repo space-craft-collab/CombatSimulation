@@ -52,3 +52,54 @@ async function fetchDetached(
 		headers: response.headers
 	});
 }
+
+/** A request the API refused or could not answer. */
+export class ArenaApiError extends Error {
+	/**
+	 * @param message What went wrong, in words fit to show.
+	 * @param status The HTTP status, if the API answered at all.
+	 */
+	constructor(
+		message: string,
+		readonly status: number | undefined
+	) {
+		super(message);
+		this.name = 'ArenaApiError';
+	}
+}
+
+/**
+ * Runs a request of the Kiota client, so that whatever it fails with
+ * reaches the caller as an `ArenaApiError`.
+ */
+export async function callApi<T>(request: () => Promise<T>): Promise<T> {
+	try {
+		return await request();
+	} catch (error) {
+		throw error instanceof ArenaApiError ? error : toApiError(error);
+	}
+}
+
+/** What Kiota throws for a failed response: its status and, if the API sent one, a problem document. */
+interface FailedResponse {
+	responseStatusCode?: number;
+	detail?: string | null;
+	title?: string | null;
+	errors?: { additionalData?: Record<string, unknown> } | null;
+}
+
+// The API explains a refusal in a problem document: `detail` for a
+// broken rule, `errors` per field for an invalid request.
+function toApiError(error: unknown): ArenaApiError {
+	const failed = (typeof error === 'object' && error !== null ? error : {}) as FailedResponse;
+	const fieldErrors = Object.values(failed.errors?.additionalData ?? {}).flat();
+	const message =
+		failed.detail ??
+		fieldErrors.find((entry) => typeof entry === 'string') ??
+		failed.title ??
+		(failed.responseStatusCode === undefined
+			? 'The arena cannot be reached right now.'
+			: `The arena answered with status ${failed.responseStatusCode}.`);
+
+	return new ArenaApiError(message, failed.responseStatusCode);
+}

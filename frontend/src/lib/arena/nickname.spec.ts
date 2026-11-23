@@ -26,4 +26,19 @@ describe('validateNickname', () => {
 		expect(validateNickname('a'.repeat(MAX_NICKNAME_LENGTH))).toHaveProperty('nickname');
 		expect(validateNickname('a'.repeat(MAX_NICKNAME_LENGTH + 1))).toHaveProperty('error');
 	});
+
+	it.each(['a/b', '/', 'ada/'])('rejects %j, whose slash the API could not route', (input) => {
+		expect(validateNickname(input)).toHaveProperty('error');
+	});
+
+	it.each(['.', '..'])('rejects %j, which an address cannot carry', (input) => {
+		expect(validateNickname(input)).toHaveProperty('error');
+	});
+
+	it.each(['...', 'a.b', 'what?', '50%', 'a#b', 'Zoë'])(
+		'accepts %j, which an address carries escaped',
+		(input) => {
+			expect(validateNickname(input)).toEqual({ nickname: input });
+		}
+	);
 });

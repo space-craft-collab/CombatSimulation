@@ -212,15 +212,33 @@ export function outcomeFor(battle: Battle, participantId: string): Outcome {
 		return 'undecided';
 	}
 
-	if (sidesOf(battle).length < 2) {
+	return endingFor(sidesOf(battle), battle.winnerId, participantId);
+}
+
+/** How a completed battle can have ended for a participant. */
+export type Ending = Exclude<Outcome, 'undecided'>;
+
+/**
+ * How a completed battle ended for `participantId`, told from its
+ * sides and its winner alone: what a battle in a player's history
+ * still has (`outcomeFor` has the rules).
+ *
+ * @param sides Every side of the battle, each once.
+ */
+export function endingFor(
+	sides: readonly string[],
+	winnerId: string | null,
+	participantId: string
+): Ending {
+	if (sides.length < 2) {
 		return 'unjoined';
 	}
 
-	if (battle.winnerId === null) {
+	if (winnerId === null) {
 		return 'abandoned';
 	}
 
-	return battle.winnerId === participantId ? 'won' : 'lost';
+	return winnerId === participantId ? 'won' : 'lost';
 }
 
 /** Whole seconds until `deadline`, never negative; null without a deadline. */

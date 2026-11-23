@@ -4,6 +4,7 @@ import {
 	applyRound,
 	changeOf,
 	clockOf,
+	endingFor,
 	newerOf,
 	outcomeFor,
 	parseDifficulty,
@@ -257,6 +258,23 @@ describe('outcomeFor', () => {
 		const expired = battle({ status: 'Completed', round: 0, combatants: [monster(0, PLAYER, 30)] });
 
 		expect(outcomeFor(expired, PLAYER)).toBe('unjoined');
+	});
+});
+
+describe('endingFor', () => {
+	it.each([
+		[PLAYER, 'won'],
+		[BOT, 'lost']
+	] as const)('with %s as the winner the player has %s', (winnerId, ending) => {
+		expect(endingFor([PLAYER, BOT], winnerId, PLAYER)).toBe(ending);
+	});
+
+	it('is abandoned with two sides and no winner', () => {
+		expect(endingFor([PLAYER, 'bob'], null, PLAYER)).toBe('abandoned');
+	});
+
+	it('is unjoined with the host alone', () => {
+		expect(endingFor([PLAYER], null, PLAYER)).toBe('unjoined');
 	});
 });
 

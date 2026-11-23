@@ -3,13 +3,9 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { STRIKE, summaryOf } from '#lib/arena/abilities.ts';
+	import { ArenaApiError } from '#lib/arena/api.ts';
 	import type { Battle, Difficulty } from '#lib/arena/battle.ts';
-	import {
-		ArenaApiError,
-		joinBattle,
-		openBattle,
-		startBattleAgainstBot
-	} from '#lib/arena/battles.ts';
+	import { joinBattle, openBattle, startBattleAgainstBot } from '#lib/arena/battles.ts';
 	import type { Species } from '#lib/arena/catalog.ts';
 	import { joinRefusal, lobbyOf } from '#lib/arena/lobby.ts';
 	import { OpenBattleList } from '#lib/arena/open-battles.svelte.ts';

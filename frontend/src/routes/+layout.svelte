@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import favicon from '#lib/assets/favicon.svg';
+	import { playerParam } from '#lib/arena/dashboard.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
 	import type { LayoutProps } from './$types';
 
@@ -24,11 +25,22 @@
 				Orleans Monster Arena
 			</a>
 			{#if player.nickname}
-				<!-- On a phone the name alone: next to the title there is no room for more. -->
-				<span class="truncate text-sm text-slate-400" data-testid="playing-as">
+				<!-- On a phone the name alone: next to the title there is no room for more.
+				     It leads to the player's dashboard; preloaded on a tap only, not on
+				     hover, so a battle that ended since the pointer passed is not missing. -->
+				<a
+					class="truncate text-sm text-slate-400 hover:text-slate-200"
+					href={resolve('/players/[playerId]', { playerId: playerParam(player.nickname) })}
+					title="Your record and your last battles"
+					data-sveltekit-preload-data="tap"
+					data-testid="playing-as"
+				>
 					<span class="max-sm:sr-only">Playing as</span>
-					<span class="font-semibold text-slate-200">{player.nickname}</span>
-				</span>
+					<span
+						class="font-semibold text-slate-200 underline decoration-slate-600 underline-offset-4"
+						>{player.nickname}</span
+					>
+				</a>
 			{/if}
 		</div>
 	</header>

@@ -19,6 +19,7 @@
 	} from '#lib/arena/battle.ts';
 	import { ownedName, sentenceOf, type LogNames } from '#lib/arena/battle-log.ts';
 	import { abilitiesById, type Ability, type Element } from '#lib/arena/catalog.ts';
+	import { afterQuery, playerParam } from '#lib/arena/dashboard.ts';
 	import { LiveBattle } from '#lib/arena/live-battle.svelte.ts';
 	import { inviteQuery } from '#lib/arena/lobby.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
@@ -123,6 +124,15 @@
 						battle.difficulty
 					)
 				: '')
+	);
+
+	// A player's way from the result to their dashboard, which waits
+	// until this battle is counted there.
+	const record = $derived(
+		playerId
+			? resolve('/players/[playerId]', { playerId: playerParam(playerId) }) +
+					afterQuery(battle.battleId)
+			: null
 	);
 
 	const names: LogNames = {
@@ -291,6 +301,18 @@
 				</a>
 				<a class="rounded border border-slate-600 px-4 py-2" href={resolve('/')}>All arenas</a>
 			</p>
+			{#if record}
+				<p class="mt-3 text-sm">
+					<!-- The path comes from resolve(); the rule only cannot see past the query appended to it. -->
+					<!-- eslint-disable svelte/no-navigation-without-resolve -->
+					<a
+						class="text-slate-300 underline underline-offset-4"
+						href={record}
+						data-testid="record-link">Your record and last battles</a
+					>
+					<!-- eslint-enable svelte/no-navigation-without-resolve -->
+				</p>
+			{/if}
 		</section>
 	{/if}
 

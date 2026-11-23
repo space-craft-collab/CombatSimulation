@@ -1,22 +1,7 @@
 import type { BattleResponse } from '#lib/api/models/index.ts';
-import { createArenaApi } from './api.ts';
+import { ArenaApiError, callApi, createArenaApi } from './api.ts';
 import type { Battle, BattleStatus, Difficulty, Move } from './battle.ts';
 import { openBattlesOf, type OpenBattle } from './lobby.ts';
-
-/** A request the API refused or could not answer. */
-export class ArenaApiError extends Error {
-	/**
-	 * @param message What went wrong, in words fit to show.
-	 * @param status The HTTP status, if the API answered at all.
-	 */
-	constructor(
-		message: string,
-		readonly status: number | undefined
-	) {
-		super(message);
-		this.name = 'ArenaApiError';
-	}
-}
 
 /**
  * Starts a battle against the bot.
@@ -32,7 +17,7 @@ export function startBattleAgainstBot(
 	speciesIds: string[],
 	difficulty: Difficulty = 'Normal'
 ): Promise<Battle> {
-	return call(async () =>
+	return callApi(async () =>
 		toBattle(
 			await createArenaApi()
 				.arenas.byArenaId(arenaId)
@@ -56,7 +41,7 @@ export function openBattle(
 	playerId: string,
 	speciesIds: string[]
 ): Promise<Battle> {
-	return call(async () =>
+	return callApi(async () =>
 		toBattle(
 			await createArenaApi()
 				.arenas.byArenaId(arenaId)
@@ -74,7 +59,7 @@ export function listOpenBattles(
 	arenaId: string,
 	fetch: typeof globalThis.fetch = globalThis.fetch
 ): Promise<OpenBattle[]> {
-	return call(async () => {
+	return callApi(async () => {
 		const summaries = (await createArenaApi(fetch).arenas.byArenaId(arenaId).battles.get()) ?? [];
 
 		// Kiota types every property as optional; an entry without
@@ -108,7 +93,7 @@ export function joinBattle(
 	playerId: string,
 	speciesIds: string[]
 ): Promise<Battle> {
-	return call(async () =>
+	return callApi(async () =>
 		toBattle(
 			await createArenaApi()
 				.battles.byBattleId(battleId)
@@ -126,7 +111,7 @@ export function joinBattle(
  * is refused with status 409.
  */
 export function seatBot(battleId: string, difficulty: Difficulty = 'Normal'): Promise<Battle> {
-	return call(async () =>
+	return callApi(async () =>
 		toBattle(
 			await createArenaApi()
 				.battles.byBattleId(battleId)
@@ -146,7 +131,7 @@ export async function findBattle(
 	battleId: string
 ): Promise<Battle | null> {
 	try {
-		return await call(async () =>
+		return await callApi(async () =>
 			toBattle(await createArenaApi(fetch).battles.byBattleId(battleId).get())
 		);
 	} catch (error) {
@@ -165,7 +150,7 @@ export async function findBattle(
  * @returns The battle after the move; against the bot the round is played by then.
  */
 export function submitMove(battleId: string, participantId: string, move: Move): Promise<Battle> {
-	return call(async () =>
+	return callApi(async () =>
 		toBattle(
 			await createArenaApi()
 				.battles.byBattleId(battleId)
@@ -208,36 +193,4 @@ function toBattle(response: BattleResponse | undefined): Battle {
 			)
 		}))
 	};
-}
-
-async function call<T>(request: () => Promise<T>): Promise<T> {
-	try {
-		return await request();
-	} catch (error) {
-		throw error instanceof ArenaApiError ? error : toApiError(error);
-	}
-}
-
-/** What Kiota throws for a failed response: its status and, if the API sent one, a problem document. */
-interface FailedResponse {
-	responseStatusCode?: number;
-	detail?: string | null;
-	title?: string | null;
-	errors?: { additionalData?: Record<string, unknown> } | null;
-}
-
-// The API explains a refusal in a problem document: `detail` for a
-// broken rule, `errors` per field for an invalid request.
-function toApiError(error: unknown): ArenaApiError {
-	const failed = (typeof error === 'object' && error !== null ? error : {}) as FailedResponse;
-	const fieldErrors = Object.values(failed.errors?.additionalData ?? {}).flat();
-	const message =
-		failed.detail ??
-		fieldErrors.find((entry) => typeof entry === 'string') ??
-		failed.title ??
-		(failed.responseStatusCode === undefined
-			? 'The arena cannot be reached right now.'
-			: `The arena answered with status ${failed.responseStatusCode}.`);
-
-	return new ArenaApiError(message, failed.responseStatusCode);
 }

@@ -1,3 +1,4 @@
+import { ArenaApiError } from './api.ts';
 import {
 	applyRound,
 	newerOf,
@@ -8,7 +9,7 @@ import {
 	type Move
 } from './battle.ts';
 import { connectToBattleHub, type BattleHub } from './battle-hub.ts';
-import { ArenaApiError, findBattle, seatBot, submitMove } from './battles.ts';
+import { findBattle, seatBot, submitMove } from './battles.ts';
 
 /** What one round did, for the battle log. */
 export interface PlayedRound {
