@@ -197,6 +197,39 @@ Inserted while Phase 4 was under way; condensed on
   frozen enum values, and Vitest for the battle state. The
   `ExactIds` migration tests read the older schema in plain
   SQL, since today's repository asks for the new column.
+- Waiting for a human in the browser: "Wait for a human" in
+  the team bar opens a battle, and the team picker lists the
+  arena's open battles ("Players waiting"), each joinable
+  with the picked team. The list is read again every 4 s
+  while the page is visible, since the API has no push for
+  it; a join that comes too late says why. A waiting host
+  sees the join countdown and the "play the bot instead"
+  offer at once, with the difficulty choice, and is moved
+  into the battle by `BattleStarted`; the waiting page links
+  to the picker with that battle listed first (`?join=`).
+- Against a human the battle view names the opponent, says
+  "Your move is in" until the other side has moved, and
+  words the result for either side and for a spectator
+  (`verdictOf`). An open battle nobody joined ends as
+  "Nobody joined".
+- Player dashboard at `/players/{nickname}`: wins, losses and
+  the win rate, and the last battles with the opponent, the
+  result as that player saw it, the arena, the round and the
+  time. A player without a finished battle gets an empty
+  state with a way to start playing. The header's nickname
+  and the result panel lead there; from a result the page
+  waits until that battle is counted (`?after=`).
+- Playwright tests for two players meeting in an open battle
+  (two browser contexts) and the bot instead, and for the
+  dashboard; Vitest for the lobby, the verdicts, the
+  dashboard and the new nickname rules.
+- CI job `e2e`: starts the whole app with
+  `scripts/play-start.sh` and runs the Playwright tests in
+  their container, after `build-test` and `frontend`. On CI
+  a failed test is retried once and reported as flaky; logs
+  and traces are kept as artifacts when something fails.
+  The play scripts take `OMA_PLAY_DIR` for the AppHost's pid
+  file and log.
 
 #### Changed
 - [ADR-0004](docs/adr/0004-sveltekit-frontend.md) records
@@ -244,6 +277,9 @@ Inserted while Phase 4 was under way; condensed on
   differ only for a bot weakened on Easy.
 - `docs/balance.md` (through `BalanceReportWriter`) says
   that Easy lies outside the balance guard rails.
+- A new nickname may hold no slash and may not be `.` or
+  `..`: it is now part of the dashboard's address.
+- The header's nickname is a link to the dashboard.
 
 #### Fixed
 - `dotnet run --project src/AppHost` started the host as
@@ -260,6 +296,12 @@ Inserted while Phase 4 was under way; condensed on
   checked for known malware before it is installed. A
   release must be a week old, and no package runs an
   install script.
+- Monster portraits are deferred: the inline-SVG monsters
+  stay.
+- The `frontend` and `e2e` jobs are to become required checks
+  on `main`; the ruleset is not changed yet.
+- [ADR-0004](docs/adr/0004-sveltekit-frontend.md)
+  `Accepted`.
 
 ### Phase 3 — Persistence (hot/cold) ✅
 
