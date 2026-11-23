@@ -96,9 +96,17 @@ Deferred by the finished phases and still open.
 
 **No phase yet**
 
+- The battle as a stage: the monsters stand in the arena's
+  picture, in two rows, instead of in rows of cards in front
+  of it; name and health float above each one. Then a round's
+  events played one after another. Display only: the rules,
+  the API and the hub stay as they are.
 - Monster portraits: one per species in the style of the
   arena pictures, with the inline SVG as the fallback.
-  Deferred: the drawings hold up for now.
+  Deferred: the drawings hold up for now. Decided once the
+  stage stands: portraits on the stage need a transparent
+  background, which the generator does not give; in the team
+  picker alone they do not.
 - A sweep for hot rows a crash left behind between the snapshot
   write and the clear ([ADR-0003](adr/0003-no-outbox.md)).
 - Arena rules such as "fire monsters only"
