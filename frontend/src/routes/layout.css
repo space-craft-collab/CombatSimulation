@@ -1,10 +1,15 @@
 @import 'tailwindcss';
 
-/* The damage a monster just took: rises and fades. */
+/* The damage a monster just took, or the hit points it got back:
+   shows as the blow lands, rises and fades. */
 @keyframes hit-flash {
 	from {
-		opacity: 1;
+		opacity: 0;
 		transform: translateY(0);
+	}
+
+	10% {
+		opacity: 1;
 	}
 
 	to {
@@ -14,10 +19,11 @@
 }
 
 .hit-flash {
-	animation: hit-flash 1.2s ease-out forwards;
+	animation: hit-flash 1.2s ease-out 0.1s both;
 }
 
-/* A monster that was just hit: shakes and flashes. */
+/* A monster that was just hit: shakes and flashes, once the lunge
+   that hits it is close. */
 @keyframes hit-shake {
 	0%,
 	100% {
@@ -46,7 +52,54 @@
 }
 
 .hit-shake {
-	animation: hit-shake 0.5s ease-out;
+	animation: hit-shake 0.5s ease-out 0.1s;
+}
+
+/* A monster acting on another: steps out towards it and back. The
+   front row steps up, the back row down, towards the viewer; the
+   stage sets how far sideways (--lunge-x). */
+@keyframes lunge {
+	0%,
+	100% {
+		transform: translate(0, 0) scale(1);
+	}
+
+	25% {
+		transform: translate(var(--lunge-x, 0), var(--lunge-reach)) scale(var(--lunge-scale));
+	}
+}
+
+.lunge-up,
+.lunge-down {
+	animation: lunge 0.45s ease-in-out;
+}
+
+.lunge-up {
+	--lunge-reach: -60%;
+	--lunge-scale: 1.05;
+}
+
+.lunge-down {
+	--lunge-reach: 70%;
+	--lunge-scale: 1.2;
+}
+
+/* A monster doing something to itself, or burning: a short swell. */
+@keyframes self-pulse {
+	0%,
+	100% {
+		transform: scale(1);
+		filter: none;
+	}
+
+	40% {
+		transform: scale(1.15);
+		filter: brightness(1.6);
+	}
+}
+
+.self-pulse {
+	animation: self-pulse 0.45s ease-in-out;
 }
 
 /* A monster on its feet, breathing. */
@@ -87,6 +140,9 @@
 	}
 
 	.hit-shake,
+	.lunge-up,
+	.lunge-down,
+	.self-pulse,
 	.idle-bob,
 	.target-bounce {
 		animation: none;

@@ -169,25 +169,6 @@ function progressOf(battle: Battle): number {
 	return battle.status === 'Completed' ? Number.POSITIVE_INFINITY : battle.round;
 }
 
-/**
- * The damage a monster took and the hit points it got back within
- * one round, all events together: a hit and a burn add up.
- */
-export function changeOf(
-	events: readonly RoundEvent[],
-	slot: number
-): { damage: number; healing: number } {
-	return events
-		.filter((event) => event.targetSlot === slot)
-		.reduce(
-			(total, event) => ({
-				damage: total.damage + event.damage,
-				healing: total.healing + event.healing
-			}),
-			{ damage: 0, healing: 0 }
-		);
-}
-
 /** The sides of a battle, in the order of their first slot. */
 export function sidesOf(battle: Battle): string[] {
 	return [...new Set(battle.combatants.map((combatant) => combatant.participantId))];

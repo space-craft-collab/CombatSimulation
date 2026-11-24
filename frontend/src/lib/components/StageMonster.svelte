@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { effectLabel } from '#lib/arena/abilities.ts';
-	import { isStanding } from '#lib/arena/battle.ts';
 	import { ELEMENT_STYLES } from './element-styles.ts';
 	import HealthBar from './HealthBar.svelte';
 	import MonsterSprite from './MonsterSprite.svelte';
@@ -14,21 +13,61 @@
 		 * the viewer's, and a pick there is the monster that acts.
 		 */
 		row: 'back' | 'front';
+		/** Where the monster in a slot stands across the stage, in pixels. */
+		centerOf: (slot: number) => number | undefined;
 	}
 
-	let { monster, row }: Props = $props();
+	let { monster, row, centerOf }: Props = $props();
 
 	const combatant = $derived(monster.combatant);
-	const standing = $derived(isStanding(combatant));
+	// What the stage shows may lag behind the battle while a round plays.
+	const standing = $derived(monster.hitPoints > 0);
 	const actor = $derived(monster.selected && row === 'front');
 	const target = $derived(monster.selected && row === 'back');
+	const cue = $derived(monster.cue);
+	const motion = $derived.by(() => {
+		switch (cue?.kind) {
+			// The front row steps up towards the back, the back row down.
+			case 'lunge':
+				return row === 'front' ? 'lunge-up' : 'lunge-down';
+			case 'struck':
+				return 'hit-shake';
+			case 'pulse':
+				return 'self-pulse';
+			default:
+				return null;
+		}
+	});
+	// One number per cue: a hit or a burn hurts, a heal heals.
+	const change = $derived(
+		cue && cue.kind !== 'lunge' && cue.damage > 0
+			? { text: `−${cue.damage}`, color: 'text-red-400' }
+			: cue?.kind === 'pulse' && cue.healing > 0
+				? { text: `+${cue.healing}`, color: 'text-emerald-400' }
+				: null
+	);
+
+	// A lunge steps up or down by its row, and sideways halfway to its
+	// target, so it is clear whom it goes for. Set before the motion's
+	// first frame is drawn; both places are the monsters' buttons, which
+	// stay put while their sprites move.
+	function aim(motion: HTMLElement) {
+		const to = cue?.kind === 'lunge' ? centerOf(cue.targetSlot) : undefined;
+		const from = centerOf(combatant.slot);
+
+		if (to !== undefined && from !== undefined) {
+			motion.style.setProperty('--lunge-x', `${(to - from) / 2}px`);
+		}
+	}
 </script>
 
 <button
 	type="button"
 	class={[
 		'group relative flex w-full flex-col items-center gap-0.5 rounded-lg px-0.5 pt-1 focus-visible:outline-2 focus-visible:outline-amber-300',
-		monster.selectable && 'cursor-pointer'
+		monster.selectable && 'cursor-pointer',
+		// A lunging monster passes over its neighbours' plates.
+		cue?.kind === 'lunge' && 'z-10'
 	]}
 	disabled={!monster.selectable}
 	aria-pressed={monster.selected}
@@ -69,11 +108,11 @@
 		<span class="sr-only">{monster.owner}</span>
 		{#if standing}
 			<span class="flex items-center gap-1">
-				<HealthBar hitPoints={combatant.hitPoints} maxHitPoints={combatant.maxHitPoints} />
+				<HealthBar hitPoints={monster.hitPoints} maxHitPoints={combatant.maxHitPoints} />
 				<span class="text-[10px] leading-none text-slate-200 tabular-nums" aria-hidden="true">
-					{combatant.hitPoints}
+					{monster.hitPoints}
 				</span>
-				<span class="sr-only">HP {combatant.hitPoints} / {combatant.maxHitPoints}</span>
+				<span class="sr-only">HP {monster.hitPoints} / {combatant.maxHitPoints}</span>
 			</span>
 		{:else}
 			<span class="text-[10px] leading-none text-slate-400">Defeated</span>
@@ -99,15 +138,20 @@
 			class={['absolute inset-0', standing && 'idle-bob']}
 			style:animation-delay="{combatant.slot * -0.7}s"
 		>
-			{#key monster.lastChange?.round}
-				<span class={['block size-full', monster.lastChange?.damage && 'hit-shake']}>
-					<MonsterSprite
-						speciesId={combatant.speciesId}
-						defeated={!standing}
-						class="size-full transition-[opacity,filter] duration-1000"
-					/>
-				</span>
-			{/key}
+			<!-- The defeat fades in here, on an element that stays: the one
+			     inside is drawn anew for every cue, to play its motion once. -->
+			<span
+				class={[
+					'block size-full transition-[opacity,filter] duration-1000',
+					!standing && 'opacity-40 grayscale'
+				]}
+			>
+				{#key cue?.key}
+					<span class={['block size-full', motion]} {@attach aim}>
+						<MonsterSprite speciesId={combatant.speciesId} class="size-full" />
+					</span>
+				{/key}
+			</span>
 		</span>
 
 		{#if standing && combatant.effects.length > 0}
@@ -126,22 +170,16 @@
 			</span>
 		{/if}
 
-		{#if monster.lastChange}
-			{#key monster.lastChange.round}
-				{#if monster.lastChange.damage > 0}
-					<span
-						class="hit-flash absolute -top-1 left-full -ml-3 text-lg font-extrabold text-red-400 text-shadow-black/80 text-shadow-md"
-					>
-						−{monster.lastChange.damage}
-					</span>
-				{/if}
-				{#if monster.lastChange.healing > 0}
-					<span
-						class="hit-flash absolute -top-1 right-full -mr-3 text-lg font-extrabold text-emerald-400 text-shadow-black/80 text-shadow-md"
-					>
-						+{monster.lastChange.healing}
-					</span>
-				{/if}
+		{#if cue && change}
+			{#key cue.key}
+				<span
+					class={[
+						'hit-flash absolute -top-1 left-full -ml-3 text-lg font-extrabold text-shadow-black/80 text-shadow-md',
+						change.color
+					]}
+				>
+					{change.text}
+				</span>
 			{/key}
 		{/if}
 	</span>

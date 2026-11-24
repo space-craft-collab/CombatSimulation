@@ -1,13 +1,12 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 // The battle stage on a phone, against a running frontend and
 // AppHost: 3 against 3 fits one screen, the strike button in reach.
 
 test.use({ viewport: { width: 390, height: 660 } });
 
-test('on a phone, a 3-vs-3 battle shows the stage, the abilities and the strike button at once', async ({
-	page
-}) => {
+/** Fields a team of three against the bot in Volcano, with a nickname of its own. */
+async function fightTheBot(page: Page): Promise<void> {
 	// A name of its own per run; the solo path tests choosing one.
 	const nickname = `e2e-phone-${Date.now()}`;
 	await page
@@ -26,6 +25,24 @@ test('on a phone, a 3-vs-3 battle shows the stage, the abilities and the strike 
 	await expect(page).toHaveURL(/\/battles\/[0-9a-f-]{36}$/);
 	await expect(page.getByTestId('home-side').getByTestId('combatant')).toHaveCount(3);
 	await expect(page.getByTestId('away-side').getByTestId('combatant')).toHaveCount(3);
+}
+
+/** The hit points the stage shows of every monster, in the stage's order. */
+function shownHitPoints(page: Page): Promise<string[]> {
+	return page
+		.getByTestId('combatant')
+		.evaluateAll((monsters) =>
+			monsters.map(
+				(monster) =>
+					monster.querySelector('[role=meter]')?.getAttribute('aria-valuenow') ?? 'defeated'
+			)
+		);
+}
+
+test('on a phone, a 3-vs-3 battle shows the stage, the abilities and the strike button at once', async ({
+	page
+}) => {
+	await fightTheBot(page);
 
 	const stage = page.getByTestId('stage');
 	const abilities = page.getByRole('list', { name: 'Abilities' });
@@ -44,4 +61,18 @@ test('on a phone, a 3-vs-3 battle shows the stage, the abilities and the strike 
 		.locator('section', { has: strike })
 		.evaluate((section) => section.getBoundingClientRect().top);
 	expect(listBottom).toBeLessThanOrEqual(strikeTop);
+});
+
+test('a round played out on the stage ends where the battle stands', async ({ page }) => {
+	await fightTheBot(page);
+
+	await page.getByTestId('strike').click();
+	await expect(page.getByTestId('round')).toHaveText('Round 2');
+
+	// A second view of the battle shows its state as it is, nothing played.
+	const settled = await page.context().newPage();
+	await settled.goto(page.url(), { waitUntil: 'networkidle' });
+	await expect(settled.getByTestId('round')).toHaveText('Round 2');
+
+	await expect.poll(() => shownHitPoints(page)).toEqual(await shownHitPoints(settled));
 });

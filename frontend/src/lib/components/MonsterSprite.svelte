@@ -4,20 +4,13 @@
 	// plain blob, so a new Catalog entry still shows up.
 	interface Props {
 		speciesId: string;
-		/** A defeated monster is drawn grey and faded. */
-		defeated?: boolean;
 		class?: string;
 	}
 
-	let { speciesId, defeated = false, class: className = 'h-16 w-16' }: Props = $props();
+	let { speciesId, class: className = 'h-16 w-16' }: Props = $props();
 </script>
 
-<svg
-	viewBox="0 0 64 64"
-	class={[className, defeated && 'opacity-40 grayscale']}
-	aria-hidden="true"
-	data-species={speciesId}
->
+<svg viewBox="0 0 64 64" class={className} aria-hidden="true" data-species={speciesId}>
 	{#if speciesId === 'ember-fox'}
 		<path d="M50 50q10-6 4-16q8 6 6 18q-4 8-12 4z" fill="#fbbf24" />
 		<path d="M14 22l6-16l8 14zM50 22l-6-16l-8 14z" fill="#ea580c" />

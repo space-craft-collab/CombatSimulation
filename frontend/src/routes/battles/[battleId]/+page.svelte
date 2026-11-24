@@ -10,7 +10,6 @@
 		unknownAbility
 	} from '#lib/arena/abilities.ts';
 	import {
-		changeOf,
 		clockOf,
 		isStanding,
 		secondsUntil,
@@ -23,12 +22,14 @@
 	import { LiveBattle } from '#lib/arena/live-battle.svelte.ts';
 	import { inviteQuery } from '#lib/arena/lobby.ts';
 	import { player } from '#lib/arena/player.svelte.ts';
+	import { Playback } from '#lib/arena/playback.svelte.ts';
+	import { cueOf, hitPointsAt } from '#lib/arena/round-playback.ts';
 	import { pickerQuery } from '#lib/arena/team.ts';
 	import { verdictOf } from '#lib/arena/verdict.ts';
 	import AbilityPicker from '#lib/components/AbilityPicker.svelte';
 	import BattleStage from '#lib/components/BattleStage.svelte';
 	import DifficultyChoice from '#lib/components/DifficultyChoice.svelte';
-	import type { StageMonster } from '#lib/components/stage.ts';
+	import type { StageCue, StageMonster } from '#lib/components/stage.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -47,6 +48,20 @@
 
 		return () => void followed.dispose();
 	});
+
+	// The stage plays each round that comes in event by event. The
+	// battle's state is that round's end already, and every pick goes
+	// by it: only what the stage draws lags behind.
+	const playback = new Playback();
+
+	// Before the stage is drawn, so the round's end does not show first.
+	$effect.pre(() => {
+		const played = live.rounds.at(-1);
+		// A new battle has no rounds yet: the old one's playback goes.
+		untrack(() => (played ? playback.play(played) : playback.clear()));
+	});
+
+	$effect(() => () => playback.clear());
 
 	// The countdown's clock. It ticks in the browser only.
 	let now = $state(Date.now());
@@ -112,7 +127,6 @@
 	const arenaName = $derived(
 		data.catalog.arenas.find((arena) => arena.id === battle.arenaId)?.name ?? battle.arenaId
 	);
-	const lastRound = $derived(live.rounds.at(-1));
 	// "Fight again" starts the picker from the team the viewer just
 	// fielded and the difficulty it was fielded on; a spectator gets
 	// an empty picker.
@@ -170,10 +184,19 @@
 		return combatant.isBot ? 'Bot' : combatant.participantId;
 	}
 
-	function lastChangeOf(
-		slot: number
-	): { round: number; damage: number; healing: number } | undefined {
-		return lastRound && { round: lastRound.round, ...changeOf(lastRound.events, slot) };
+	function shownHitPoints(combatant: Combatant): number {
+		const played = playback.round;
+
+		return played && playback.playing
+			? hitPointsAt(played.events, playback.step, combatant)
+			: combatant.hitPoints;
+	}
+
+	function cueAt(slot: number): StageCue | undefined {
+		const played = playback.round;
+		const cue = played && cueOf(played.events, playback.step, slot);
+
+		return played && cue ? { ...cue, key: `${played.round}-${cue.step}` } : undefined;
 	}
 
 	/** One side as the stage shows it; `picking` while the viewer may pick there. */
@@ -185,12 +208,13 @@
 	): StageMonster[] {
 		return combatants.map((combatant) => ({
 			combatant,
+			hitPoints: shownHitPoints(combatant),
 			name: nameOf(combatant.speciesId),
 			element: elementOf(combatant.speciesId),
 			owner: ownerOf(combatant),
 			selectable: picking && isStanding(combatant),
 			selected: picking && picked?.slot === combatant.slot,
-			lastChange: lastChangeOf(combatant.slot),
+			cue: cueAt(combatant.slot),
 			onselect: () => onpick(combatant.slot)
 		}));
 	}

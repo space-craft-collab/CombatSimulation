@@ -18,6 +18,15 @@
 	}
 
 	let { arenaId, away, home, emptySeat, title }: Props = $props();
+
+	let stage = $state<HTMLElement>();
+
+	// Where a monster stands across the stage, for one that lunges at it.
+	function centerOf(slot: number): number | undefined {
+		const rect = stage?.querySelector(`[data-slot="${slot}"]`)?.getBoundingClientRect();
+
+		return rect && rect.left + rect.width / 2;
+	}
 </script>
 
 <!-- Wider than square: a square stage pushes the abilities and the strike
@@ -28,6 +37,7 @@
 <div
 	class="relative isolate aspect-[8/5] overflow-hidden rounded-lg border border-slate-800 bg-[linear-gradient(to_bottom,var(--color-slate-900),var(--color-slate-700)_52%,var(--color-slate-500)_52%,var(--color-slate-600)_53%,var(--color-slate-800))] sm:aspect-video"
 	data-testid="stage"
+	bind:this={stage}
 >
 	<ArenaBackdrop
 		{arenaId}
@@ -68,7 +78,7 @@
 		>
 			{#each side.monsters as monster (monster.combatant.slot)}
 				<li class={['pointer-events-auto w-1/3', row === 'back' ? 'sm:w-40' : 'sm:w-48']}>
-					<StageMonster {monster} {row} />
+					<StageMonster {monster} {row} {centerOf} />
 				</li>
 			{:else}
 				<!-- The seat of an open battle, while nobody has taken it. -->
