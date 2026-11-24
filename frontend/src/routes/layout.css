@@ -17,8 +17,78 @@
 	animation: hit-flash 1.2s ease-out forwards;
 }
 
+/* A monster that was just hit: shakes and flashes. */
+@keyframes hit-shake {
+	0%,
+	100% {
+		transform: translateX(0);
+		filter: none;
+	}
+
+	15% {
+		transform: translateX(-4px);
+		filter: brightness(2.2);
+	}
+
+	30% {
+		transform: translateX(4px);
+	}
+
+	45% {
+		transform: translateX(-3px);
+		filter: brightness(1.5);
+	}
+
+	60% {
+		transform: translateX(2px);
+		filter: none;
+	}
+}
+
+.hit-shake {
+	animation: hit-shake 0.5s ease-out;
+}
+
+/* A monster on its feet, breathing. */
+@keyframes idle-bob {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+
+	50% {
+		transform: translateY(-3px);
+	}
+}
+
+.idle-bob {
+	animation: idle-bob 2.4s ease-in-out infinite;
+}
+
+/* The marker over the target, nodding at it. */
+@keyframes target-bounce {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+
+	50% {
+		transform: translateY(-3px);
+	}
+}
+
+.target-bounce {
+	animation: target-bounce 1s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.hit-flash {
 		animation-duration: 0.01s;
+	}
+
+	.hit-shake,
+	.idle-bob,
+	.target-bounce {
+		animation: none;
 	}
 }

@@ -26,9 +26,9 @@
 	import { pickerQuery } from '#lib/arena/team.ts';
 	import { verdictOf } from '#lib/arena/verdict.ts';
 	import AbilityPicker from '#lib/components/AbilityPicker.svelte';
-	import ArenaBackdrop from '#lib/components/ArenaBackdrop.svelte';
-	import CombatantCard from '#lib/components/CombatantCard.svelte';
+	import BattleStage from '#lib/components/BattleStage.svelte';
 	import DifficultyChoice from '#lib/components/DifficultyChoice.svelte';
+	import type { StageMonster } from '#lib/components/stage.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -176,6 +176,25 @@
 		return lastRound && { round: lastRound.round, ...changeOf(lastRound.events, slot) };
 	}
 
+	/** One side as the stage shows it; `picking` while the viewer may pick there. */
+	function onStage(
+		combatants: Combatant[],
+		picking: boolean,
+		picked: Combatant | undefined,
+		onpick: (slot: number) => void
+	): StageMonster[] {
+		return combatants.map((combatant) => ({
+			combatant,
+			name: nameOf(combatant.speciesId),
+			element: elementOf(combatant.speciesId),
+			owner: ownerOf(combatant),
+			selectable: picking && isStanding(combatant),
+			selected: picking && picked?.slot === combatant.slot,
+			lastChange: lastChangeOf(combatant.slot),
+			onselect: () => onpick(combatant.slot)
+		}));
+	}
+
 	function pickAbility(abilityId: string) {
 		pickedAbility = { abilityId, round: battle.round };
 	}
@@ -196,31 +215,47 @@
 </svelte:head>
 
 <div class="flex flex-col gap-4">
-	<section class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-		<h1 class="flex items-baseline gap-2 text-2xl font-bold">
-			{arenaName}
-			{#if battle.difficulty === 'Easy'}
-				<span
-					class="rounded-full border border-emerald-500/60 px-2 py-0.5 text-xs font-semibold text-emerald-300"
-					title="The bot's monsters entered weakened"
-					data-testid="difficulty">Easy</span
-				>
-			{/if}
-		</h1>
-		<p class="text-slate-300">
-			{#if waiting}
-				<span data-testid="round">Open battle</span>
-			{:else if battle.round > 0}
-				<span data-testid="round">Round {battle.round}</span>
-			{/if}
-			{#if (canAct || live.moved) && secondsLeft !== null}
-				<span class="text-slate-500">·</span>
-				<span class={secondsLeft <= 10 ? 'text-red-400' : ''} data-testid="countdown">
-					{secondsLeft}s {canAct ? 'to move' : 'left'}
-				</span>
-			{/if}
-		</p>
-	</section>
+	<!-- The title rides on the stage: below it, a phone has no room to spare. -->
+	<BattleStage
+		arenaId={battle.arenaId}
+		away={{
+			label: away[0] ? ownerOf(away[0]) : 'Opponent',
+			monsters: onStage(away, canAct && targeted, target, (slot) => (pickedTarget = slot))
+		}}
+		home={{
+			label: home[0] ? ownerOf(home[0]) : 'Challenger',
+			monsters: onStage(home, canAct, actor, (slot) => (pickedActor = slot))
+		}}
+		emptySeat={waiting ? 'Waiting for an opponent…' : 'Nobody joined.'}
+	>
+		{#snippet title()}
+			<h1
+				class="flex items-baseline gap-2 text-base font-bold text-shadow-black/60 text-shadow-sm sm:text-xl"
+			>
+				{arenaName}
+				{#if battle.difficulty === 'Easy'}
+					<span
+						class="rounded-full border border-emerald-500/60 bg-slate-950/60 px-2 py-0.5 text-xs font-semibold text-emerald-300 text-shadow-none"
+						title="The bot's monsters entered weakened"
+						data-testid="difficulty">Easy</span
+					>
+				{/if}
+			</h1>
+			<p class="text-sm text-slate-200 text-shadow-black/60 text-shadow-sm">
+				{#if waiting}
+					<span data-testid="round">Open battle</span>
+				{:else if battle.round > 0}
+					<span data-testid="round">Round {battle.round}</span>
+				{/if}
+				{#if (canAct || live.moved) && secondsLeft !== null}
+					<span class="text-slate-400">·</span>
+					<span class={secondsLeft <= 10 ? 'text-red-400' : ''} data-testid="countdown">
+						{secondsLeft}s {canAct ? 'to move' : 'left'}
+					</span>
+				{/if}
+			</p>
+		{/snippet}
+	</BattleStage>
 
 	{#if live.feed === 'offline' && (inProgress || waiting)}
 		<p class="rounded border border-amber-500 p-3 text-sm text-amber-300" role="status">
@@ -315,65 +350,6 @@
 			{/if}
 		</section>
 	{/if}
-
-	{#snippet side(
-		label: string,
-		testId: string,
-		combatants: Combatant[],
-		picking: boolean,
-		picked: Combatant | undefined,
-		onpick: (slot: number) => void
-	)}
-		<section aria-label={label} data-testid={testId}>
-			<h2 class="mb-1 text-sm font-semibold text-slate-400">{label}</h2>
-			<ul class="flex justify-center gap-2">
-				{#each combatants as combatant (combatant.slot)}
-					<li class="max-w-40 min-w-0 flex-1 basis-0">
-						<CombatantCard
-							{combatant}
-							name={nameOf(combatant.speciesId)}
-							element={elementOf(combatant.speciesId)}
-							owner={ownerOf(combatant)}
-							selectable={picking && isStanding(combatant)}
-							selected={picking && picked?.slot === combatant.slot}
-							lastChange={lastChangeOf(combatant.slot)}
-							onselect={() => onpick(combatant.slot)}
-						/>
-					</li>
-				{:else}
-					<!-- The seat of an open battle, while nobody has taken it. -->
-					<li
-						class="grid min-h-28 max-w-40 flex-1 place-items-center rounded-lg border border-dashed border-slate-600 bg-slate-950/40 p-2 text-center text-sm text-slate-300"
-					>
-						{waiting ? 'Waiting for an opponent…' : 'Nobody joined.'}
-					</li>
-				{/each}
-			</ul>
-		</section>
-	{/snippet}
-
-	<!-- The arena's picture, dimmed, behind both sides. -->
-	<div
-		class="relative isolate flex flex-col gap-4 overflow-hidden rounded-lg border border-slate-800 p-2 sm:p-4"
-	>
-		<ArenaBackdrop arenaId={battle.arenaId} shade="bg-slate-950/55" />
-		{@render side(
-			away[0] ? ownerOf(away[0]) : 'Opponent',
-			'away-side',
-			away,
-			canAct && targeted,
-			target,
-			(slot) => (pickedTarget = slot)
-		)}
-		{@render side(
-			home[0] ? ownerOf(home[0]) : 'Challenger',
-			'home-side',
-			home,
-			canAct,
-			actor,
-			(slot) => (pickedActor = slot)
-		)}
-	</div>
 
 	{#if canAct && actor && ability && move}
 		<section aria-labelledby="abilities-heading">

@@ -10,7 +10,7 @@
 </script>
 
 <div
-	class="h-2 w-full overflow-hidden rounded-full bg-slate-700"
+	class="h-1.5 w-full overflow-hidden rounded-full bg-slate-700"
 	role="meter"
 	aria-label="Hit points"
 	aria-valuemin={0}
