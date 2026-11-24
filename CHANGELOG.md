@@ -66,8 +66,9 @@ are as they were.
   which the stage now draws itself.
 
 #### Decided
-- The stage keeps the inline SVG monsters; portraits, if
-  they come, belong in the team picker only.
+- Monster portraits are dropped (2026-11-24): the monsters
+  stay inline SVG, on the stage and everywhere else
+  ([ADR-0004](docs/adr/0004-sveltekit-frontend.md)).
 
 ### Phase 4.5 — Combat depth ✅
 

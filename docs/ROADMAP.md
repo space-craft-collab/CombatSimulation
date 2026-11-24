@@ -96,11 +96,6 @@ Deferred by the finished phases and still open.
 
 **No phase yet**
 
-- Monster portraits: one per species in the style of the
-  arena pictures, in the team picker only. Deferred: the
-  drawings hold up for now. The battle's stage keeps the
-  inline SVG: portraits there would need a transparent
-  background, which the generator does not give.
 - A sweep for hot rows a crash left behind between the snapshot
   write and the clear ([ADR-0003](adr/0003-no-outbox.md)).
 - Arena rules such as "fire monsters only"

@@ -69,7 +69,10 @@ Settled at the start of Phase 4 (2026-11-21):
   Badges, health bars and icons stay SVG/CSS. A portrait
   per species was planned to follow and deferred on
   2026-11-23: the inline-SVG monsters hold up next to the
-  arena pictures.
+  arena pictures. Dropped on 2026-11-24: the monsters stay
+  inline SVG, also on the battle's stage, where a portrait
+  would need a transparent background the generator does
+  not give.
 - **Player identity until Phase 6:** a nickname the visitor
   types on the first visit, kept in `localStorage`. It is
   the client-chosen player id the API already takes, so
