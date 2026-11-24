@@ -18,6 +18,57 @@ this file's history ([Phases 0–3][full-changelog],
 
 ## [Unreleased]
 
+### Between phases — The battle as a stage
+
+Carried over from Phase 4 and built on 2026-11-24, with no
+phase current. Display only: the rules, the API and the hub
+are as they were.
+
+#### Added
+- The battle page is a stage (`BattleStage`, `StageMonster`):
+  the monsters stand in the arena's picture, the opponent's
+  at the back and smaller, the viewer's in front, each on a
+  ground shadow.
+- A name plate floats above each monster: name, health bar,
+  the current hit points as a number, the element as a
+  coloured dot. Effects are chips beside the monster.
+- A glowing ring on the floor marks the monster that acts,
+  an arrow the target, instead of card borders.
+- A resolved round plays event by event, half a second each
+  (`round-playback.ts`, `Playback`): the acting monster
+  lunges at its target, the target shakes and shows that
+  event's damage, its health steps to that event's hit
+  points. A guard, a heal and a burn pulse instead.
+- Standing monsters bob; a defeated one fades. With reduced
+  motion none of it moves and a round's end shows at once.
+- An arena without a picture gets a plain sky and floor that
+  meet where the pictures' floors begin.
+- Playwright: 3 against 3 fits a 390 x 660 screen with the
+  abilities and the strike button uncovered, and a played
+  round ends on the battle's real state.
+
+#### Changed
+- The stage is 8:5 on a phone and 16:9 from `sm:` up, and
+  the arena's name, the round and the countdown ride on it.
+  A square stage, and the cards before it, pushed the
+  abilities under the strike button on a phone.
+- The waiting and the result card follow the stage instead
+  of preceding it.
+- While a round plays, only what the stage draws lags
+  behind: picks, the strike button, the round counter, the
+  log and the result go by the battle's state, and the next
+  round cuts the playback short.
+- The damage number is one per event, no longer a round's
+  sum (`changeOf` is gone).
+
+#### Removed
+- `CombatantCard`, and `MonsterSprite`'s `defeated` look,
+  which the stage now draws itself.
+
+#### Decided
+- The stage keeps the inline SVG monsters; portraits, if
+  they come, belong in the team picker only.
+
 ### Phase 4.5 — Combat depth ✅
 
 Inserted while Phase 4 was under way; condensed on
