@@ -47,9 +47,9 @@
 		"node": ">=24"
 	},
 	"dependencies": {
-		"@microsoft/kiota-abstractions": "1.0.0-preview.113",
-		"@microsoft/kiota-http-fetchlibrary": "1.0.0-preview.113",
-		"@microsoft/kiota-serialization-json": "1.0.0-preview.113",
+		"@microsoft/kiota-abstractions": "1.0.0-preview.114",
+		"@microsoft/kiota-http-fetchlibrary": "1.0.0-preview.114",
+		"@microsoft/kiota-serialization-json": "1.0.0-preview.114",
 		"@microsoft/signalr": "10.0.11"
 	}
 }
